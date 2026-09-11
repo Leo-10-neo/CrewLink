@@ -6,6 +6,7 @@ const VolunteerProfile = require('../models/VolunteerProfile');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'crewlink_jwt_default_secret_key_2026';
 
 console.log('Auth routes loaded');
 
@@ -98,7 +99,7 @@ router.post('/register', async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '24h' }
     );
 
@@ -150,7 +151,7 @@ router.post('/login', async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '24h' }
     );
 
