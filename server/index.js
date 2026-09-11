@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 
 dotenv.config();
 
@@ -39,7 +40,13 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/admin/notifications', notificationsRoutes);
 console.log('Routes configured');
 
-const path = require('path');
+const fs = require('fs');
+
+// Serve static frontend assets if dist exists
+const clientDistPath = path.join(__dirname, '../dist');
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+}
 
 // Direct APK Download route for mobile devices
 app.get('/download-apk', (req, res) => {
@@ -54,13 +61,34 @@ app.get('/download-apk', (req, res) => {
   });
 });
 
-// Root & Test routes
-app.get('/', (req, res) => {
-  res.json({ status: 'ok', message: 'CrewLink API Server is live' });
-});
-
+// Test route
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working' });
+});
+
+// SPA fallback: Serve frontend index.html for all other web routes, or API status if dist not present
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/download-apk')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+
+  const indexPath = path.join(clientDistPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+
+  res.json({
+    status: 'ok',
+    message: 'CrewLink API Server is running successfully!',
+    notice: 'To view the frontend website, deploy the frontend static site on Render or configure the build command to build the frontend.',
+    endpoints: {
+      test: '/api/test',
+      auth: '/api/auth',
+      events: '/api/events',
+      users: '/api/users',
+      volunteer: '/api/volunteer'
+    }
+  });
 });
 
 const PORT = process.env.PORT || 5000;
