@@ -121,7 +121,7 @@ npm install
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173`
+The application will be available at `https://crewlink-nd2l.onrender.com`
 
 ## API Endpoints
 
