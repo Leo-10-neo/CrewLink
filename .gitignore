@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production builds
+dist/
+build/
+**/build/
+
+# Gradle & Android
+**/.gradle/
+**/.idea/
+**/captures/
+*.iml
+**/*.iml
+**/local.properties
+**/.cxx/
+**/.externalNativeBuild/
+**/src/main/assets/public/
+**/src/main/assets/capacitor.config.json
+**/src/main/assets/capacitor.plugins.json
+**/src/main/res/xml/config.xml
+
+# Built application files / Binaries
+*.apk
+*.aar
+*.aab
+*.dex
+*.class
+
+# Misc & Env
+.DS_Store
+.env
+.env.local
+.env.test.local
+.env.production.local
+server/.env
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

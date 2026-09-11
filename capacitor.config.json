@@ -1,0 +1,9 @@
+{
+  "appId": "com.crewlink.app",
+  "appName": "CrewLink",
+  "webDir": "dist",
+  "server": {
+    "cleartext": true,
+    "androidScheme": "http"
+  }
+}

@@ -1,0 +1,1541 @@
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import {
+  LayoutDashboard, User, ClipboardList, Clock, Award,
+  LogOut, Search, Bell, CalendarDays, CheckCircle2, X, MessageSquare, Download, FileText, Lock, Menu
+} from 'lucide-react';
+
+import { API_BASE, API_URL } from '../services/api';
+
+const API = `${API_URL}/volunteer`;
+
+const VolunteerDashboard = () => {
+  const { user, token, logout } = useAuth();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Data states
+  const [overview, setOverview] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [attendance, setAttendance] = useState(null);
+  const [certificates, setCertificates] = useState([]);
+  const [certMeta, setCertMeta] = useState({ points: 0, requiredPoints: 500, isEligible: false });
+  const [selectedCert, setSelectedCert] = useState(null);
+  const [claimingCert, setClaimingCert] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState('');
+  const [selectedRulesTask, setSelectedRulesTask] = useState(null);
+  const [completingTask, setCompletingTask] = useState(null);
+  const [taskPhoto, setTaskPhoto] = useState('');
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const headers = { Authorization: `Bearer ${token}` };
+
+  // ── Fetchers ──────────────────────────────
+  const fetchOverview = async () => {
+    try {
+      const { data } = await axios.get(`${API}/overview`, { headers });
+      setOverview(data);
+    } catch (e) { console.error(e); }
+  };
+
+  const fetchProfile = async () => {
+    try {
+      const { data } = await axios.get(`${API}/profile`, { headers });
+      const source = data.user || user || {};
+      const asList = (value) => Array.isArray(value) ? value : (value || '');
+      const savedEmergencyContact = data.emergencyContact && Object.values(data.emergencyContact).some(Boolean)
+        ? data.emergencyContact
+        : (source.emergencyContact || { name: '', phone: '', relation: '' });
+
+      setProfile({
+        ...data,
+        fullName: data.fullName || source.fullName || source.username || '',
+        city: data.city || source.city || '',
+        phone: data.phone || source.phone || '',
+        photo: data.photo || source.photo || '',
+        aadharNo: data.aadharNo || source.aadharNo || '',
+        panCardNo: data.panCardNo || source.panCardNo || '',
+        address: data.address || source.address || '',
+        age: data.age ?? source.age ?? null,
+        gender: data.gender || source.gender || '',
+        skills: data.skills || asList(source.skills),
+        availability: data.availability || asList(source.availability),
+        experience: data.experience || source.experience || '',
+        preferredEventTypes: data.preferredEventTypes || asList(source.preferredEventTypes),
+        languages: data.languages?.length ? data.languages : asList(source.languages),
+        emergencyContact: savedEmergencyContact,
+        bloodGroup: data.bloodGroup || source.bloodGroup || ''
+      });
+    } catch (e) { console.error(e); }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const { data } = await axios.get(`${API}/tasks`, { headers });
+      setTasks(data);
+    } catch (e) { console.error(e); }
+  };
+
+  const fetchAttendance = async () => {
+    try {
+      const { data } = await axios.get(`${API}/attendance`, { headers });
+      setAttendance(data);
+    } catch (e) { console.error(e); }
+  };
+
+  const fetchCertificates = async () => {
+    try {
+      const { data } = await axios.get(`${API}/certificates`, { headers });
+      setCertificates(Array.isArray(data) ? data : (data.certificates || []));
+      if (data && typeof data.points === 'number') {
+        setCertMeta({ points: data.points, requiredPoints: data.requiredPoints || 500, isEligible: data.isEligible });
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      await Promise.all([fetchOverview(), fetchProfile()]);
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/notifications`, { headers });
+        setNotifications(data);
+      } catch (e) { console.error(e); }
+    };
+
+    fetchNotifications();
+    
+    // Poll for new notifications every 10 seconds
+    const interval = setInterval(fetchNotifications, 10000);
+    return () => clearInterval(interval);
+  }, [token]);
+
+  useEffect(() => {
+    if (activeTab === 'tasks') fetchTasks();
+    if (activeTab === 'attendance') fetchAttendance();
+    if (activeTab === 'certificates') fetchCertificates();
+    if (activeTab === 'overview') fetchOverview();
+    if (activeTab === 'profile') fetchProfile();
+  }, [activeTab]);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  };
+
+  const handleLogout = () => { logout(); navigate('/'); };
+
+  const markNotificationAsRead = async (id) => {
+    try {
+      await axios.put(`${API_URL}/notifications/${id}/read`, {}, { headers });
+      setNotifications(notifications.map(n => n._id === id ? { ...n, read: true } : n));
+    } catch (e) { 
+      console.error('Error marking notification as read:', e);
+      console.error('Error response:', e.response);
+    }
+  };
+
+  const markAllNotificationsAsRead = async () => {
+    try {
+      await axios.put(`${API_URL}/notifications/read-all`, {}, { headers });
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+    } catch (e) { 
+      console.error('Error marking all notifications as read:', e);
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    try {
+      console.log('Clearing all notifications...');
+      const response = await axios.delete(`${API_URL}/notifications/clear-all`, { headers });
+      console.log('Clear response:', response.data);
+      setNotifications([]);
+      console.log('Notifications cleared successfully');
+    } catch (e) { 
+      console.error('Error clearing notifications:', e);
+      console.error('Error response:', e.response);
+    }
+  };
+
+  const handleNotificationClick = (notification) => {
+    if (!notification.read) {
+      markNotificationAsRead(notification._id);
+    }
+    if (notification.link) {
+      // Navigate to the chat with state to indicate it came from notification
+      navigate(notification.link, { state: { fromNotification: true } });
+      setShowNotifications(false);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  // ── Handlers ──────────────────────────────
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    try {
+      const normalizeList = (value) => {
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'string') return value.split(',').map(v => v.trim()).filter(Boolean);
+        return [];
+      };
+
+      const { data } = await axios.put(`${API}/profile`, {
+        fullName: profile?.fullName || profile?.user?.fullName || '',
+        city: profile?.city || profile?.user?.city || '',
+        phone: profile?.phone || profile?.user?.phone || '',
+        photo: profile?.photo || profile?.user?.photo || '',
+        aadharNo: profile?.aadharNo || profile?.user?.aadharNo || '',
+        panCardNo: profile?.panCardNo || profile?.user?.panCardNo || '',
+        address: profile?.address || profile?.user?.address || '',
+        age: profile?.age ?? profile?.user?.age ?? null,
+        gender: profile?.gender || profile?.user?.gender || '',
+        skills: normalizeList(profile?.skills ?? profile?.user?.skills ?? []),
+        availability: normalizeList(profile?.availability ?? profile?.user?.availability ?? []),
+        experience: profile?.experience || profile?.user?.experience || '',
+        preferredEventTypes: normalizeList(profile?.preferredEventTypes ?? profile?.user?.preferredEventTypes ?? []),
+        languages: normalizeList(profile?.languages ?? profile?.user?.languages ?? []),
+        emergencyContact: profile?.emergencyContact || profile?.user?.emergencyContact || { name: '', phone: '', relation: '' },
+        bloodGroup: profile?.bloodGroup || profile?.user?.bloodGroup || '',
+      }, { headers });
+      setProfile(data);
+      showToast('Profile saved');
+    } catch (e) { showToast('Failed to save'); }
+    setSaving(false);
+  };
+
+  const handleUpdateTaskStatus = async (taskId, status, photo = '') => {
+    try {
+      await axios.put(`${API}/tasks/${taskId}/status`, { status, photo }, { headers });
+      fetchTasks();
+      if (status === 'completed') {
+        showToast('Work submitted to the admin for review!');
+      } else {
+        showToast('Task updated');
+      }
+    } catch (e) { showToast(e.response?.data?.message || 'Failed to update'); }
+  };
+
+  const handleToggleAttendance = async (recordId) => {
+    try {
+      const res = await axios.put(`${API}/attendance/${recordId}/toggle`, {}, { headers });
+      fetchAttendance();
+      const msg = res.data?.checkOut ? 'Checked out successfully!' : 'Checked in successfully!';
+      showToast(msg);
+    } catch (e) { showToast(e.response?.data?.message || 'Failed to update attendance'); }
+  };
+
+  const handleApply = async (eventId) => {
+    try {
+      await axios.post(`${API}/apply/${eventId}`, {}, { headers });
+      fetchOverview();
+      showToast('Applied!');
+    } catch (e) { showToast(e.response?.data?.message || 'Failed'); }
+  };
+
+  const handleClaimCertificate = async () => {
+    setClaimingCert(true);
+    try {
+      const { data } = await axios.post(`${API}/certificates/claim`, {}, { headers });
+      await fetchCertificates();
+      showToast(data.message || 'Certificate generated successfully!');
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Failed to generate certificate');
+    } finally {
+      setClaimingCert(false);
+    }
+  };
+
+  const openCertificate = (cert, autoPrint = false) => {
+    setSelectedCert(cert);
+    if (autoPrint) {
+      setTimeout(() => {
+        window.print();
+      }, 350);
+    }
+  };
+
+  // ── Helpers ───────────────────────────────
+  const fmtDate = (d) => {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+  const fmtDateTime = (d) => {
+    if (!d) return '—';
+    return new Date(d).toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' });
+  };
+
+  // ── Sidebar nav items ─────────────────────
+  const navItems = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'profile', label: 'My profile', icon: User },
+    { id: 'tasks', label: 'My tasks', icon: ClipboardList },
+    { id: 'attendance', label: 'Attendance', icon: Clock },
+    { id: 'certificates', label: 'Certificates', icon: Award },
+  ];
+
+  // ══════════════════════════════════════════
+  // RENDER TABS
+  // ══════════════════════════════════════════
+
+  const renderOverview = () => {
+    if (!overview) return <div className="text-gray-400 py-12 text-center">Loading…</div>;
+    return (
+      <div className="max-w-6xl mx-auto animate-fade-in">
+        <div className="mb-6">
+          <h1 className="text-2xl sm:text-3xl font-medium text-gray-900 mb-1">Ready to make it happen?</h1>
+          <p className="text-gray-500 text-sm sm:text-base">Your volunteer hub for every contribution.</p>
+        </div>
+
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between min-h-[96px] sm:h-32">
+            <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">Application</span>
+            <span className="text-2xl font-bold text-gray-900 capitalize">{overview.applicationStatus}</span>
+          </div>
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between min-h-[96px] sm:h-32">
+            <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">Assigned Events</span>
+            <span className="text-3xl font-bold text-gray-900">{overview.assignedEvents}</span>
+          </div>
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between min-h-[96px] sm:h-32">
+            <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">Open Tasks</span>
+            <span className="text-3xl font-bold text-gray-900">{overview.openTasks}</span>
+          </div>
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between min-h-[96px] sm:h-32">
+            <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">Crew Points</span>
+            <span className="text-3xl font-bold text-gray-900">{overview.crewPoints}</span>
+          </div>
+        </div>
+
+        {/* Two-column content */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Available events */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Available events</h2>
+              <button onClick={() => setActiveTab('profile')} className="text-sm text-[#5b52f6] font-medium hover:underline">Profile</button>
+            </div>
+            {overview.availableEvents.length === 0 ? (
+              <p className="text-gray-400 text-sm py-4">No available events right now.</p>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {overview.availableEvents.map(ev => (
+                  <div key={ev._id} className="py-3">
+                    <p className="font-semibold text-gray-900">{ev.title}</p>
+                    <p className="text-sm text-gray-500">
+                      {fmtDate(ev.date)} · {ev.category || 'General'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Next tasks */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Next tasks</h2>
+            {overview.nextTasks.length === 0 ? (
+              <p className="text-gray-400 text-sm py-4">No tasks assigned yet.</p>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {overview.nextTasks.map(t => (
+                  <div key={t._id} className="py-3 flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-gray-900">{t.taskName}</p>
+                      <p className="text-sm text-gray-500">
+                        {t.event?.title || '—'} ·{' '}
+                        {(t.startTime || t.dueDate || t.event?.date) ? (
+                          <span className="text-indigo-600 font-mono text-xs mr-1">
+                            {fmtDateTime(t.startTime || t.dueDate || t.event?.date)} ·
+                          </span>
+                        ) : null}
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          t.status === 'completed' ? 'bg-teal-50 text-teal-700' :
+                          t.status === 'in-progress' ? 'bg-yellow-50 text-yellow-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>{t.status === 'completed' ? 'Completed' : t.status === 'in-progress' ? 'In progress' : 'Pending'}</span>
+                      </p>
+                    </div>
+                    <span className="font-semibold text-emerald-600 text-sm">₹{t.salary || 0}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderProfile = () => {
+    if (!profile) return <div className="text-gray-400 py-12 text-center">Loading…</div>;
+    const userProfile = profile.user || user || {};
+    const profileValue = (key) => {
+      const val = profile[key] || userProfile[key] || '';
+      return Array.isArray(val) ? val.join(', ') : val;
+    };
+    const field = (label, key, placeholder) => (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+        <input
+          type="text"
+          value={profileValue(key)}
+          onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
+          placeholder={placeholder}
+          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-shadow"
+        />
+      </div>
+    );
+    const listValue = (value) => Array.isArray(value) ? value.join(', ') : (value || '');
+    const emergencyContact = profile.emergencyContact && Object.values(profile.emergencyContact).some(Boolean)
+      ? profile.emergencyContact
+      : (userProfile.emergencyContact || {});
+    const updateEmergencyContact = (key, value) => setProfile({
+      ...profile,
+      emergencyContact: { ...emergencyContact, [key]: value }
+    });
+
+    return (
+      <div className="max-w-4xl mx-auto animate-fade-in">
+        <div className="mb-6">
+          <h1 className="text-2xl sm:text-3xl font-medium text-gray-900 mb-1">Volunteer profile</h1>
+          <p className="text-gray-500 text-sm sm:text-base">Your profile helps organisers match your strengths to the work.</p>
+        </div>
+
+        {/* Privacy note */}
+        <div className="mb-6 p-4 bg-[#f0fdf4] border-l-4 border-teal-400 rounded-r-lg text-sm text-teal-800">
+          For privacy, CrewLink does not collect government identity numbers in this prototype. Verification is represented with secure document placeholders and masked references only.
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {field('Full name', 'fullName', 'Your full name')}
+            {field('City', 'city', 'e.g. Bengaluru')}
+            {field('Phone', 'phone', '9876503333')}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+              <input
+                type="text"
+                value={userProfile.email || ''}
+                disabled
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+              />
+            </div>
+            {field('Skills', 'skills', 'Guest coordination, first aid')}
+            {field('Availability', 'availability', 'Weekends')}
+            {field('Experience', 'experience', '2 years of campus events')}
+            {field('Preferred event types', 'preferredEventTypes', 'Cultural, Charity')}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Languages</label>
+              <input
+                type="text"
+                value={listValue(profile.languages?.length ? profile.languages : userProfile.languages)}
+                onChange={(e) => setProfile({ ...profile, languages: e.target.value })}
+                placeholder="Kannada, Hindi"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-shadow"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="md:col-span-2">
+              <h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-2">Emergency contact</h2>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Contact name</label>
+              <input
+                type="text"
+                value={emergencyContact.name || ''}
+                onChange={(e) => updateEmergencyContact('name', e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-shadow"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
+              <input
+                type="text"
+                value={emergencyContact.phone || ''}
+                onChange={(e) => updateEmergencyContact('phone', e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-shadow"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Relation</label>
+              <input
+                type="text"
+                value={emergencyContact.relation || ''}
+                onChange={(e) => updateEmergencyContact('relation', e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-shadow"
+              />
+            </div>
+            {field('Blood group', 'bloodGroup', 'O+')}
+          </div>
+
+          {/* Volunteer Registration Details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Volunteer Photo</label>
+              <div className="px-4 py-3 border-l-4 border-blue-400 bg-blue-50/50 rounded-r-lg">
+                {profileValue('photo') ? (
+                  <img src={profileValue('photo')} alt="Volunteer" className="w-24 h-24 object-cover rounded-md border border-gray-200" />
+                ) : (
+                  <span className="text-sm text-gray-500 italic">No photo provided</span>
+                )}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Identity & Details</label>
+              <div className="space-y-3">
+                {field('Aadhaar number', 'aadharNo', 'Aadhaar number')}
+                {field('PAN card number', 'panCardNo', 'PAN card number')}
+                <div className="grid grid-cols-2 gap-3">
+                  {field('Age', 'age', 'Age')}
+                  {field('Gender', 'gender', 'Gender')}
+                </div>
+                {field('Address', 'address', 'Address')}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveProfile}
+            disabled={saving}
+            className="px-8 py-2.5 bg-[#5b52f6] hover:bg-[#4a42d4] text-white font-medium rounded-lg transition-colors shadow-md disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : 'Save profile'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTasks = () => {
+    if (tasks.length === 0) {
+      return (
+        <div className="max-w-5xl mx-auto animate-fade-in">
+          <div className="mb-8">
+            <h1 className="text-3xl font-medium text-gray-900 mb-1">My tasks</h1>
+            <p className="text-gray-500 text-lg">Update your progress as you move through the day.</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+            <div className="flex flex-col items-center justify-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <span className="text-3xl">📋</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No tasks assigned yet</h3>
+              <p className="text-gray-500">When admin assigns you tasks, they will appear here.</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const sortedTasks = [...tasks].sort((a, b) => {
+      const isCompletedA = a.status === 'completed' ? 1 : 0;
+      const isCompletedB = b.status === 'completed' ? 1 : 0;
+      if (isCompletedA !== isCompletedB) {
+        return isCompletedA - isCompletedB;
+      }
+      const timeA = new Date(a.startTime || a.dueDate || a.event?.date || 0).getTime();
+      const timeB = new Date(b.startTime || b.dueDate || b.event?.date || 0).getTime();
+      return timeA - timeB;
+    });
+
+    const approvedSalary = tasks.filter(t => t.paymentStatus === 'approved').reduce((sum, t) => sum + (Number(t.salary) || 0), 0);
+    const pendingApprovalSalary = tasks.filter(t => t.status === 'completed' && t.paymentStatus !== 'approved').reduce((sum, t) => sum + (Number(t.salary) || 0), 0);
+    const totalSalary = tasks.reduce((sum, t) => sum + (Number(t.salary) || 0), 0);
+
+    return (
+      <>
+        <div className="max-w-5xl mx-auto animate-fade-in">
+          <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-medium text-gray-900 mb-1">My tasks</h1>
+              <p className="text-gray-500 text-sm sm:text-base">Update your progress as you move through the day.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+              <div className="bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-xl">
+                <span className="text-[10px] font-semibold uppercase text-emerald-800 tracking-wider block">Approved Earnings:</span>
+                <span className="text-base font-bold text-emerald-600">₹{approvedSalary}</span>
+              </div>
+              {pendingApprovalSalary > 0 && (
+                <div className="bg-amber-50 border border-amber-100 px-3 py-2 rounded-xl">
+                  <span className="text-[10px] font-semibold uppercase text-amber-800 tracking-wider block">Awaiting:</span>
+                  <span className="text-base font-bold text-amber-600">₹{pendingApprovalSalary}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile card list */}
+          <div className="md:hidden space-y-3">
+            {sortedTasks.map(t => (
+              <div key={t._id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 text-sm leading-tight">{t.taskName}</p>
+                    {t.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{t.description}</p>}
+                  </div>
+                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    t.status === 'completed' ? 'bg-teal-50 text-teal-700' :
+                    t.status === 'in-progress' ? 'bg-yellow-50 text-yellow-700' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    {t.status === 'completed' ? 'Done' : t.status === 'in-progress' ? 'In progress' : 'Pending'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => navigate(`/volunteer/event-support/${t._id}`)}
+                  className="text-[#5b52f6] text-xs font-semibold hover:underline"
+                >
+                  📅 {t.event?.title || '—'}
+                </button>
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
+                  <div>
+                    <span className="text-xs text-indigo-600 font-mono block">{fmtDateTime(t.startTime || t.dueDate || t.event?.date)}</span>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="font-semibold text-emerald-600 text-sm">₹{t.salary || 0}</span>
+                      {t.status === 'completed' ? (
+                        t.paymentStatus === 'approved' ? (
+                          <span className="text-[10px] font-semibold text-emerald-600">✓ Paid</span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-amber-600">⏳ Pending</span>
+                        )
+                      ) : null}
+                    </div>
+                  </div>
+                  {t.status !== 'completed' && (
+                    <button
+                      onClick={() => {
+                        if (t.status === 'pending') {
+                          handleUpdateTaskStatus(t._id, 'in-progress');
+                        } else {
+                          setCompletingTask(t);
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-blue-50 text-blue-700 font-medium text-xs rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      {t.status === 'pending' ? 'Start' : 'Complete'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="py-4 px-6 font-semibold text-xs text-gray-400 uppercase tracking-wider">Task</th>
+                    <th className="py-4 px-6 font-semibold text-xs text-gray-400 uppercase tracking-wider">Event</th>
+                    <th className="py-4 px-6 font-semibold text-xs text-gray-400 uppercase tracking-wider">Date &amp; Time</th>
+                    <th className="py-4 px-6 font-semibold text-xs text-gray-400 uppercase tracking-wider">Salary &amp; Payment</th>
+                    <th className="py-4 px-6 font-semibold text-xs text-gray-400 uppercase tracking-wider">Status</th>
+                    <th className="py-4 px-6"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {sortedTasks.map(t => (
+                  <tr key={t._id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="py-5 px-6">
+                      <p className="font-semibold text-gray-900">{t.taskName}</p>
+                      <p className="text-sm text-gray-500">{t.description}</p>
+                    </td>
+                    <td className="py-5 px-6">
+                      <button 
+                        onClick={() => navigate(`/volunteer/event-support/${t._id}`)}
+                        className="text-[#5b52f6] hover:text-[#4a42d4] hover:underline transition-colors text-left font-semibold"
+                      >
+                        {t.event?.title || '—'}
+                      </button>
+                    </td>
+                    <td className="py-5 px-6 text-gray-600 font-mono text-sm">
+                      <span className="text-xs font-semibold text-indigo-600">
+                        {fmtDateTime(t.startTime || t.dueDate || t.event?.date)}
+                      </span>
+                    </td>
+                    <td className="py-5 px-6">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-emerald-600">₹{t.salary || 0}</span>
+                        {t.status === 'completed' ? (
+                          t.paymentStatus === 'approved' ? (
+                            <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1 mt-0.5">✓ Payment Approved</span>
+                          ) : (
+                            <span className="text-xs font-medium text-amber-600 flex items-center gap-1 mt-0.5">⏳ Awaiting Approval</span>
+                          )
+                        ) : (
+                          <span className="text-xs text-gray-400 mt-0.5">Upon completion</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-5 px-6">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        t.status === 'completed' ? 'bg-teal-50 text-teal-700' :
+                        t.status === 'in-progress' ? 'bg-yellow-50 text-yellow-700' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {t.status === 'completed' ? 'Completed' : t.status === 'in-progress' ? 'In progress' : 'Pending'}
+                      </span>
+                    </td>
+                    <td className="py-5 px-6 text-right">
+                      {t.status !== 'completed' && (
+                        <button
+                          onClick={() => {
+                            if (t.status === 'pending') {
+                              handleUpdateTaskStatus(t._id, 'in-progress');
+                            } else {
+                              setCompletingTask(t);
+                            }
+                          }}
+                          className="px-4 py-1.5 bg-blue-50 text-blue-700 font-medium text-sm rounded-lg hover:bg-blue-100 transition-colors"
+                        >
+                          {t.status === 'pending' ? 'Start task' : 'Complete task'}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {selectedRulesTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up">
+            <div className="flex justify-between items-center p-6 border-b border-gray-100">
+              <h3 className="text-xl font-bold text-gray-900">
+                Rules &amp; Regulations
+              </h3>
+              <button
+                onClick={() => setSelectedRulesTask(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6 max-h-[70vh] overflow-y-auto">
+              {selectedRulesTask.event?.rules && (
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wider">
+                    Event Rules ({selectedRulesTask.event.title})
+                  </h4>
+                  <div className="p-4 bg-gray-50 rounded-xl text-sm text-gray-700 whitespace-pre-line">
+                    {selectedRulesTask.event.rules}
+                  </div>
+                </div>
+              )}
+              {selectedRulesTask.rules ? (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wider">
+                    Task Instructions ({selectedRulesTask.taskName})
+                  </h4>
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-800 whitespace-pre-line">
+                    {selectedRulesTask.rules}
+                  </div>
+                </div>
+              ) : (
+                !selectedRulesTask.event?.rules && (
+                  <p className="text-gray-500 italic text-center py-4">No specific rules or instructions provided for this task.</p>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {completingTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
+            <div className="flex justify-between items-center p-6 border-b border-gray-100">
+              <h3 className="text-xl font-bold text-gray-900">Complete Task</h3>
+              <button
+                onClick={() => { setCompletingTask(null); setTaskPhoto(''); }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">Please upload a photo of your completed work (Required).</p>
+              <div className="mb-6">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => setTaskPhoto(reader.result);
+                      reader.readAsDataURL(file);
+                    }
+                  }} 
+                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+                {taskPhoto && (
+                  <div className="mt-4 rounded-xl overflow-hidden border border-gray-200">
+                    <img src={taskPhoto} alt="Task proof" className="w-full h-48 object-cover" />
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button 
+                  onClick={() => { setCompletingTask(null); setTaskPhoto(''); }}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => {
+                    handleUpdateTaskStatus(completingTask._id, 'completed', taskPhoto);
+                    setCompletingTask(null);
+                    setTaskPhoto('');
+                  }}
+                  disabled={!taskPhoto}
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#5b52f6] hover:bg-[#4a42d4] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+  const renderAttendance = () => (
+    <div className="max-w-5xl mx-auto animate-fade-in pb-12">
+      <div className="mb-10 text-center md:text-left">
+        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-3 tracking-tight">Attendance & points</h1>
+        <p className="text-gray-500 text-lg max-w-2xl">Your contribution record, checked in and accounted for.</p>
+      </div>
+
+      {/* Points & Present Days */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 max-w-2xl">
+        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-fuchsia-600 rounded-3xl p-8 shadow-xl shadow-indigo-200 transform hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 bg-indigo-300 opacity-20 rounded-full blur-xl"></div>
+          <div className="flex items-center justify-between relative z-10 mb-4">
+            <span className="text-sm font-bold text-indigo-100 tracking-widest uppercase">Total Points</span>
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+              <Award size={20} className="text-white" />
+            </div>
+          </div>
+          <span className="text-5xl font-black text-white relative z-10">{attendance?.points || 0}</span>
+          <div className="mt-3 relative z-10 flex items-center justify-between text-xs text-indigo-100/90 font-medium pt-2 border-t border-white/15">
+            <span>Certificate Goal:</span>
+            <span className="font-bold">{attendance?.points >= 500 ? '✓ 500 pts achieved!' : `${attendance?.points || 0} / 500 pts`}</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex flex-col justify-between transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-bold text-gray-400 tracking-widest uppercase">Present Days</span>
+            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+              <CalendarDays size={20} className="text-blue-600" />
+            </div>
+          </div>
+          <span className="text-5xl font-black text-gray-900">{attendance?.records?.filter(r => r.status === 'present').length || 0}</span>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+        <div className="bg-gray-50/50 px-6 py-5 border-b border-gray-100">
+          <h2 className="text-lg font-bold text-gray-900">Attendance History</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="py-4 px-6 font-bold text-xs text-gray-400 uppercase tracking-widest">Event / Task</th>
+                <th className="py-4 px-6 font-bold text-xs text-gray-400 uppercase tracking-widest">Status</th>
+                <th className="py-4 px-6 font-bold text-xs text-gray-400 uppercase tracking-widest">Check-in</th>
+                <th className="py-4 px-6 font-bold text-xs text-gray-400 uppercase tracking-widest">Check-out</th>
+                <th className="py-4 px-6 text-right font-bold text-xs text-gray-400 uppercase tracking-widest">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {(!attendance?.records || attendance.records.length === 0) ? (
+                <tr>
+                  <td colSpan="5" className="py-16">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <span className="text-3xl">📅</span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No attendance records yet</h3>
+                      <p className="text-gray-500">Start attending events to build your record!</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : [...attendance.records].sort((a, b) => {
+                const isDoneA = (a.status === 'absent' || (a.status === 'present' && a.checkOut)) ? 1 : 0;
+                const isDoneB = (b.status === 'absent' || (b.status === 'present' && b.checkOut)) ? 1 : 0;
+                if (isDoneA !== isDoneB) return isDoneA - isDoneB;
+                return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+              }).map(r => (
+                <tr key={r._id} className="hover:bg-gray-50/50 transition-colors group">
+                  <td className="py-5 px-6">
+                    <p className="font-bold text-gray-900">{r.task?.taskName || r.event?.title || '—'}</p>
+                    {r.task?.taskName && r.event?.title && (
+                      <p className="text-xs text-indigo-600 font-medium mt-0.5">{r.event.title}</p>
+                    )}
+                  </td>
+                  <td className="py-5 px-6">
+                    {r.status === 'present' ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        <CheckCircle2 size={14} className="text-emerald-500" /> Present
+                      </span>
+                    ) : r.status === 'absent' ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-100">
+                        <X size={14} className="text-rose-500" /> Absent
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-100">
+                        <Clock size={14} className="text-amber-500" /> Pending
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-5 px-6 text-gray-600 font-mono text-sm font-medium">{fmtDateTime(r.checkIn)}</td>
+                  <td className="py-5 px-6 text-gray-600 font-mono text-sm font-medium">{fmtDateTime(r.checkOut)}</td>
+                  <td className="py-5 px-6 text-right">
+                    {r.status === 'pending' ? (
+                      <button
+                        onClick={() => handleToggleAttendance(r._id)}
+                        className="px-5 py-2 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-200 transition-all active:scale-95"
+                      >
+                        Check In
+                      </button>
+                    ) : r.status === 'present' && !r.checkOut ? (
+                      <button
+                        onClick={() => handleToggleAttendance(r._id)}
+                        className="px-5 py-2 bg-white border-2 border-gray-200 text-gray-700 font-bold text-sm rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all active:scale-95"
+                      >
+                        Check Out
+                      </button>
+                    ) : r.status === 'absent' ? (
+                      <span className="text-rose-500 font-semibold text-sm px-4">Absent</span>
+                    ) : (
+                      <span className="text-emerald-600 font-semibold text-sm px-4">Completed</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderCertificates = () => {
+    const volunteerPoints = certMeta.points || overview?.crewPoints || attendance?.points || 0;
+    const isEligible = volunteerPoints >= 500;
+    const progressPct = Math.min(100, Math.round((volunteerPoints / 500) * 100));
+
+    return (
+      <div className="max-w-5xl mx-auto animate-fade-in pb-12">
+        <div className="mb-8">
+          <h1 className="text-3xl font-medium text-gray-900 mb-1">Certificates</h1>
+          <p className="text-gray-500 text-lg">Formal recognition for moments you helped make possible.</p>
+        </div>
+
+        {/* 500 Points Qualification Progress Card */}
+        <div className={`mb-8 p-6 rounded-3xl border transition-all duration-300 ${
+          isEligible 
+            ? 'bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-indigo-500/10 border-emerald-200 shadow-sm' 
+            : 'bg-white border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
+        }`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-2xl">🏆</span>
+                <h2 className="text-lg font-bold text-gray-900">Certificate Qualification Status</h2>
+                {isEligible ? (
+                  <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                    ✓ Eligible (500+ Pts)
+                  </span>
+                ) : (
+                  <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">
+                    Locked ({500 - volunteerPoints} pts needed)
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 max-w-2xl leading-relaxed">
+                {isEligible 
+                  ? "🎉 Outstanding job! You have obtained 500+ crew points. You are fully qualified to receive formal event completion certificates issued by the admin." 
+                  : "Volunteers must obtain 500 points to unlock certificates. Earn +40 points per event check-in and +60 points per completed task."}
+              </p>
+            </div>
+            <div className="text-left md:text-right bg-gray-50/80 md:bg-transparent p-3 md:p-0 rounded-2xl">
+              <span className="text-3xl font-black text-gray-900">{volunteerPoints}</span>
+              <span className="text-sm font-semibold text-gray-400"> / 500 pts</span>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-100 rounded-full h-3.5 overflow-hidden p-0.5">
+            <div 
+              className={`h-full transition-all duration-500 rounded-full ${
+                isEligible 
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500' 
+                  : 'bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500'
+              }`}
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-gray-400 font-medium mt-2">
+            <span>0 pts</span>
+            <span>250 pts</span>
+            <span className="font-bold text-gray-700">500 pts (Certificate Unlock)</span>
+          </div>
+        </div>
+
+        {certificates.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-12 text-center">
+            <div className="flex flex-col items-center justify-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <span className="text-3xl">🎓</span>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                {isEligible ? "Your Certificate is Ready!" : "Certificates Locked"}
+              </h3>
+              <p className="text-gray-500 max-w-md mb-6">
+                {isEligible
+                  ? "Outstanding achievement! You have reached 500+ points and qualified for your Certificate of Appreciation. Click below to generate your official credential."
+                  : "You need 500 points before a certificate can be generated. Complete tasks and attend events to reach 500 points!"}
+              </p>
+              {isEligible && (
+                <button
+                  onClick={handleClaimCertificate}
+                  disabled={claimingCert}
+                  className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Award size={18} />
+                  <span>{claimingCert ? 'Generating Certificate...' : 'Claim & Generate Certificate'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg">My Issued Certificates</h3>
+                <p className="text-xs text-gray-500">Official recognized credentials awarded for volunteer service.</p>
+              </div>
+              {isEligible && (
+                <button
+                  onClick={handleClaimCertificate}
+                  disabled={claimingCert}
+                  className="px-4 py-2 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-xl hover:bg-emerald-100 transition-colors flex items-center gap-1.5"
+                >
+                  <Award size={14} />
+                  <span>{claimingCert ? 'Generating...' : 'Refresh / Check New Certs'}</span>
+                </button>
+              )}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="py-4 px-6 font-semibold text-xs text-gray-400 uppercase tracking-wider">Certificate ID</th>
+                    <th className="py-4 px-6 font-semibold text-xs text-gray-400 uppercase tracking-wider">Event</th>
+                    <th className="py-4 px-6 font-semibold text-xs text-gray-400 uppercase tracking-wider">Issued Date</th>
+                    <th className="py-4 px-6 font-semibold text-xs text-gray-400 uppercase tracking-wider">Status</th>
+                    <th className="py-4 px-6 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {certificates.map(c => (
+                    <tr key={c._id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="py-5 px-6 font-mono text-[#5b52f6] font-bold">{c.certificateId}</td>
+                      <td className="py-5 px-6 text-gray-700 font-medium">{c.event?.title || '—'}</td>
+                      <td className="py-5 px-6 text-gray-500">{fmtDate(c.issuedDate)}</td>
+                      <td className="py-5 px-6">
+                        {c.status === 'approved' ? (
+                          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 font-semibold text-xs rounded-full border border-emerald-200 inline-flex items-center gap-1">
+                            <CheckCircle2 size={12} /> Approved
+                          </span>
+                        ) : c.status === 'rejected' ? (
+                          <span className="px-2.5 py-1 bg-rose-50 text-rose-700 font-semibold text-xs rounded-full border border-rose-200 inline-flex items-center gap-1">
+                            <X size={12} /> Not Approved
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 bg-amber-50 text-amber-700 font-semibold text-xs rounded-full border border-amber-200 inline-flex items-center gap-1" title="Awaiting Admin Approval">
+                            <Clock size={12} /> Awaiting Approval
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-5 px-6 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => openCertificate(c, false)}
+                            className="px-3.5 py-1.5 bg-gray-100 text-gray-700 font-semibold text-xs rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
+                          >
+                            View
+                          </button>
+                          {c.status === 'approved' ? (
+                            <button 
+                              onClick={() => openCertificate(c, true)}
+                              className="px-4 py-1.5 bg-indigo-600 text-white font-semibold text-xs rounded-lg hover:bg-indigo-700 shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Download size={14} />
+                              <span>Download</span>
+                            </button>
+                          ) : (
+                            <button 
+                              disabled
+                              className="px-3.5 py-1.5 bg-gray-100 text-gray-400 font-medium text-xs rounded-lg cursor-not-allowed flex items-center gap-1.5"
+                              title="Certificate will be downloadable once approved by admin"
+                            >
+                              <Lock size={12} />
+                              <span>Pending</span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'overview': return renderOverview();
+      case 'profile': return renderProfile();
+      case 'tasks': return renderTasks();
+      case 'attendance': return renderAttendance();
+      case 'certificates': return renderCertificates();
+      default: return renderOverview();
+    }
+  };
+
+  // ══════════════════════════════════════════
+  // MAIN LAYOUT
+  // ══════════════════════════════════════════
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f8f9fc] flex items-center justify-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#5b52f6]"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex bg-[#f8f9fc] overflow-x-hidden">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-6 right-6 z-50 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-lg flex items-center space-x-3 animate-fade-in">
+          <CheckCircle2 size={18} className="text-green-400" />
+          <span className="text-sm font-medium">{toast}</span>
+          <button onClick={() => setToast('')} className="text-gray-400 hover:text-white"><X size={16} /></button>
+        </div>
+      )}
+
+      {/* Mobile Drawer Backdrop */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/65 backdrop-blur-xs z-40 md:hidden transition-opacity"
+          onClick={() => setMobileMenuOpen(false)} 
+        />
+      )}
+
+      {/* Sidebar (drawer on mobile, fixed on desktop) */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-[270px] bg-[#0b132c] text-gray-300 flex flex-col transform transition-transform duration-300 ease-in-out md:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {/* Logo and close button */}
+        <div className="px-6 py-6 flex items-center justify-between">
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
+            <svg width="38" height="28" viewBox="0 0 44 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="vRingGrad" x1="0" y1="0" x2="44" y2="30" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#ffffff"/>
+                  <stop offset="50%" stopColor="#c084fc"/>
+                  <stop offset="100%" stopColor="#8b5cf6"/>
+                </linearGradient>
+              </defs>
+              <circle cx="14" cy="15" r="11" stroke="#ffffff" strokeWidth="3.5" fill="none"/>
+              <circle cx="30" cy="15" r="11" stroke="url(#vRingGrad)" strokeWidth="3.5" fill="none"/>
+            </svg>
+            <span className="text-2xl font-bold text-white tracking-tight">CrewLink</span>
+          </div>
+          <button 
+            onClick={() => setMobileMenuOpen(false)} 
+            className="md:hidden p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/10"
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Nav */}
+        <div className="px-4 mt-2">
+          <p className="px-4 text-[11px] font-bold tracking-widest text-gray-500 mb-3 uppercase">Volunteer Space</p>
+          <nav className="space-y-1.5">
+            {navItems.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => { setActiveTab(id); setMobileMenuOpen(false); }}
+                className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl transition-all ${
+                  activeTab === id ? 'bg-[#1c2744] text-white font-semibold' : 'hover:bg-[#15203b] hover:text-white'
+                }`}
+              >
+                <Icon size={20} className={activeTab === id ? 'text-purple-400' : 'text-gray-400'} />
+                <span className="font-medium text-sm">{label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Account */}
+        <div className="px-4 mt-auto mb-6">
+          <p className="px-4 text-[11px] font-bold tracking-widest text-gray-500 mb-3 uppercase">Account</p>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl transition-all hover:bg-[#15203b] hover:text-white text-gray-300"
+          >
+            <LogOut size={20} className="text-gray-400" />
+            <span className="font-medium text-sm">Logout</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main area */}
+      <div className="flex-1 md:ml-[260px] ml-0 flex flex-col min-h-screen w-full max-w-full bg-[#f8f9fc] overflow-x-hidden">
+        {/* Mobile Header (visible only on < md) */}
+        <header className="md:hidden sticky top-0 z-30 bg-[#0b132c] text-white px-4 py-3 flex items-center justify-between border-b border-slate-800 shadow-md">
+          <div className="flex items-center space-x-2.5">
+            <button 
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-1.5 -ml-1 text-gray-300 hover:text-white rounded-lg hover:bg-white/10 focus:outline-none"
+              aria-label="Open menu"
+            >
+              <Menu size={22} />
+            </button>
+            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
+              <svg width="28" height="20" viewBox="0 0 44 30" fill="none">
+                <circle cx="14" cy="15" r="11" stroke="#ffffff" strokeWidth="3.5" fill="none"/>
+                <circle cx="30" cy="15" r="11" stroke="#8b5cf6" strokeWidth="3.5" fill="none"/>
+              </svg>
+              <span className="font-bold text-base tracking-tight">CrewLink</span>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-[#1c2744] text-purple-300 px-2.5 py-0.5 rounded-full border border-purple-500/30">
+              Volunteer
+            </span>
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="p-1.5 text-gray-300 hover:text-white relative rounded-lg hover:bg-white/10"
+                aria-label="Notifications"
+              >
+                <Bell size={19} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-72 bg-white text-gray-900 rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                  <div className="p-3.5 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="font-semibold text-sm text-gray-900">Notifications</h3>
+                    <div className="flex gap-2">
+                      {unreadCount > 0 && (
+                        <button onClick={markAllNotificationsAsRead} className="text-xs text-blue-600 hover:text-blue-700">Mark read</button>
+                      )}
+                      {notifications.length > 0 && (
+                        <button onClick={clearAllNotifications} className="text-xs text-red-600 hover:text-red-700">Clear</button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500 text-xs">No notifications yet.</div>
+                    ) : (
+                      notifications.map(n => (
+                        <div
+                          key={n._id}
+                          onClick={() => handleNotificationClick(n)}
+                          className={`p-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors ${!n.read ? 'bg-blue-50/70' : ''}`}
+                        >
+                          <p className="text-xs text-gray-900 font-medium">{n.message}</p>
+                          <p className="text-[10px] text-gray-400 mt-1">{new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Desktop Header */}
+        <header className="hidden md:flex h-20 bg-white border-b border-gray-100 items-center justify-between px-8 sticky top-0 z-10">
+          <div className="relative w-96">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={18} className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search CrewLink"
+              className="w-full bg-[#f4f6fa] border-none text-sm text-gray-800 rounded-xl py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-100 outline-none"
+            />
+          </div>
+          <div className="flex items-center space-x-6">
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="text-gray-500 hover:text-gray-700 transition-colors relative"
+              >
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="font-semibold text-gray-900">Notifications</h3>
+                    <div className="flex gap-2">
+                      {unreadCount > 0 && (
+                        <button 
+                          onClick={markAllNotificationsAsRead} 
+                          className="text-xs text-blue-600 hover:text-blue-700"
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                      {notifications.length > 0 && (
+                        <button 
+                          onClick={clearAllNotifications} 
+                          className="text-xs text-red-600 hover:text-red-700"
+                        >
+                          Clear all
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500 text-sm">No notifications yet.</div>
+                    ) : (
+                      notifications.map(n => (
+                        <div
+                          key={n._id}
+                          onClick={() => handleNotificationClick(n)}
+                          className={`p-4 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors ${!n.read ? 'bg-blue-50' : ''}`}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className="mt-0.5">
+                              {n.type === 'chat_message' ? (
+                                <MessageSquare size={16} className={n.read ? 'text-gray-400' : 'text-blue-600'} />
+                              ) : (
+                                <Bell size={16} className={n.read ? 'text-gray-400' : 'text-blue-600'} />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-900">{n.message}</p>
+                              <p className="text-xs text-gray-500 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Content */}
+        <main className="flex-1 p-3 sm:p-6 md:p-8 pb-28 md:pb-8 overflow-x-hidden w-full min-w-0">
+          {renderContent()}
+        </main>
+      </div>
+
+      {/* Mobile Bottom Navigation Bar for Volunteers */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-[#0b132c]/95 backdrop-blur-md border-t border-slate-800 flex items-center justify-around py-1 px-1 z-30 shadow-lg" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 6px)' }}>
+        {navItems.map(({ id, label, icon: Icon }) => {
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all flex-1 max-w-[72px] ${
+                isActive ? 'text-purple-400 font-bold scale-105' : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              <div className={`p-1 rounded-lg ${isActive ? 'bg-purple-500/20' : ''}`}>
+                <Icon size={18} className={isActive ? 'text-purple-400' : 'text-gray-400'} />
+              </div>
+              <span className="text-[10px] tracking-tight mt-0.5 truncate w-full text-center">
+                {label.replace('My ', '')}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* CERTIFICATE PREVIEW & DOWNLOAD MODAL */}
+      {selectedCert && (
+        <div className="modal-backdrop certificate-no-print" style={{ zIndex: 9999 }}>
+          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 md:p-8 max-h-[96vh] overflow-y-auto shadow-2xl relative">
+            {/* Modal Top Bar */}
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100 certificate-no-print">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🎓</span>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-lg">Official Certificate of Appreciation</h3>
+                  <p className="text-xs text-gray-400 font-mono">ID: {selectedCert.certificateId}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {selectedCert.status === 'approved' ? (
+                  <button
+                    onClick={() => window.print()}
+                    className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm rounded-xl hover:shadow-lg hover:shadow-indigo-200 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                  >
+                    <Download size={16} />
+                    <span>Download / Print PDF</span>
+                  </button>
+                ) : (
+                  <span className="px-3.5 py-2 bg-amber-50 text-amber-700 font-semibold text-xs rounded-xl border border-amber-200 flex items-center gap-1.5">
+                    <Clock size={14} />
+                    <span>Awaiting Admin Approval</span>
+                  </span>
+                )}
+                <button
+                  onClick={() => setSelectedCert(null)}
+                  className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {selectedCert.status !== 'approved' && (
+              <div className="mb-4 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center gap-2.5 certificate-no-print">
+                <Clock size={16} className="text-amber-600 shrink-0" />
+                <div>
+                  <strong>Pending Admin Approval:</strong> This certificate is awaiting review and verification by the admin. Once approved, the official download will unlock.
+                </div>
+              </div>
+            )}
+
+            {/* Print Area & Certificate Card */}
+            <div className="certificate-print-area flex items-center justify-center p-1 sm:p-4">
+              <div 
+                className="w-full max-w-[820px] bg-[#fffdfa] border-4 sm:border-8 border-double border-[#d4af37] rounded-xl sm:rounded-2xl p-4 sm:p-12 relative text-center shadow-lg overflow-hidden select-none"
+                style={{ fontFamily: "'Georgia', serif" }}
+              >
+                {/* Corner Flourishes */}
+                <div className="absolute top-3 left-3 text-[#d4af37] text-xl font-bold">✦</div>
+                <div className="absolute top-3 right-3 text-[#d4af37] text-xl font-bold">✦</div>
+                <div className="absolute bottom-3 left-3 text-[#d4af37] text-xl font-bold">✦</div>
+                <div className="absolute bottom-3 right-3 text-[#d4af37] text-xl font-bold">✦</div>
+
+                {/* Brand Header */}
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <svg width="28" height="20" viewBox="0 0 44 30" fill="none">
+                    <circle cx="14" cy="15" r="11" stroke="#5b52f6" strokeWidth="3.5" fill="none"/>
+                    <circle cx="30" cy="15" r="11" stroke="#8b5cf6" strokeWidth="3.5" fill="none"/>
+                  </svg>
+                  <span className="text-xs tracking-[0.3em] font-bold text-gray-600 uppercase font-sans">CREWLINK VOLUNTEER NETWORK</span>
+                </div>
+
+                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-wider text-[#0f172a] uppercase mb-1">
+                  Certificate of Appreciation
+                </h1>
+                <p className="text-xs sm:text-sm font-semibold tracking-widest text-[#b38728] uppercase mb-6 font-sans">
+                  ★ 500 CREW POINTS EXCELLENCE MILESTONE ★
+                </p>
+
+                <p className="text-xs sm:text-sm text-gray-500 italic mb-2">
+                  This honor is proudly presented to
+                </p>
+
+                <h2 className="text-2xl sm:text-4xl font-bold text-[#1e293b] border-b-2 border-[#d4af37]/50 pb-2 mb-4 inline-block px-8 max-w-full truncate">
+                  {selectedCert.volunteer?.fullName || selectedCert.volunteer?.username || profile?.fullName || user?.fullName || user?.username || 'Honored Volunteer'}
+                </h2>
+
+                <p className="text-xs sm:text-sm text-gray-600 max-w-xl mx-auto leading-relaxed mb-6 font-sans">
+                  In recognition of extraordinary commitment, exemplary service, and successfully obtaining the prestigious milestone of <strong className="text-gray-900">500+ Crew Points</strong> as an accredited volunteer for:
+                </p>
+
+                <div className="inline-block bg-[#faf6ea] border border-[#d4af37]/40 px-6 py-2.5 rounded-xl mb-8 font-sans">
+                  <span className="text-base sm:text-lg font-bold text-[#1e293b]">
+                    {selectedCert.event?.title || 'CrewLink Community Operations'}
+                  </span>
+                </div>
+
+                {/* Footer Signatures and Seals */}
+                <div className="grid grid-cols-3 items-end pt-6 border-t border-gray-200 mt-4 text-xs font-sans">
+                  <div className="text-left">
+                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Date Issued</p>
+                    <p className="font-bold text-gray-800">{fmtDate(selectedCert.issuedDate)}</p>
+                    <div className="w-28 h-0.5 bg-gray-300 mt-3 mb-1"></div>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">Date of Recognition</p>
+                  </div>
+
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 rounded-full border-2 border-dashed border-[#d4af37] flex flex-col items-center justify-center p-1 bg-amber-50/60 shadow-inner">
+                      <span className="text-lg">🏅</span>
+                      <span className="text-[8px] font-bold text-[#b38728] tracking-tighter uppercase">500 PTS</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-[#5b52f6] font-bold mt-1">{selectedCert.certificateId}</span>
+                  </div>
+
+                  <div className="text-right">
+                    <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${selectedCert.status === 'approved' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      {selectedCert.status === 'approved' ? '✓ Admin Approved' : '⏳ Verification Pending'}
+                    </p>
+                    <p className="font-bold text-gray-800 font-serif italic text-sm">
+                      {selectedCert.status === 'approved' ? 'CrewLink Operations' : 'Pending Approval'}
+                    </p>
+                    <div className={`w-28 h-0.5 mt-3 mb-1 ml-auto ${selectedCert.status === 'approved' ? 'bg-emerald-300' : 'bg-amber-300'}`}></div>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">Executive Director</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default VolunteerDashboard;
