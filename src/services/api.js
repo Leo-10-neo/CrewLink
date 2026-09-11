@@ -4,8 +4,12 @@ import { Capacitor } from '@capacitor/core';
 // Dynamic host detection: When running on native mobile via Capacitor,
 // localhost refers to the device itself, so we target the server on the local network.
 export const getApiBase = () => {
-  if (import.meta.env.VITE_API_BASE) {
-    return import.meta.env.VITE_API_BASE;
+  let base = import.meta.env.VITE_API_BASE;
+  if (base) {
+    if (!base.startsWith('http://') && !base.startsWith('https://')) {
+      base = `https://${base}`;
+    }
+    return base.replace(/\/+$/, '');
   }
   
   // 1. Official Capacitor check
@@ -29,8 +33,8 @@ export const getApiBase = () => {
       return 'http://192.168.0.121:5000';
     }
 
-    // 4. LAN IP when browsing on phone browser
-    if (window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    // 4. LAN IP when browsing on phone browser (e.g. 192.168.x.x)
+    if (window.location.hostname && /^(\d{1,3}\.){3}\d{1,3}$/.test(window.location.hostname) && window.location.hostname !== '127.0.0.1') {
       return `http://${window.location.hostname}:5000`;
     }
   }

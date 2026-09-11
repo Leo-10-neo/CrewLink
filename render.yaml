@@ -1,0 +1,37 @@
+services:
+  # 1. CrewLink Backend API (Node.js Express Web Service)
+  - type: web
+    name: crewlink-api
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
+
+  # 2. CrewLink Frontend (Vite React Static Site)
+  - type: web
+    name: crewlink-web
+    runtime: static
+    plan: free
+    rootDir: .
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE
+        fromService:
+          type: web
+          name: crewlink-api
+          property: host

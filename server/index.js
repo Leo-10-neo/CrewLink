@@ -54,7 +54,11 @@ app.get('/download-apk', (req, res) => {
   });
 });
 
-// Test route
+// Root & Test routes
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'CrewLink API Server is live' });
+});
+
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working' });
 });
