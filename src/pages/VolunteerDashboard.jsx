@@ -304,19 +304,19 @@ const VolunteerDashboard = () => {
 
         {/* Stat cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between min-h-[96px] sm:h-32">
+          <div className="glass-panel rounded-2xl p-4 sm:p-6 shadow-premium border border-white/60 flex flex-col justify-between min-h-[96px] sm:h-32 hover:shadow-glow transition-all">
             <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">Application</span>
             <span className="text-2xl font-bold text-gray-900 capitalize">{overview.applicationStatus}</span>
           </div>
-          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between min-h-[96px] sm:h-32">
+          <div className="glass-panel rounded-2xl p-4 sm:p-6 shadow-premium border border-white/60 flex flex-col justify-between min-h-[96px] sm:h-32 hover:shadow-glow transition-all">
             <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">Assigned Events</span>
             <span className="text-3xl font-bold text-gray-900">{overview.assignedEvents}</span>
           </div>
-          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between min-h-[96px] sm:h-32">
+          <div className="glass-panel rounded-2xl p-4 sm:p-6 shadow-premium border border-white/60 flex flex-col justify-between min-h-[96px] sm:h-32 hover:shadow-glow transition-all">
             <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">Open Tasks</span>
             <span className="text-3xl font-bold text-gray-900">{overview.openTasks}</span>
           </div>
-          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between min-h-[96px] sm:h-32">
+          <div className="glass-panel rounded-2xl p-4 sm:p-6 shadow-premium border border-white/60 flex flex-col justify-between min-h-[96px] sm:h-32 hover:shadow-glow transition-all">
             <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">Crew Points</span>
             <span className="text-3xl font-bold text-gray-900">{overview.crewPoints}</span>
           </div>
@@ -325,7 +325,7 @@ const VolunteerDashboard = () => {
         {/* Two-column content */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Available events */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className="glass-panel rounded-2xl border border-white/60 shadow-premium p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-gray-900">Available events</h2>
               <button onClick={() => setActiveTab('profile')} className="text-sm text-[#5b52f6] font-medium hover:underline">Profile</button>
@@ -347,7 +347,7 @@ const VolunteerDashboard = () => {
           </div>
 
           {/* Next tasks */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className="glass-panel rounded-2xl border border-white/60 shadow-premium p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-6">Next tasks</h2>
             {overview.nextTasks.length === 0 ? (
               <p className="text-gray-400 text-sm py-4">No tasks assigned yet.</p>
@@ -422,7 +422,7 @@ const VolunteerDashboard = () => {
           For privacy, CrewLink does not collect government identity numbers in this prototype. Verification is represented with secure document placeholders and masked references only.
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-8">
+        <div className="glass-panel rounded-2xl shadow-premium p-4 sm:p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {field('Full name', 'fullName', 'Your full name')}
             {field('City', 'city', 'e.g. Bengaluru')}
@@ -532,7 +532,7 @@ const VolunteerDashboard = () => {
             <h1 className="text-3xl font-medium text-gray-900 mb-1">My tasks</h1>
             <p className="text-gray-500 text-lg">Update your progress as you move through the day.</p>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+          <div className="glass-panel rounded-2xl shadow-premium p-12 text-center">
             <div className="flex flex-col items-center justify-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <span className="text-3xl">📋</span>
@@ -639,7 +639,7 @@ const VolunteerDashboard = () => {
           </div>
 
           {/* Desktop table */}
-          <div className="hidden md:block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="hidden md:block glass-panel rounded-2xl shadow-premium overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -849,7 +849,7 @@ const VolunteerDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex flex-col justify-between transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300">
+        <div className="glass-panel rounded-3xl p-8 shadow-premium flex flex-col justify-between transform hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-bold text-gray-400 tracking-widest uppercase">Present Days</span>
             <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
@@ -860,7 +860,7 @@ const VolunteerDashboard = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+      <div className="glass-panel rounded-3xl shadow-premium overflow-hidden">
         <div className="bg-gray-50/50 px-6 py-5 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-900">Attendance History</h2>
         </div>
@@ -963,8 +963,8 @@ const VolunteerDashboard = () => {
         {/* 500 Points Qualification Progress Card */}
         <div className={`mb-8 p-6 rounded-3xl border transition-all duration-300 ${
           isEligible 
-            ? 'bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-indigo-500/10 border-emerald-200 shadow-sm' 
-            : 'bg-white border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
+            ? 'glass-panel bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-indigo-500/10 border-emerald-300/60 shadow-premium' 
+            : 'glass-panel border-white/60 shadow-premium'
         }`}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <div>
@@ -1012,7 +1012,7 @@ const VolunteerDashboard = () => {
         </div>
 
         {certificates.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-12 text-center">
+          <div className="glass-panel rounded-3xl shadow-premium p-12 text-center">
             <div className="flex flex-col items-center justify-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <span className="text-3xl">🎓</span>
@@ -1038,7 +1038,7 @@ const VolunteerDashboard = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+          <div className="glass-panel rounded-3xl shadow-premium overflow-hidden">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-gray-900 text-lg">My Issued Certificates</h3>
@@ -1143,14 +1143,14 @@ const VolunteerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8f9fc] flex items-center justify-center">
+      <div className="min-h-screen bg-transparent flex items-center justify-center">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#5b52f6]"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-[#f8f9fc] overflow-x-hidden">
+    <div className="min-h-screen flex bg-transparent overflow-x-hidden">
       {/* Toast */}
       {toast && (
         <div className="fixed top-6 right-6 z-50 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-lg flex items-center space-x-3 animate-fade-in">
@@ -1228,12 +1228,12 @@ const VolunteerDashboard = () => {
       </div>
 
       {/* Main area */}
-      <div className="flex-1 md:ml-[260px] ml-0 flex flex-col min-h-screen w-full max-w-full bg-[#f8f9fc] overflow-x-hidden">
+      <div className="flex-1 md:ml-[260px] ml-0 flex flex-col min-h-screen w-full max-w-full bg-transparent overflow-x-hidden">
         {/* Mobile Header (visible only on < md) */}
         <header className="md:hidden sticky top-0 z-30 bg-[#0b132c] text-white px-4 py-3 flex items-center justify-between border-b border-slate-800 shadow-md">
           <div className="flex items-center space-x-2.5">
             <button 
-              onClick={() => setMobileMenuOpen(true)}
+              onClick={() => setMobileMenuOpen(true)} 
               className="p-1.5 -ml-1 text-gray-300 hover:text-white rounded-lg hover:bg-white/10 focus:outline-none"
               aria-label="Open menu"
             >
@@ -1253,7 +1253,7 @@ const VolunteerDashboard = () => {
             </span>
             <div className="relative">
               <button 
-                onClick={() => setShowNotifications(!showNotifications)}
+                onClick={() => setShowNotifications(!showNotifications)} 
                 className="p-1.5 text-gray-300 hover:text-white relative rounded-lg hover:bg-white/10"
                 aria-label="Notifications"
               >
@@ -1300,7 +1300,7 @@ const VolunteerDashboard = () => {
         </header>
 
         {/* Desktop Header */}
-        <header className="hidden md:flex h-20 bg-white border-b border-gray-100 items-center justify-between px-8 sticky top-0 z-10">
+        <header className="hidden md:flex h-20 glass-panel border-b border-gray-200/50 backdrop-blur-md items-center justify-between px-8 sticky top-0 z-10">
           <div className="relative w-96">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search size={18} className="text-gray-400" />
@@ -1308,7 +1308,7 @@ const VolunteerDashboard = () => {
             <input
               type="text"
               placeholder="Search CrewLink"
-              className="w-full bg-[#f4f6fa] border-none text-sm text-gray-800 rounded-xl py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-100 outline-none"
+              className="w-full bg-white/75 border border-gray-200/60 text-sm text-gray-800 rounded-xl py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-100 focus:bg-white outline-none transition-all"
             />
           </div>
           <div className="flex items-center space-x-6">
