@@ -421,6 +421,9 @@ const VolunteersView = ({ volunteers, events, onAssign, onUpdateStatus, onViewPr
 };
 const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
   const [tasks, setTasks] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [loadingApplications, setLoadingApplications] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [form, setForm] = useState({ volunteerId: '', eventId: '', taskName: '', rules: '', salary: '' });
@@ -461,7 +464,38 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
     } catch {}
   };
 
-  useEffect(() => { fetchTasks(); }, [refreshTrigger]);
+  const fetchApplications = async () => {
+    setLoadingApplications(true);
+    try {
+      const res = await axios.get(`${API_URL}/volunteer/admin/applications`, config);
+      setApplications(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch applications:', err);
+    } finally {
+      setLoadingApplications(false);
+    }
+  };
+
+  const handleApplicationStatus = async (appId, status) => {
+    setActionLoading(appId);
+    try {
+      await axios.patch(
+        `${API_URL}/volunteer/admin/applications/${appId}/status`,
+        { status },
+        config
+      );
+      await Promise.all([fetchApplications(), fetchTasks()]);
+    } catch (err) {
+      alert(err.response?.data?.message || `Failed to ${status} application.`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  useEffect(() => { 
+    fetchTasks(); 
+    fetchApplications();
+  }, [refreshTrigger]);
 
   // Check if we need to open chat for a specific task (from notification click)
   useEffect(() => {
@@ -677,7 +711,116 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
 
   return (
     <div className="table-panel relative mt-6" style={{ padding: '24px 24px 8px 24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+      {/* Pending Volunteer Task Applications */}
+      <div style={{ marginBottom: '28px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', background: 'linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%)', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#4f46e5', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '15px' }}>
+              {applications.length}
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>Volunteer Task Applications</h3>
+              <p style={{ margin: 0, fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Review and approve volunteer requests to handle event roles</p>
+            </div>
+          </div>
+          {applications.length > 0 ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: '600', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#d97706' }}></span>
+              {applications.length} pending review
+            </span>
+          ) : (
+            <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '600' }}>✓ All applications processed</span>
+          )}
+        </div>
+
+        {applications.length === 0 ? (
+          <div style={{ padding: '32px 20px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+            No pending task applications right now. When volunteers apply for event tasks from their dashboard, they will show up here.
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontSize: '12px', fontWeight: '600', letterSpacing: '0.5px' }}>
+                  <th style={{ padding: '14px 18px' }}>VOLUNTEER</th>
+                  <th style={{ padding: '14px 18px' }}>EVENT</th>
+                  <th style={{ padding: '14px 18px' }}>APPLIED ROLE / TASK</th>
+                  <th style={{ padding: '14px 18px' }}>EXPECTED PAY</th>
+                  <th style={{ padding: '14px 18px' }}>APPLICATION NOTE</th>
+                  <th style={{ padding: '14px 18px', textAlign: 'right' }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {applications.map((app) => (
+                  <tr key={app._id} style={{ borderBottom: '1px solid #f1f5f9', background: '#fff', transition: 'background-color 0.15s' }}>
+                    <td style={{ padding: '16px 18px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {app.volunteer?.photo ? (
+                          <img src={app.volunteer.photo} alt={app.volunteer.username} style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                        ) : (
+                          <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '14px' }}>
+                            {app.volunteer?.username?.[0]?.toUpperCase() || 'V'}
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>{app.volunteer?.fullName || app.volunteer?.username || 'Volunteer'}</div>
+                          <div style={{ fontSize: '12px', color: '#94a3b8' }}>{app.volunteer?.email} {app.volunteer?.phone ? `• ${app.volunteer.phone}` : ''}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ padding: '16px 18px' }}>
+                      <div style={{ fontWeight: '600', fontSize: '14px', color: '#4f46e5' }}>{app.event?.title || 'Event'}</div>
+                      {app.event?.date && (
+                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                          {new Date(app.event.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '16px 18px' }}>
+                      <span style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '8px', background: '#eef2ff', color: '#4338ca', fontWeight: '600', fontSize: '13px', border: '1px solid #c7d2fe' }}>
+                        {app.taskName}
+                      </span>
+                    </td>
+                    <td style={{ padding: '16px 18px' }}>
+                      <span style={{ fontWeight: '700', fontSize: '14px', color: '#059669' }}>₹{app.salary || 0}</span>
+                    </td>
+                    <td style={{ padding: '16px 18px', maxWidth: '240px' }}>
+                      {app.applicationNote ? (
+                        <p style={{ margin: 0, fontSize: '13px', color: '#475569', fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} title={app.applicationNote}>
+                          "{app.applicationNote}"
+                        </p>
+                      ) : (
+                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>None</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '16px 18px', textAlign: 'right' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                        <button
+                          disabled={actionLoading === app._id}
+                          onClick={() => handleApplicationStatus(app._id, 'approved')}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', background: '#059669', color: '#fff', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', opacity: actionLoading === app._id ? 0.6 : 1 }}
+                        >
+                          <Check size={14} /> Approve
+                        </button>
+                        <button
+                          disabled={actionLoading === app._id}
+                          onClick={() => handleApplicationStatus(app._id, 'rejected')}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', cursor: 'pointer', transition: 'background-color 0.2s', opacity: actionLoading === app._id ? 0.6 : 1 }}
+                        >
+                          <X size={14} /> Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1e293b' }}>Assigned Tasks & Live Attendance</h3>
         <button 
           className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
           onClick={() => { setEditingTask(null); setShowModal(true); }}

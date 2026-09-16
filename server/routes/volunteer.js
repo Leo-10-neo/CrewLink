@@ -901,13 +901,179 @@ router.post('/admin/tasks/:id/chat', adminAuth, async (req, res) => {
     }
 
     // Return updated task with chat messages
-    const updatedTask = await VolunteerTask.findById(task._id)
-      .populate('event', 'title rules')
-      .populate('volunteer', 'username fullName')
-      .lean();
-
     res.json(updatedTask);
   } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// ──────────────────────────────────────────
+// VOLUNTEER EVENT TASK APPLICATIONS
+// ──────────────────────────────────────────
+
+// POST apply for a task on an event (volunteer)
+router.post('/apply-task', auth, async (req, res) => {
+  try {
+    const { eventId, taskName, salary, note } = req.body;
+    if (!eventId || !taskName) {
+      return res.status(400).json({ message: 'Event and Task Name are required' });
+    }
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    const parsedSalary = salary ? Math.max(200, Number(salary)) : 200;
+
+    // Check if user already applied or has this task for this event
+    const existing = await VolunteerTask.findOne({
+      volunteer: req.userId,
+      event: eventId,
+      taskName: taskName.trim(),
+      applicationStatus: { $in: ['pending', 'approved'] }
+    });
+
+    if (existing) {
+      return res.status(400).json({ 
+        message: existing.applicationStatus === 'approved' 
+          ? 'You are already assigned to this task!' 
+          : 'You already have a pending application for this task.' 
+      });
+    }
+
+    const User = require('../models/User');
+    const volUser = await User.findById(req.userId);
+    const volunteerName = volUser?.fullName || volUser?.username || 'A volunteer';
+
+    const task = await VolunteerTask.create({
+      volunteer: req.userId,
+      event: eventId,
+      taskName: taskName.trim(),
+      salary: parsedSalary,
+      rules: event.rules || '',
+      startTime: event.date || new Date(),
+      dueDate: event.date || new Date(),
+      applicationStatus: 'pending',
+      applicationNote: note || '',
+      status: 'pending'
+    });
+
+    // Notify all admins about new application
+    const Notification = require('../models/Notification');
+    const admins = await User.find({ role: 'admin' });
+    for (const admin of admins) {
+      await Notification.create({
+        userId: admin._id,
+        message: `${volunteerName} applied for the task "${taskName.trim()}" at "${event.title}".`,
+        type: 'task_applied',
+        link: '/admin/dashboard?view=tasks'
+      });
+    }
+
+    const populated = await VolunteerTask.findById(task._id)
+      .populate('event', 'title date location category imageUrl')
+      .populate('volunteer', 'username fullName email phone photo');
+
+    res.status(201).json(populated);
+  } catch (error) {
+    console.error('Apply task error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// GET all events with volunteer's applied/assigned status
+router.get('/events-with-status', auth, async (req, res) => {
+  try {
+    const events = await Event.find({ status: 'approved' }).sort({ date: 1 }).lean();
+    const volunteerTasks = await VolunteerTask.find({ volunteer: req.userId }).lean();
+
+    const eventsWithStatus = events.map(event => {
+      const myTasks = volunteerTasks.filter(t => t.event?.toString() === event._id.toString());
+      return {
+        ...event,
+        myTasks
+      };
+    });
+
+    res.json(eventsWithStatus);
+  } catch (error) {
+    console.error('Events with status error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// GET all pending volunteer task applications (admin)
+router.get('/admin/applications', adminAuth, async (req, res) => {
+  try {
+    const applications = await VolunteerTask.find({ applicationStatus: 'pending' })
+      .populate('volunteer', 'username fullName email phone photo skills availability city')
+      .populate('event', 'title date location category price')
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(applications);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// PATCH approve or reject volunteer task application (admin)
+router.patch('/admin/applications/:id/status', adminAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Status must be approved or rejected' });
+    }
+
+    const task = await VolunteerTask.findById(req.params.id)
+      .populate('volunteer', 'username fullName email')
+      .populate('event', 'title date location assignedVolunteers');
+
+    if (!task) return res.status(404).json({ message: 'Application not found' });
+
+    task.applicationStatus = status;
+    await task.save();
+
+    const Notification = require('../models/Notification');
+
+    if (status === 'approved') {
+      const event = await Event.findById(task.event._id);
+      if (event) {
+        event.assignedVolunteers = event.assignedVolunteers || [];
+        if (!event.assignedVolunteers.some(v => v.toString() === task.volunteer._id.toString())) {
+          event.assignedVolunteers.push(task.volunteer._id);
+          await event.save();
+        }
+      }
+
+      const existingAtt = await Attendance.findOne({ task: task._id });
+      if (!existingAtt) {
+        await Attendance.create({
+          volunteer: task.volunteer._id,
+          event: task.event._id,
+          task: task._id,
+          status: 'pending'
+        });
+      }
+
+      await Notification.create({
+        userId: task.volunteer._id,
+        message: `Great news! Admin approved your application for "${task.taskName}" at "${task.event?.title}". You can now start working on this task!`,
+        type: 'task_approved',
+        link: '/volunteer/dashboard'
+      });
+    } else if (status === 'rejected') {
+      await Notification.create({
+        userId: task.volunteer._id,
+        message: `Your application for "${task.taskName}" at "${task.event?.title}" was not approved. You can apply for other available events!`,
+        type: 'info',
+        link: '/volunteer/dashboard'
+      });
+    }
+
+    res.json({ message: `Application ${status} successfully`, task });
+  } catch (error) {
+    console.error('Update application status error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

@@ -34,6 +34,15 @@ const volunteerTaskSchema = new mongoose.Schema({
     enum: ['pending', 'in-progress', 'completed'],
     default: 'pending'
   },
+  applicationStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'approved'
+  },
+  applicationNote: {
+    type: String,
+    default: ''
+  },
   completedPhoto: {
     type: String,
     default: ''

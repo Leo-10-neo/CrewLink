@@ -35,9 +35,35 @@ const VolunteerDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
 
+  // Events tab states
+  const [eventsList, setEventsList] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [selectedEventForApply, setSelectedEventForApply] = useState(null);
+  const [applyForm, setApplyForm] = useState({
+    taskName: 'Stage Management',
+    customTask: '',
+    salary: 400,
+    note: ''
+  });
+  const [submittingApply, setSubmittingApply] = useState(false);
+  const [eventSearch, setEventSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
+
   const headers = { Authorization: `Bearer ${token}` };
 
   // ── Fetchers ──────────────────────────────
+  const fetchEventsWithStatus = async () => {
+    try {
+      setLoadingEvents(true);
+      const { data } = await axios.get(`${API}/events-with-status`, { headers });
+      setEventsList(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error('Error fetching events with status:', e);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
   const fetchOverview = async () => {
     try {
       const { data } = await axios.get(`${API}/overview`, { headers });
@@ -103,7 +129,7 @@ const VolunteerDashboard = () => {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      await Promise.all([fetchOverview(), fetchProfile()]);
+      await Promise.all([fetchOverview(), fetchProfile(), fetchEventsWithStatus()]);
       setLoading(false);
     };
     load();
@@ -126,6 +152,7 @@ const VolunteerDashboard = () => {
   }, [token]);
 
   useEffect(() => {
+    if (activeTab === 'events') fetchEventsWithStatus();
     if (activeTab === 'tasks') fetchTasks();
     if (activeTab === 'attendance') fetchAttendance();
     if (activeTab === 'certificates') fetchCertificates();
@@ -282,6 +309,7 @@ const VolunteerDashboard = () => {
 
   // ── Sidebar nav items ─────────────────────
   const navItems = [
+    { id: 'events', label: 'Events', icon: CalendarDays },
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'profile', label: 'My profile', icon: User },
     { id: 'tasks', label: 'My tasks', icon: ClipboardList },
@@ -328,15 +356,28 @@ const VolunteerDashboard = () => {
           <div className="glass-panel rounded-2xl border border-white/60 shadow-premium p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-gray-900">Available events</h2>
-              <button onClick={() => setActiveTab('profile')} className="text-sm text-[#5b52f6] font-medium hover:underline">Profile</button>
+              <button 
+                onClick={() => setActiveTab('events')} 
+                className="text-xs bg-purple-600 hover:bg-purple-700 text-white font-semibold px-3 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <span>Explore & Apply</span>
+                <span>→</span>
+              </button>
             </div>
             {overview.availableEvents.length === 0 ? (
               <p className="text-gray-400 text-sm py-4">No available events right now.</p>
             ) : (
               <div className="divide-y divide-gray-50">
                 {overview.availableEvents.map(ev => (
-                  <div key={ev._id} className="py-3">
-                    <p className="font-semibold text-gray-900">{ev.title}</p>
+                  <div 
+                    key={ev._id} 
+                    onClick={() => setActiveTab('events')}
+                    className="py-3 cursor-pointer hover:bg-purple-50/50 rounded-xl px-2 transition-colors group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">{ev.title}</p>
+                      <span className="text-xs text-purple-600 font-medium">Apply →</span>
+                    </div>
                     <p className="text-sm text-gray-500">
                       {fmtDate(ev.date)} · {ev.category || 'General'}
                     </p>
@@ -1126,14 +1167,374 @@ const VolunteerDashboard = () => {
     );
   };
 
+  const openApplyModal = (event) => {
+    setSelectedEventForApply(event);
+    setApplyForm({
+      taskName: 'Stage Management',
+      customTask: '',
+      salary: 400,
+      note: ''
+    });
+    setShowApplyModal(true);
+  };
+
+  const handleApplySubmit = async (e) => {
+    e.preventDefault();
+    const finalTaskName = applyForm.taskName === 'Custom' ? applyForm.customTask : applyForm.taskName;
+    if (!finalTaskName || !finalTaskName.trim()) {
+      showToast('Please specify a task name.');
+      return;
+    }
+    if (Number(applyForm.salary) < 200) {
+      showToast('Salary must be at least ₹200.');
+      return;
+    }
+
+    try {
+      setSubmittingApply(true);
+      await axios.post(`${API}/apply-task`, {
+        eventId: selectedEventForApply._id,
+        taskName: finalTaskName.trim(),
+        salary: Number(applyForm.salary),
+        note: applyForm.note
+      }, { headers });
+
+      showToast('Task application submitted! Admin will review and approve.');
+      setShowApplyModal(false);
+      fetchEventsWithStatus();
+      fetchOverview();
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Error submitting application');
+    } finally {
+      setSubmittingApply(false);
+    }
+  };
+
+  const renderEvents = () => {
+    const filteredEvents = eventsList.filter(ev => {
+      const matchSearch = !eventSearch || 
+        ev.title?.toLowerCase().includes(eventSearch.toLowerCase()) ||
+        ev.location?.toLowerCase().includes(eventSearch.toLowerCase()) ||
+        ev.description?.toLowerCase().includes(eventSearch.toLowerCase());
+      const matchCategory = categoryFilter === 'All' || ev.category?.toLowerCase() === categoryFilter.toLowerCase();
+      return matchSearch && matchCategory;
+    });
+
+    const categories = ['All', 'General', 'Conference', 'Concert', 'Festival', 'Sports', 'Charity', 'Exhibition'];
+
+    return (
+      <div className="max-w-6xl mx-auto animate-fade-in pb-12">
+        {/* Page Heading */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-2 text-accent font-semibold text-xs tracking-wider uppercase mb-1">
+              <CalendarDays size={16} /> Volunteer Opportunities
+            </div>
+            <h1 className="text-2xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">Available Events & Tasks</h1>
+            <p className="text-gray-600 text-sm sm:text-base mt-1">Explore upcoming events, apply for specific volunteer roles, and earn compensation and crew points.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs bg-purple-100 text-purple-700 font-bold px-3 py-1.5 rounded-xl border border-purple-200">
+              {filteredEvents.length} {filteredEvents.length === 1 ? 'Event' : 'Events'} Available
+            </span>
+          </div>
+        </div>
+
+        {/* Filter & Search Bar */}
+        <div className="glass-panel p-4 rounded-2xl mb-8 border border-white/60 shadow-sm flex flex-col sm:flex-row gap-4 justify-between items-center">
+          <div className="relative w-full sm:w-80">
+            <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Search by title, venue, or keyword..."
+              value={eventSearch}
+              onChange={(e) => setEventSearch(e.target.value)}
+              className="w-full bg-white/80 border border-gray-200 text-sm text-gray-800 rounded-xl py-2 pl-10 pr-4 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+            />
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  categoryFilter === cat 
+                    ? 'bg-purple-600 text-white shadow-sm' 
+                    : 'bg-white/60 hover:bg-white text-gray-600 border border-gray-200/60'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Events Grid */}
+        {loadingEvents ? (
+          <div className="text-center py-16">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-3"></div>
+            <p className="text-gray-500 text-sm">Loading available events...</p>
+          </div>
+        ) : filteredEvents.length === 0 ? (
+          <div className="glass-panel rounded-3xl p-12 text-center border border-white/60 shadow-sm">
+            <div className="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <CalendarDays size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-1">No Events Found</h3>
+            <p className="text-sm text-gray-500 max-w-md mx-auto">
+              {eventSearch || categoryFilter !== 'All' 
+                ? 'No events matched your current search or category filter. Try clearing filters.' 
+                : 'There are no active approved events at the moment. Please check back soon!'}
+            </p>
+            {(eventSearch || categoryFilter !== 'All') && (
+              <button 
+                onClick={() => { setEventSearch(''); setCategoryFilter('All'); }}
+                className="mt-4 px-4 py-2 bg-purple-100 text-purple-700 font-semibold text-xs rounded-xl hover:bg-purple-200 transition-colors"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredEvents.map(ev => {
+              const myTasks = ev.myTasks || [];
+              const pendingApp = myTasks.find(t => t.applicationStatus === 'pending');
+              const approvedTasks = myTasks.filter(t => t.applicationStatus === 'approved');
+
+              return (
+                <div 
+                  key={ev._id}
+                  className="glass-panel rounded-3xl overflow-hidden border border-white/70 shadow-premium flex flex-col justify-between hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                >
+                  <div>
+                    {/* Event Banner / Image */}
+                    <div className="h-44 w-full relative overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500">
+                      {ev.imageUrl ? (
+                        <img 
+                          src={ev.imageUrl} 
+                          alt={ev.title} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-4 text-white">
+                          <CalendarDays size={40} className="mb-2 opacity-80" />
+                          <span className="font-bold text-sm text-center px-4 line-clamp-2">{ev.title}</span>
+                        </div>
+                      )}
+                      {/* Category Badge */}
+                      <span className="absolute top-3.5 left-3.5 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                        {ev.category || 'General'}
+                      </span>
+                      {/* Price indicator */}
+                      <span className="absolute bottom-3.5 right-3.5 bg-white/95 backdrop-blur-md text-purple-700 text-xs font-extrabold px-3 py-1 rounded-xl shadow-xs">
+                        ₹{ev.price > 0 ? ev.price : 'Free Entry'}
+                      </span>
+                    </div>
+
+                    {/* Card Body */}
+                    <div className="p-5">
+                      <h3 className="text-xl font-bold text-gray-900 tracking-tight mb-2 line-clamp-1">
+                        {ev.title}
+                      </h3>
+
+                      {/* Meta Details */}
+                      <div className="space-y-1.5 text-xs text-gray-600 mb-4">
+                        <div className="flex items-center gap-2">
+                          <Clock size={14} className="text-purple-600 shrink-0" />
+                          <span>{fmtDateTime(ev.date)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-purple-600 font-bold shrink-0">📍</span>
+                          <span className="line-clamp-1">{ev.location}</span>
+                        </div>
+                        {ev.capacity && (
+                          <div className="flex items-center gap-2">
+                            <User size={14} className="text-purple-600 shrink-0" />
+                            <span>{ev.capacity} Attendee Capacity</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-gray-500 text-xs line-clamp-2 mb-4 leading-relaxed">
+                        {ev.description}
+                      </p>
+
+                      {/* Applied / Assigned Tasks Status Badges */}
+                      {myTasks.length > 0 && (
+                        <div className="space-y-1.5 mb-4 p-3 bg-purple-50/70 border border-purple-100 rounded-2xl">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-purple-900">Your Status for this Event:</p>
+                          {myTasks.map(t => (
+                            <div key={t._id} className="flex items-center justify-between text-xs">
+                              <span className="font-semibold text-gray-800 line-clamp-1">
+                                {t.taskName}
+                              </span>
+                              {t.applicationStatus === 'pending' ? (
+                                <span className="bg-amber-100 text-amber-800 font-bold text-[10px] px-2 py-0.5 rounded-md shrink-0">
+                                  ⏳ Pending Approval
+                                </span>
+                              ) : t.applicationStatus === 'approved' ? (
+                                <span className="bg-emerald-100 text-emerald-800 font-bold text-[10px] px-2 py-0.5 rounded-md shrink-0">
+                                  ✅ Assigned (₹{t.salary})
+                                </span>
+                              ) : (
+                                <span className="bg-red-100 text-red-800 font-bold text-[10px] px-2 py-0.5 rounded-md shrink-0">
+                                  ✕ Not Selected
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card Footer / Action */}
+                  <div className="p-5 pt-0 border-t border-gray-100/60 mt-auto flex items-center gap-2">
+                    {approvedTasks.length > 0 ? (
+                      <button
+                        onClick={() => setActiveTab('tasks')}
+                        className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <ClipboardList size={15} />
+                        <span>View Assigned Task ({approvedTasks[0].taskName})</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => openApplyModal(ev)}
+                        className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                      >
+                        <span>{pendingApp ? 'Apply for Another Task' : 'Apply for Event Task'}</span>
+                        <span>→</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* APPLY FOR TASK MODAL */}
+        {showApplyModal && selectedEventForApply && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+            <div className="glass-panel bg-white/95 max-w-lg w-full rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/80 relative my-8 animate-scale-up">
+              <div className="flex items-center justify-between pb-4 mb-5 border-b border-gray-100">
+                <div>
+                  <span className="text-purple-600 text-xs font-bold uppercase tracking-wider">Volunteer Task Application</span>
+                  <h2 className="text-xl font-bold text-gray-900 line-clamp-1">{selectedEventForApply.title}</h2>
+                </div>
+                <button 
+                  onClick={() => setShowApplyModal(false)}
+                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleApplySubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1.5">
+                    Select Event Role / Task *
+                  </label>
+                  <select
+                    value={applyForm.taskName}
+                    onChange={(e) => setApplyForm({ ...applyForm, taskName: e.target.value })}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-purple-200 outline-none"
+                    required
+                  >
+                    <option value="Stage Management">Stage Management & Coordination</option>
+                    <option value="Registration & Check-in">Registration & Attendee Check-in</option>
+                    <option value="Guest Coordination">Guest Coordination & Hospitality</option>
+                    <option value="Crowd Management">Crowd Management & Ushering</option>
+                    <option value="Technical / AV Support">Technical, Sound & Lighting Support</option>
+                    <option value="Decoration & Venue Setup">Decoration & Venue Setup</option>
+                    <option value="Refreshment Management">Food & Refreshment Distribution</option>
+                    <option value="Videography Volunteer">Photography & Videography</option>
+                    <option value="Custom">Other (Custom Task)</option>
+                  </select>
+                </div>
+
+                {applyForm.taskName === 'Custom' && (
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1.5">
+                      Specify Custom Task Name *
+                    </label>
+                    <input 
+                      type="text"
+                      required
+                      placeholder="e.g. Social Media Coverage or DJ Assistant"
+                      value={applyForm.customTask}
+                      onChange={(e) => setApplyForm({ ...applyForm, customTask: e.target.value })}
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-purple-200 outline-none"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1.5">
+                    Requested Compensation / Salary (₹) *
+                  </label>
+                  <input 
+                    type="number"
+                    min="200"
+                    step="50"
+                    required
+                    value={applyForm.salary}
+                    onChange={(e) => setApplyForm({ ...applyForm, salary: e.target.value })}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-purple-200 outline-none"
+                    placeholder="Minimum ₹200"
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">Minimum statutory rate is ₹200 per completed task.</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1.5">
+                    Experience or Application Note (Optional)
+                  </label>
+                  <textarea 
+                    rows="3"
+                    value={applyForm.note}
+                    onChange={(e) => setApplyForm({ ...applyForm, note: e.target.value })}
+                    placeholder="Mention any relevant experience or availability for this event..."
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-purple-200 outline-none"
+                  />
+                </div>
+
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowApplyModal(false)}
+                    className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-xs hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingApply}
+                    className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    {submittingApply ? 'Submitting...' : 'Submit Application'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderContent = () => {
     switch (activeTab) {
+      case 'events': return renderEvents();
       case 'overview': return renderOverview();
       case 'profile': return renderProfile();
       case 'tasks': return renderTasks();
       case 'attendance': return renderAttendance();
       case 'certificates': return renderCertificates();
-      default: return renderOverview();
+      default: return renderEvents();
     }
   };
 
