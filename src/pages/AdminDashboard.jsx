@@ -66,17 +66,17 @@ export default function AdminDashboard() {
             const latestNew = (res.data || [])[0];
             const latestOld = prev[0];
             
-            if (latestNew && (!latestOld || latestNew._id !== latestNew._id)) {
-              // Also only show toast if it's unread
+            if (latestNew && (!latestOld || latestNew._id !== latestOld._id)) {
               if (!latestNew.read) {
                 setToast(latestNew.message);
+                fetchData(); // Auto-refresh dashboard counts and data
                 setTimeout(() => setToast(''), 6000);
               }
             }
             return res.data || [];
           });
         } catch (e) {}
-      }, 5000);
+      }, 2500);
     }
     return () => clearInterval(interval);
   }, [token]);
@@ -478,6 +478,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
 
   const handleApplicationStatus = async (appId, status) => {
     setActionLoading(appId);
+    // Optimistic UI update: immediately remove from pending list
+    setApplications(prev => prev.filter(a => a._id !== appId));
     try {
       await axios.patch(
         `${API_URL}/volunteer/admin/applications/${appId}/status`,
@@ -487,6 +489,7 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
       await Promise.all([fetchApplications(), fetchTasks()]);
     } catch (err) {
       alert(err.response?.data?.message || `Failed to ${status} application.`);
+      fetchApplications();
     } finally {
       setActionLoading(null);
     }
@@ -495,6 +498,12 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
   useEffect(() => { 
     fetchTasks(); 
     fetchApplications();
+    // Fast polling every 2.5 seconds for instant real-time sync
+    const interval = setInterval(() => {
+      fetchTasks();
+      fetchApplications();
+    }, 2500);
+    return () => clearInterval(interval);
   }, [refreshTrigger]);
 
   // Check if we need to open chat for a specific task (from notification click)
@@ -542,16 +551,17 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
   }, [showChatModal, selectedTaskForChat?._id]);
 
   const markAttendance = async (task, status) => {
+    // Instant optimistic update
+    setAttendanceMap(prev => ({ 
+      ...prev, 
+      [task._id]: status,
+      [`${task.volunteer?._id}_${task.event?._id}`]: status 
+    }));
     try {
-      const res = await axios.patch(
+      await axios.patch(
         `${API_URL}/volunteer/admin/attendance/${task.volunteer._id}/${task.event._id}`,
         { status, taskId: task._id }, config
       );
-      setAttendanceMap(prev => ({ 
-        ...prev, 
-        [task._id]: res.data.status,
-        [`${task.volunteer._id}_${task.event._id}`]: res.data.status 
-      }));
     } catch {}
   };
 
@@ -595,11 +605,14 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
   };
 
   const approvePayment = async (taskId) => {
+    // Instant optimistic update
+    setTasks(prev => prev.map(t => t._id === taskId ? { ...t, paymentStatus: 'approved' } : t));
     try {
       await axios.patch(`${API_URL}/volunteer/admin/tasks/${taskId}/payment`, { status: 'approved' }, config);
       fetchTasks();
     } catch (err) {
       console.error('Error approving payment:', err);
+      fetchTasks();
     }
   };
 
@@ -665,6 +678,41 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
       }, 100);
     } catch (error) {
       console.error('Error sending message:', error);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const handleSendQuickMessage = async (quickText) => {
+    if (!quickText || !selectedTaskForChat || sendingMessage) return;
+    setSendingMessage(true);
+    try {
+      const newMessage = {
+        sender: user?._id || 'admin',
+        senderName: user?.fullName || user?.username || 'Admin',
+        senderRole: 'admin',
+        text: quickText,
+        image: '',
+        audio: '',
+        timestamp: new Date().toISOString()
+      };
+
+      // Optimistic message update
+      setChatMessages(prev => [...prev, newMessage]);
+      setTimeout(() => {
+        if (chatMessagesEndRef.current) {
+          chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 50);
+
+      const res = await axios.post(
+        `${API_URL}/volunteer/admin/tasks/${selectedTaskForChat._id}/chat`,
+        { message: newMessage },
+        config
+      );
+      setChatMessages(res.data.chatMessages || []);
+    } catch (error) {
+      console.error('Error sending quick message:', error);
     } finally {
       setSendingMessage(false);
     }
@@ -1120,6 +1168,31 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
               </div>
             </div>
             <div className="mt-4">
+              {/* Quick Replies Bar */}
+              <div className="mb-3 pb-2 border-b border-gray-100 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 shrink-0 mr-1 flex items-center gap-1">
+                  <Sparkles size={11} className="text-indigo-500" /> Quick Replies:
+                </span>
+                {[
+                  'Approved! Great work 👍',
+                  'Please upload photo proof 📸',
+                  'Please check in at attendance 📋',
+                  'Report to coordinator 📍',
+                  'Payment approved 💰',
+                  'Thank you! ⭐'
+                ].map((quickText) => (
+                  <button
+                    key={quickText}
+                    type="button"
+                    disabled={sendingMessage}
+                    onClick={() => handleSendQuickMessage(quickText)}
+                    className="px-2.5 py-1 bg-gray-100 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 text-xs font-medium rounded-lg border border-gray-200/80 shadow-2xs transition-all whitespace-nowrap active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    {quickText}
+                  </button>
+                ))}
+              </div>
+
               {/* Voice Note Preview */}
               {audioBase64 && (
                 <div className="mb-3 p-2 bg-indigo-50/90 border border-indigo-100 rounded-xl flex items-center justify-between gap-3 animate-fade-in">

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { ArrowLeft, Send, User, Clock, FileText, MessageSquare, Image as ImageIcon, X, Mic, Square, Trash2 } from 'lucide-react';
+import { ArrowLeft, Send, User, Clock, FileText, MessageSquare, Image as ImageIcon, X, Mic, Square, Trash2, Sparkles } from 'lucide-react';
 import VoiceNotePlayer from '../components/VoiceNotePlayer';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 
@@ -151,6 +151,40 @@ const EventSupport = () => {
       }, 100);
     } catch (error) {
       console.error('Error sending message:', error);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const handleSendQuickMessage = async (quickText) => {
+    if (!quickText || !taskId || sendingMessage) return;
+    setSendingMessage(true);
+    try {
+      const newMessage = {
+        sender: user?._id || 'volunteer',
+        senderName: user?.fullName || user?.username || 'Volunteer',
+        senderRole: 'volunteer',
+        text: quickText,
+        image: '',
+        audio: '',
+        timestamp: new Date().toISOString()
+      };
+
+      setChatMessages((prev) => [...prev, newMessage]);
+      setTimeout(() => {
+        if (chatMessagesEndRef.current) {
+          chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 50);
+
+      const { data } = await axios.post(
+        `${API}/volunteer/tasks/${taskId}/chat`,
+        { message: newMessage },
+        { headers }
+      );
+      setChatMessages(data.chatMessages || []);
+    } catch (error) {
+      console.error('Error sending quick message:', error);
     } finally {
       setSendingMessage(false);
     }
@@ -375,6 +409,31 @@ const EventSupport = () => {
 
               {/* Message Input */}
               <div className="p-2.5 sm:p-3.5 border-t border-gray-100 bg-white min-w-0">
+                {/* Quick Replies Bar */}
+                <div className="mb-2.5 pb-2 border-b border-gray-50 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 shrink-0 mr-1 flex items-center gap-1">
+                    <Sparkles size={11} className="text-indigo-500" /> Quick Replies:
+                  </span>
+                  {[
+                    'On my way! 🏃',
+                    'Arrived at venue 📍',
+                    'Task completed! ✅',
+                    'Photo uploaded 📸',
+                    'Need assistance 🙋',
+                    'Got it, thanks! 👍'
+                  ].map((quickText) => (
+                    <button
+                      key={quickText}
+                      type="button"
+                      disabled={sendingMessage}
+                      onClick={() => handleSendQuickMessage(quickText)}
+                      className="px-2.5 py-1 bg-slate-50 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 text-xs font-medium rounded-lg border border-gray-200/80 shadow-2xs transition-all whitespace-nowrap active:scale-95 cursor-pointer disabled:opacity-50"
+                    >
+                      {quickText}
+                    </button>
+                  ))}
+                </div>
+
                 {/* Voice Note Preview */}
                 {audioBase64 && (
                   <div className="mb-2.5 p-2 bg-indigo-50/90 border border-indigo-100 rounded-xl flex items-center justify-between gap-2 animate-fade-in min-w-0">

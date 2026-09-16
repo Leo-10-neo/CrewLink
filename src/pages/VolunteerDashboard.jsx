@@ -135,29 +135,51 @@ const VolunteerDashboard = () => {
     load();
   }, []);
 
-  // Fetch notifications
+  // Live Notifications & Real-Time Sync (every 2.5 seconds)
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
         const { data } = await axios.get(`${API_URL}/notifications`, { headers });
-        setNotifications(data);
+        setNotifications(prev => {
+          const latestNew = (data || [])[0];
+          const latestOld = prev[0];
+          if (latestNew && (!latestOld || latestNew._id !== latestOld._id)) {
+            if (!latestNew.read) {
+              setToast(latestNew.message);
+              // Instantly refresh all tabs so volunteer sees approved/rejected status, new tasks, attendance without refreshing
+              fetchEventsWithStatus();
+              fetchTasks();
+              fetchOverview();
+              fetchAttendance();
+              setTimeout(() => setToast(''), 6000);
+            }
+          }
+          return data || [];
+        });
       } catch (e) { console.error(e); }
     };
 
     fetchNotifications();
     
-    // Poll for new notifications every 10 seconds
-    const interval = setInterval(fetchNotifications, 10000);
+    // Fast polling every 2.5 seconds for instant real-time response
+    const interval = setInterval(fetchNotifications, 2500);
     return () => clearInterval(interval);
   }, [token]);
 
+  // Real-time active tab live sync (every 3 seconds)
   useEffect(() => {
-    if (activeTab === 'events') fetchEventsWithStatus();
-    if (activeTab === 'tasks') fetchTasks();
-    if (activeTab === 'attendance') fetchAttendance();
-    if (activeTab === 'certificates') fetchCertificates();
-    if (activeTab === 'overview') fetchOverview();
-    if (activeTab === 'profile') fetchProfile();
+    const refreshActiveTab = () => {
+      if (activeTab === 'events') fetchEventsWithStatus();
+      else if (activeTab === 'tasks') fetchTasks();
+      else if (activeTab === 'attendance') fetchAttendance();
+      else if (activeTab === 'certificates') fetchCertificates();
+      else if (activeTab === 'overview') fetchOverview();
+      else if (activeTab === 'profile') fetchProfile();
+    };
+
+    refreshActiveTab();
+    const interval = setInterval(refreshActiveTab, 3000);
+    return () => clearInterval(interval);
   }, [activeTab]);
 
   const showToast = (msg) => {
@@ -1192,6 +1214,20 @@ const VolunteerDashboard = () => {
 
     try {
       setSubmittingApply(true);
+      // Optimistic update so event card immediately shows Pending Approval
+      setEventsList(prev => prev.map(ev => {
+        if (ev._id === selectedEventForApply._id) {
+          const newTask = {
+            _id: 'temp_' + Date.now(),
+            taskName: finalTaskName.trim(),
+            salary: Number(applyForm.salary),
+            applicationStatus: 'pending'
+          };
+          return { ...ev, myTasks: [...(ev.myTasks || []), newTask] };
+        }
+        return ev;
+      }));
+
       await axios.post(`${API}/apply-task`, {
         eventId: selectedEventForApply._id,
         taskName: finalTaskName.trim(),
@@ -1199,12 +1235,13 @@ const VolunteerDashboard = () => {
         note: applyForm.note
       }, { headers });
 
-      showToast('Task application submitted! Admin will review and approve.');
+      showToast('Task application submitted! Admin notified for quick review.');
       setShowApplyModal(false);
       fetchEventsWithStatus();
       fetchOverview();
     } catch (err) {
       showToast(err.response?.data?.message || 'Error submitting application');
+      fetchEventsWithStatus();
     } finally {
       setSubmittingApply(false);
     }
