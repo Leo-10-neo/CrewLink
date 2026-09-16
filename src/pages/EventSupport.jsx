@@ -125,6 +125,9 @@ const EventSupport = () => {
 
     // Immediately clear inputs so the type box is emptied instantly!
     setMessage('');
+    if (chatInputRef.current) {
+      chatInputRef.current.value = '';
+    }
     setSelectedImage(null);
     setImagePreview(null);
     clearRecording();
@@ -167,7 +170,6 @@ const EventSupport = () => {
       }, 100);
     } catch (error) {
       console.error('Error sending message:', error);
-      setMessage(textToSend);
     } finally {
       setSendingMessage(false);
     }

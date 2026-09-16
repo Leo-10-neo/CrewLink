@@ -901,8 +901,14 @@ router.post('/admin/tasks/:id/chat', adminAuth, async (req, res) => {
     }
 
     // Return updated task with chat messages
+    const updatedTask = await VolunteerTask.findById(task._id)
+      .populate('event', 'title rules')
+      .populate('volunteer', 'username fullName')
+      .lean();
+
     res.json(updatedTask);
   } catch (error) {
+    console.error('Error in admin chat route:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

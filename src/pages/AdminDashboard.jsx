@@ -439,6 +439,7 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
   const [showImagePreview, setShowImagePreview] = useState(null);
   const [sortOrder, setSortOrder] = useState('asc');
   const chatMessagesEndRef = useRef(null);
+  const chatInputRef = useRef(null);
   const config = { headers: { Authorization: `Bearer ${token}` } };
 
   const getTaskTime = (t) => {
@@ -638,6 +639,7 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
     setSelectedTaskForChat(null);
     setChatMessages([]);
     setMessage('');
+    if (chatInputRef.current) chatInputRef.current.value = '';
     setSelectedImage(null);
     setImagePreview(null);
     cancelRecording();
@@ -652,6 +654,9 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
 
     // Immediately clear input box so it empties instantly!
     setMessage('');
+    if (chatInputRef.current) {
+      chatInputRef.current.value = '';
+    }
     setSelectedImage(null);
     setImagePreview(null);
     clearRecording();
@@ -694,8 +699,6 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
       }, 100);
     } catch (error) {
       console.error('Error sending message:', error);
-      // Restore text if send failed
-      setMessage(textToSend);
     } finally {
       setSendingMessage(false);
     }
@@ -1322,6 +1325,7 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
                     <Mic size={18} />
                   </button>
                   <input
+                    ref={chatInputRef}
                     type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
