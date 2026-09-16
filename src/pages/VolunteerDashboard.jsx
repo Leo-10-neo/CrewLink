@@ -14,7 +14,7 @@ const API = `${API_URL}/volunteer`;
 const VolunteerDashboard = () => {
   const { user, token, logout } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('events');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Data states
@@ -1167,10 +1167,10 @@ const VolunteerDashboard = () => {
     );
   };
 
-  const openApplyModal = (event) => {
+  const openApplyModal = (event, prefillRole = 'Stage Management') => {
     setSelectedEventForApply(event);
     setApplyForm({
-      taskName: 'Stage Management',
+      taskName: prefillRole,
       customTask: '',
       salary: 400,
       note: ''
@@ -1360,6 +1360,42 @@ const VolunteerDashboard = () => {
                       <p className="text-gray-500 text-xs line-clamp-2 mb-4 leading-relaxed">
                         {ev.description}
                       </p>
+
+                      {/* Available Roles to Apply */}
+                      <div className="mb-4">
+                        <p className="text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-2">Select Role to Apply:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            'Stage Management', 
+                            'Registration & Check-in', 
+                            'Guest Coordination', 
+                            'Crowd Management', 
+                            'Technical Support', 
+                            'Food & Catering'
+                          ].map((role) => {
+                            const isAssigned = myTasks.some(t => t.taskName === role && t.applicationStatus === 'approved');
+                            const isPending = myTasks.some(t => t.taskName === role && t.applicationStatus === 'pending');
+                            return (
+                              <button
+                                key={role}
+                                type="button"
+                                onClick={() => openApplyModal(ev, role)}
+                                className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                                  isAssigned
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : isPending
+                                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                    : 'bg-indigo-50/90 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 hover:scale-102 shadow-2xs'
+                                }`}
+                                title={`Click to apply for ${role}`}
+                              >
+                                <span>{isAssigned ? '✓' : isPending ? '⏳' : '+'}</span>
+                                <span>{role}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
 
                       {/* Applied / Assigned Tasks Status Badges */}
                       {myTasks.length > 0 && (
