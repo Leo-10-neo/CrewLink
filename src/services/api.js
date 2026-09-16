@@ -1,60 +1,139 @@
 import axios from 'axios';
 import { Capacitor } from '@capacitor/core';
 
-// Dynamic host detection: When running on native mobile via Capacitor,
-// localhost refers to the device itself, so we target the server on the local network.
-export const getApiBase = () => {
-  let base = import.meta.env.VITE_API_BASE;
-  if (base) {
-    if (!base.startsWith('http://') && !base.startsWith('https://')) {
-      base = `https://${base}`;
-    }
-    return base.replace(/\/+$/, '');
+// Helper to format URL
+const formatUrl = (raw) => {
+  if (!raw) return '';
+  let url = raw.trim().replace(/\/+$/, '');
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    url = `https://${url}`;
   }
-  
-  // 1. Official Capacitor check
-  if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) {
-    return 'http://192.168.0.121:5000';
+  return url;
+};
+
+export const PUBLIC_INTERNET_URL = 'https://became-undo-bonds-discusses.trycloudflare.com';
+
+// Dynamic host detection with support for custom user-configured server URL
+export const getApiBase = () => {
+  // 1. User-configured server URL (persisted on the device in localStorage)
+  if (typeof window !== 'undefined') {
+    const custom = localStorage.getItem('crewlink_api_base');
+    if (custom && custom.trim()) {
+      return formatUrl(custom);
+    }
   }
 
-  // 2. Protocol / WebView checks
+  // 2. Build-time environment variable (e.g. Render or production URL)
+  let base = import.meta.env.VITE_API_BASE;
+  if (base) {
+    return formatUrl(base);
+  }
+  
+  // 3. Native mobile (Capacitor / Android WebView): Default directly to public internet URL!
+  if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) {
+    return PUBLIC_INTERNET_URL;
+  }
+
+  // 4. Protocol / WebView checks
   if (typeof window !== 'undefined') {
     if (
       window.location.protocol === 'capacitor:' || 
       window.location.protocol === 'ionic:' ||
       window.Capacitor?.isNativePlatform?.()
     ) {
-      return 'http://192.168.0.121:5000';
+      return PUBLIC_INTERNET_URL;
     }
 
-    // 3. User-agent check for Android WebView
+    // 5. User-agent check for Android WebView
     const ua = navigator.userAgent || '';
     if ((ua.includes('wv') || ua.includes('Android')) && (window.location.hostname === 'localhost' || !window.location.port)) {
-      return 'http://192.168.0.121:5000';
+      return PUBLIC_INTERNET_URL;
     }
 
-    // 4. LAN IP when browsing on phone browser (e.g. 192.168.x.x)
+    // 6. Localhost PC web development
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:5000';
+    }
+
+    // 7. LAN IP when browsing on phone browser (e.g. 192.168.x.x)
     if (window.location.hostname && /^(\d{1,3}\.){3}\d{1,3}$/.test(window.location.hostname) && window.location.hostname !== '127.0.0.1') {
       return `http://${window.location.hostname}:5000`;
     }
   }
 
-  return 'http://localhost:5000';
+  return PUBLIC_INTERNET_URL;
+};
+
+export const setApiBase = (url) => {
+  if (typeof window !== 'undefined') {
+    if (url && url.trim()) {
+      const formatted = formatUrl(url);
+      localStorage.setItem('crewlink_api_base', formatted);
+      return formatted;
+    } else {
+      localStorage.removeItem('crewlink_api_base');
+      return getApiBase();
+    }
+  }
+  return url;
+};
+
+export const resetApiBase = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('crewlink_api_base');
+  }
+  return getApiBase();
+};
+
+export const testServerConnection = async (testUrl) => {
+  const target = formatUrl(testUrl || getApiBase());
+  try {
+    const res = await axios.get(`${target}/api/test`, { timeout: 6000 });
+    return { success: true, url: target, data: res.data };
+  } catch (err) {
+    const errMsg = err.code === 'ECONNABORTED' 
+      ? 'Connection timed out' 
+      : (err.response?.status ? `HTTP ${err.response.status}` : (err.message || 'Network unreachable'));
+    return { success: false, url: target, error: errMsg };
+  }
+};
+
+export const CLOUD_REGISTRY_URL = 'https://api.github.com/repos/Leo-10-neo/CrewLink/contents/current_tunnel_url.txt';
+
+export const autoDiscoverTunnelUrl = async () => {
+  try {
+    const res = await axios.get(CLOUD_REGISTRY_URL, {
+      headers: { Accept: 'application/vnd.github.v3.raw' },
+      timeout: 6000,
+    });
+    if (res.data && typeof res.data === 'string' && res.data.includes('trycloudflare.com')) {
+      const liveUrl = formatUrl(res.data.trim());
+      const test = await testServerConnection(liveUrl);
+      if (test.success) {
+        setApiBase(liveUrl);
+        return { success: true, url: liveUrl };
+      }
+    }
+  } catch (err) {
+    console.warn('Auto-discovery from Cloud Registry failed:', err.message);
+  }
+  return { success: false };
 };
 
 export const API_BASE = getApiBase();
 export const API_URL = import.meta.env.VITE_API_URL || `${API_BASE}/api`;
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: `${getApiBase()}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add token to requests if available
+// Dynamically use the active base URL and add authorization token
 api.interceptors.request.use(
   (config) => {
+    config.baseURL = `${getApiBase()}/api`;
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -62,6 +141,32 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+let isAutoDiscovering = false;
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (!error.response && originalRequest && !originalRequest._retryNetwork) {
+      originalRequest._retryNetwork = true;
+      if (!isAutoDiscovering) {
+        isAutoDiscovering = true;
+        try {
+          const discovered = await autoDiscoverTunnelUrl();
+          if (discovered.success) {
+            originalRequest.baseURL = `${discovered.url}/api`;
+            return api(originalRequest);
+          }
+        } catch (_) {
+          // ignore
+        } finally {
+          isAutoDiscovering = false;
+        }
+      }
+    }
     return Promise.reject(error);
   }
 );
