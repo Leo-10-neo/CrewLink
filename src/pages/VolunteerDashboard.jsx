@@ -53,9 +53,11 @@ const VolunteerDashboard = () => {
   const headers = { Authorization: `Bearer ${token}` };
 
   // ── Fetchers ──────────────────────────────
-  const fetchEventsWithStatus = async () => {
+  const fetchEventsWithStatus = async (showLoader = false) => {
     try {
-      setLoadingEvents(true);
+      if (showLoader && eventsList.length === 0) {
+        setLoadingEvents(true);
+      }
       const { data } = await axios.get(`${API}/events-with-status`, { headers });
       setEventsList(Array.isArray(data) ? data : []);
     } catch (e) {
@@ -129,7 +131,7 @@ const VolunteerDashboard = () => {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      await Promise.all([fetchOverview(), fetchProfile(), fetchEventsWithStatus()]);
+      await Promise.all([fetchOverview(), fetchProfile(), fetchEventsWithStatus(true)]);
       setLoading(false);
     };
     load();
@@ -147,7 +149,7 @@ const VolunteerDashboard = () => {
             if (!latestNew.read) {
               setToast(latestNew.message);
               // Instantly refresh all tabs so volunteer sees approved/rejected status, new tasks, attendance without refreshing
-              fetchEventsWithStatus();
+              fetchEventsWithStatus(false);
               fetchTasks();
               fetchOverview();
               fetchAttendance();
@@ -166,10 +168,10 @@ const VolunteerDashboard = () => {
     return () => clearInterval(interval);
   }, [token]);
 
-  // Real-time active tab live sync (every 3 seconds)
+  // Real-time active tab live sync (every 5 seconds)
   useEffect(() => {
     const refreshActiveTab = () => {
-      if (activeTab === 'events') fetchEventsWithStatus();
+      if (activeTab === 'events') fetchEventsWithStatus(false);
       else if (activeTab === 'tasks') fetchTasks();
       else if (activeTab === 'attendance') fetchAttendance();
       else if (activeTab === 'certificates') fetchCertificates();
@@ -178,7 +180,7 @@ const VolunteerDashboard = () => {
     };
 
     refreshActiveTab();
-    const interval = setInterval(refreshActiveTab, 3000);
+    const interval = setInterval(refreshActiveTab, 5000);
     return () => clearInterval(interval);
   }, [activeTab]);
 
@@ -1310,7 +1312,7 @@ const VolunteerDashboard = () => {
         </div>
 
         {/* Events Grid */}
-        {loadingEvents ? (
+        {loadingEvents && eventsList.length === 0 ? (
           <div className="text-center py-16">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-3"></div>
             <p className="text-gray-500 text-sm">Loading available events...</p>
