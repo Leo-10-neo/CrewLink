@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, User, ClipboardList, Clock, Award,
-  LogOut, Search, Bell, CalendarDays, CheckCircle2, X, MessageSquare, Download, FileText, Lock, Menu
+  LogOut, Search, Bell, CalendarDays, CheckCircle2, X, MessageSquare, Download, FileText, Lock, Menu,
+  ShieldAlert, ScrollText
 } from 'lucide-react';
 
 import { API_BASE, API_URL } from '../services/api';
@@ -49,6 +50,7 @@ const VolunteerDashboard = () => {
   const [submittingApply, setSubmittingApply] = useState(false);
   const [eventSearch, setEventSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [selectedRulesEvent, setSelectedRulesEvent] = useState(null);
 
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -1399,9 +1401,28 @@ const VolunteerDashboard = () => {
                       </div>
 
                       {/* Description */}
-                      <p className="text-gray-500 text-xs line-clamp-2 mb-4 leading-relaxed">
+                      <p className="text-gray-500 text-xs line-clamp-2 mb-3 leading-relaxed">
                         {ev.description}
                       </p>
+
+                      {/* Rules & Regulations of this Event */}
+                      <div className="mb-4 p-3 bg-amber-50/80 border border-amber-200/80 rounded-2xl">
+                        <div className="flex items-center justify-between gap-1 mb-1.5">
+                          <span className="text-[10.5px] font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <ShieldAlert size={13} className="text-amber-600 shrink-0" /> Rules &amp; Regulations
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedRulesEvent(ev)}
+                            className="text-[10px] font-bold text-amber-700 hover:text-amber-900 underline cursor-pointer shrink-0"
+                          >
+                            Full View
+                          </button>
+                        </div>
+                        <p className="text-xs text-amber-950/90 font-medium leading-relaxed line-clamp-2 whitespace-pre-line">
+                          {ev.rules || 'Follow venue guidelines, wear volunteer badge, maintain punctuality, and coordinate directly with event supervisors.'}
+                        </p>
+                      </div>
 
                       {/* Available Roles to Apply */}
                       <div className="mb-4">
@@ -1512,6 +1533,17 @@ const VolunteerDashboard = () => {
               </div>
 
               <form onSubmit={handleApplySubmit} className="space-y-4">
+                {/* Event Rules & Regulations inside Apply Modal */}
+                <div className="p-3.5 bg-amber-50/90 border border-amber-200/90 rounded-2xl">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase tracking-wider mb-1">
+                    <ShieldAlert size={14} className="text-amber-600 shrink-0" />
+                    <span>Event Rules &amp; Regulations:</span>
+                  </div>
+                  <p className="text-xs text-amber-950 font-medium leading-relaxed whitespace-pre-line">
+                    {selectedEventForApply.rules || 'Volunteers must check in punctually, wear volunteer ID badge, maintain decorum, and follow venue safety instructions.'}
+                  </p>
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1.5">
                     Select Event Role / Task *
@@ -1597,6 +1629,74 @@ const VolunteerDashboard = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* EVENT RULES & REGULATIONS MODAL */}
+        {selectedRulesEvent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+            <div className="glass-panel bg-white/95 max-w-lg w-full rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/80 relative my-8 animate-scale-up">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                    <ShieldAlert size={20} />
+                  </div>
+                  <div>
+                    <span className="text-amber-700 text-[10px] font-bold uppercase tracking-wider">Guidelines &amp; Code of Conduct</span>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 line-clamp-1">{selectedRulesEvent.title}</h2>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedRulesEvent(null)}
+                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 bg-amber-50/80 border border-amber-200/80 rounded-2xl">
+                  <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <ScrollText size={14} className="text-amber-700" />
+                    <span>Official Event Rules</span>
+                  </h4>
+                  <div className="text-xs sm:text-sm text-gray-800 leading-relaxed whitespace-pre-line font-medium">
+                    {selectedRulesEvent.rules ? selectedRulesEvent.rules : (
+                      '1. Punctuality is strictly required. Check in with your lead 30 minutes prior to event opening.\n2. Carry your volunteer badge and wear clean professional attire.\n3. Maintain decorum and courteous communication with attendees and guests.\n4. Follow all safety protocols and report issues directly to the admin coordinator.'
+                    )}
+                  </div>
+                </div>
+
+                {/* Event Summary Details */}
+                <div className="p-3.5 bg-gray-50/90 border border-gray-100 rounded-2xl text-xs space-y-1.5 text-gray-600">
+                  <div><strong>Venue / Location:</strong> {selectedRulesEvent.location}</div>
+                  <div><strong>Date &amp; Time:</strong> {fmtDateTime(selectedRulesEvent.date)}</div>
+                  {selectedRulesEvent.capacity && <div><strong>Attendee Capacity:</strong> {selectedRulesEvent.capacity} Attendees</div>}
+                  <div><strong>Category:</strong> {selectedRulesEvent.category || 'General'}</div>
+                </div>
+
+                <div className="pt-2 flex justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRulesEvent(null)}
+                    className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const ev = selectedRulesEvent;
+                      setSelectedRulesEvent(null);
+                      openApplyModal(ev);
+                    }}
+                    className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+                  >
+                    Apply for this Event →
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

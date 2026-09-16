@@ -86,7 +86,7 @@ export default function AdminDashboard() {
   const visibleEvents = useMemo(() => events.filter((event) => `${event.title} ${event.location}`.toLowerCase().includes(search.toLowerCase())), [events, search]);
   const formatDate = (value) => new Date(value).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   const closeModal = () => { setShowEventModal(false); setEditingEvent(null); setEventForm(emptyEvent); };
-  const editEvent = (event) => { setEditingEvent(event); setEventForm({ title: event.title, description: event.description, date: new Date(event.date).toISOString().slice(0, 16), location: event.location, capacity: event.capacity, price: event.price || '', imageUrl: event.imageUrl || '' }); setShowEventModal(true); };
+  const editEvent = (event) => { setEditingEvent(event); setEventForm({ title: event.title, description: event.description, rules: event.rules || '', date: new Date(event.date).toISOString().slice(0, 16), location: event.location, capacity: event.capacity, price: event.price || '', imageUrl: event.imageUrl || '' }); setShowEventModal(true); };
   const saveEvent = async (event) => {
     event.preventDefault();
     try {
