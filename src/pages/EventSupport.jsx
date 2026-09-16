@@ -40,6 +40,9 @@ const EventSupport = () => {
   const headers = { Authorization: `Bearer ${token}` };
 
   useEffect(() => {
+    // Prevent any horizontal scroll on mount
+    window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
+
     const fetchTaskDetails = async () => {
       try {
         setLoading(true);
@@ -59,23 +62,55 @@ const EventSupport = () => {
     }
   }, [taskId]);
 
+  // Live polling for chat messages every 2 seconds without page refresh
+  useEffect(() => {
+    if (!taskId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const { data } = await axios.get(`${API}/volunteer/tasks/${taskId}`, { headers });
+        const newMsgs = data?.chatMessages || [];
+        setChatMessages((prevMsgs) => {
+          if (
+            newMsgs.length !== prevMsgs.length ||
+            (newMsgs.length > 0 &&
+              prevMsgs.length > 0 &&
+              newMsgs[newMsgs.length - 1]?.timestamp !== prevMsgs[prevMsgs.length - 1]?.timestamp)
+          ) {
+            setTimeout(() => {
+              if (chatMessagesEndRef.current) {
+                chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+              }
+            }, 100);
+            return newMsgs;
+          }
+          return prevMsgs;
+        });
+      } catch (error) {
+        // Silent catch for background polling
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [taskId, token]);
+
   // Auto-scroll to chat and focus input when coming from notification
   useEffect(() => {
     if (location.state?.fromNotification) {
       setTimeout(() => {
-        // Scroll to the chat section
+        // Scroll to the chat section cleanly without horizontal drift
         const chatSection = document.getElementById('chat-section');
         if (chatSection) {
-          chatSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          chatSection.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
           // Add a temporary highlight effect
           chatSection.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
           setTimeout(() => {
             chatSection.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
           }, 2000);
         }
-        // Focus the input
+        // Focus the input safely without viewport jump
         if (chatInputRef.current) {
-          chatInputRef.current.focus();
+          chatInputRef.current.focus({ preventScroll: true });
         }
       }, 500);
     }
@@ -167,43 +202,43 @@ const EventSupport = () => {
   }
 
   return (
-    <div className="min-h-screen bg-transparent">
+    <div className="min-h-screen bg-transparent w-full max-w-full overflow-x-hidden flex flex-col">
       {/* Header */}
-      <header className="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-8 sticky top-0 z-10">
-        <div className="flex items-center space-x-4">
+      <header className="h-16 sm:h-20 bg-white/95 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-3.5 sm:px-8 sticky top-0 z-20 w-full shadow-2xs">
+        <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
           <button
             onClick={() => navigate('/volunteer/dashboard')}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="flex items-center space-x-1.5 sm:space-x-2 text-gray-700 hover:text-gray-900 transition-colors p-1.5 -ml-1 rounded-lg hover:bg-gray-100/80 active:scale-95 shrink-0"
           >
-            <ArrowLeft size={20} />
-            <span className="font-medium">Back to Dashboard</span>
+            <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
+            <span className="font-semibold text-xs sm:text-sm">Back<span className="hidden xs:inline"> to Dashboard</span></span>
           </button>
         </div>
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-[#eef0ff] text-[#5b52f6] rounded-full flex items-center justify-center font-bold text-sm">
+        <div className="flex items-center space-x-2 sm:space-x-3 shrink-0 ml-2">
+          <div className="w-8 h-8 bg-[#eef0ff] text-[#5b52f6] rounded-full flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 border border-indigo-100">
             {user?.username ? user.username.charAt(0).toUpperCase() : 'V'}
           </div>
-          <span className="text-gray-700 font-medium text-sm">{user?.username || 'Volunteer'}</span>
+          <span className="text-gray-800 font-semibold text-xs sm:text-sm max-w-[120px] truncate">{user?.username || 'Volunteer'}</span>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-medium text-gray-900 mb-1">Event Support</h1>
-          <p className="text-gray-500 text-lg">Rules, regulations, and communication for your assigned task</p>
+      <main className="w-full max-w-7xl mx-auto p-3.5 sm:p-6 lg:p-8 flex-1 min-w-0">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1">Event Support</h1>
+          <p className="text-gray-500 text-xs sm:text-sm lg:text-base">Rules, regulations, and real-time communication for your assigned task</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 w-full min-w-0">
           {/* Left Column - Rules and Regulations */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6 w-full min-w-0">
             {/* Task Info Card */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">{task?.taskName}</h2>
-                  <p className="text-gray-600">{task?.description}</p>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 w-full min-w-0">
+              <div className="flex items-start justify-between gap-3 mb-3 sm:mb-4">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 break-words">{task?.taskName}</h2>
+                  <p className="text-gray-600 text-xs sm:text-sm break-words">{task?.description}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                <span className={`px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold shrink-0 ${
                   task?.status === 'completed' ? 'bg-teal-50 text-teal-700' :
                   task?.status === 'in-progress' ? 'bg-yellow-50 text-yellow-700' :
                   'bg-gray-100 text-gray-600'
@@ -211,70 +246,79 @@ const EventSupport = () => {
                   {task?.status === 'completed' ? 'Completed' : task?.status === 'in-progress' ? 'In progress' : 'Pending'}
                 </span>
               </div>
-              <div className="flex items-center space-x-6 text-sm text-gray-500">
-                <div className="flex items-center space-x-2">
-                  <Clock size={16} />
+              <div className="flex flex-wrap items-center gap-y-2 gap-x-4 sm:gap-x-6 text-xs sm:text-sm text-gray-500 pt-2 border-t border-gray-50">
+                <div className="flex items-center space-x-1.5 shrink-0">
+                  <Clock size={15} className="text-gray-400 shrink-0" />
                   <span>Due: {task?.dueDate ? new Date(task.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <User size={16} />
-                  <span className="text-[#5b52f6] font-semibold">Event: {event?.title || '—'}</span>
+                <div className="flex items-center space-x-1.5 min-w-0">
+                  <User size={15} className="text-[#5b52f6] shrink-0" />
+                  <span className="text-[#5b52f6] font-semibold truncate">Event: {event?.title || '—'}</span>
                 </div>
               </div>
             </div>
 
             {/* Rules and Regulations */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <FileText size={24} className="text-[#5b52f6]" />
-                <h3 className="text-xl font-bold text-gray-900">Rules and Regulations</h3>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 w-full min-w-0">
+              <div className="flex items-center space-x-2.5 mb-3 sm:mb-4">
+                <FileText size={20} className="text-[#5b52f6] sm:w-6 sm:h-6 shrink-0" />
+                <h3 className="text-base sm:text-xl font-bold text-gray-900">Rules and Regulations</h3>
               </div>
               
-              {event?.rules ? (
+              {event?.rules || task?.rules ? (
                 <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wider">
-                      Event Rules ({event.title})
-                    </h4>
-                    <div className="p-4 bg-gray-50 rounded-xl text-sm text-gray-700 whitespace-pre-line">
-                      {event.rules}
+                  {event?.rules && (
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 uppercase tracking-wider">
+                        Event Rules ({event.title})
+                      </h4>
+                      <div className="p-3 sm:p-4 bg-gray-50 rounded-xl text-xs sm:text-sm text-gray-700 whitespace-pre-line break-words">
+                        {event.rules}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   
                   {task?.rules && (
                     <div>
-                      <h4 className="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wider">
+                      <h4 className="text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 uppercase tracking-wider">
                         Task Instructions ({task.taskName})
                       </h4>
-                      <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-800 whitespace-pre-line">
+                      <div className="p-3 sm:p-4 bg-blue-50 border border-blue-100 rounded-xl text-xs sm:text-sm text-blue-800 whitespace-pre-line break-words">
                         {task.rules}
                       </div>
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-gray-500 italic text-center py-4">No specific rules or instructions provided for this task.</p>
+                <p className="text-gray-500 italic text-center py-4 text-xs sm:text-sm">No specific rules or instructions provided for this task.</p>
               )}
             </div>
           </div>
 
           {/* Right Column - Chat Box */}
-          <div className="lg:col-span-1">
-            <div id="chat-section" className="bg-white rounded-2xl border border-gray-100 shadow-sm h-[600px] flex flex-col">
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center space-x-3">
-                  <MessageSquare size={24} className="text-[#5b52f6]" />
-                  <h3 className="text-lg font-bold text-gray-900">Chat</h3>
+          <div className="lg:col-span-1 w-full min-w-0">
+            <div id="chat-section" className="bg-white rounded-2xl border border-gray-100 shadow-sm h-[520px] sm:h-[600px] flex flex-col w-full min-w-0 overflow-hidden">
+              <div className="p-3.5 sm:p-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <MessageSquare size={20} className="text-[#5b52f6] shrink-0" />
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-gray-900 leading-tight">Live Coordinator Chat</h3>
+                    <p className="text-[11px] sm:text-xs text-gray-400">Direct message with event admins</p>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Communicate with event coordinators</p>
+                <span className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Live Sync
+                </span>
               </div>
 
               {/* Chat Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3" ref={chatContainerRef}>
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 min-h-0 min-w-0" ref={chatContainerRef}>
                 {chatMessages.length === 0 ? (
-                  <div className="text-center text-gray-400 py-8">
-                    <MessageSquare size={32} className="mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No messages yet</p>
+                  <div className="text-center text-gray-400 py-12">
+                    <MessageSquare size={32} className="mx-auto mb-2 opacity-40" />
+                    <p className="text-xs sm:text-sm font-medium">No messages yet</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">Send a message below to start chatting with the event coordinator</p>
                   </div>
                 ) : (
                   chatMessages.map((msg, index) => {
@@ -282,20 +326,20 @@ const EventSupport = () => {
                     return (
                       <div
                         key={index}
-                        className={`flex ${isAdminMessage ? 'justify-start' : 'justify-end'}`}
+                        className={`flex ${isAdminMessage ? 'justify-start' : 'justify-end'} w-full min-w-0`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-xl px-4 py-2 ${
+                          className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-3.5 py-2.5 shadow-2xs break-words ${
                             isAdminMessage
-                              ? 'bg-teal-600 text-white'
-                              : 'bg-[#5b52f6] text-white'
+                              ? 'bg-teal-600 text-white rounded-tl-xs'
+                              : 'bg-[#5b52f6] text-white rounded-tr-xs'
                           }`}
                         >
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="text-xs font-semibold">
+                          <div className="flex items-center space-x-1.5 mb-1 opacity-90">
+                            <span className="text-[11px] sm:text-xs font-semibold">
                               {msg.senderName}
                             </span>
-                            <span className="text-xs opacity-70">
+                            <span className="text-[10px] sm:text-[11px] opacity-75">
                               {msg.senderRole === 'admin' ? '(Admin)' : '(Volunteer)'}
                             </span>
                           </div>
@@ -304,22 +348,21 @@ const EventSupport = () => {
                               <img 
                                 src={msg.image} 
                                 alt="Shared image" 
-                                className="max-w-full h-auto rounded-lg cursor-pointer"
+                                className="max-w-full h-auto rounded-lg cursor-pointer max-h-[180px] object-cover"
                                 onClick={() => setShowImagePreview(msg.image)}
-                                style={{ maxHeight: '200px' }}
                               />
                             </div>
                           )}
                           {msg.audio && (
-                            <div className="mb-2">
+                            <div className="mb-2 max-w-full overflow-hidden">
                               <VoiceNotePlayer 
                                 src={msg.audio} 
                                 variant={isAdminMessage ? 'admin' : 'volunteer'} 
                               />
                             </div>
                           )}
-                          {msg.text && <p className="text-sm">{msg.text}</p>}
-                          <p className="text-xs opacity-70 mt-1 text-right">
+                          {msg.text && <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>}
+                          <p className="text-[10px] opacity-70 mt-1 text-right">
                             {formatTime(msg.timestamp)}
                           </p>
                         </div>
@@ -331,15 +374,17 @@ const EventSupport = () => {
               </div>
 
               {/* Message Input */}
-              <div className="p-4 border-t border-gray-100">
+              <div className="p-2.5 sm:p-3.5 border-t border-gray-100 bg-white min-w-0">
                 {/* Voice Note Preview */}
                 {audioBase64 && (
-                  <div className="mb-3 p-2 bg-indigo-50/90 border border-indigo-100 rounded-xl flex items-center justify-between gap-3 animate-fade-in">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      <span className="text-xs font-bold text-indigo-700 flex items-center gap-1 shrink-0">
-                        <Mic size={14} /> Voice note:
+                  <div className="mb-2.5 p-2 bg-indigo-50/90 border border-indigo-100 rounded-xl flex items-center justify-between gap-2 animate-fade-in min-w-0">
+                    <div className="flex items-center gap-1.5 overflow-hidden min-w-0 flex-1">
+                      <span className="text-[11px] font-bold text-indigo-700 flex items-center gap-1 shrink-0">
+                        <Mic size={13} /> Voice:
                       </span>
-                      <VoiceNotePlayer src={audioBase64} variant="light" />
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <VoiceNotePlayer src={audioBase64} variant="light" />
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -354,69 +399,63 @@ const EventSupport = () => {
 
                 {/* Recorder Error message */}
                 {recorderError && (
-                  <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 flex items-center justify-between">
+                  <div className="mb-2.5 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 flex items-center justify-between">
                     <span>{recorderError}</span>
                   </div>
                 )}
 
                 {/* Image Preview */}
                 {imagePreview && (
-                  <div className="mb-3 relative inline-block">
+                  <div className="mb-2.5 relative inline-block">
                     <img 
                       src={imagePreview} 
                       alt="Preview" 
-                      className="h-20 w-20 object-cover rounded-lg border border-gray-200"
+                      className="h-16 w-16 object-cover rounded-lg border border-gray-200"
                     />
                     <button
                       onClick={handleRemoveImage}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
                     >
-                      <X size={14} />
+                      <X size={12} />
                     </button>
                   </div>
                 )}
                 
                 {isRecording ? (
-                  <div className="flex items-center space-x-3 w-full bg-red-50/90 border border-red-200 rounded-xl px-3.5 py-2 animate-fade-in">
-                    <div className="flex items-center space-x-2.5 flex-1">
-                      <span className="relative flex h-3 w-3">
+                  <div className="flex items-center space-x-2 w-full bg-red-50/90 border border-red-200 rounded-xl px-2.5 py-1.5 animate-fade-in min-w-0">
+                    <div className="flex items-center space-x-1.5 flex-1 min-w-0">
+                      <span className="relative flex h-2.5 w-2.5 shrink-0">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
                       </span>
-                      <span className="text-xs font-bold text-red-600 uppercase tracking-wider">
-                        Recording
+                      <span className="text-[11px] font-bold text-red-600 uppercase tracking-wider shrink-0">
+                        Rec
                       </span>
-                      <span className="text-xs font-mono font-semibold text-gray-700 bg-white/90 px-2 py-0.5 rounded border border-red-100">
+                      <span className="text-xs font-mono font-semibold text-gray-700 bg-white/90 px-1.5 py-0.5 rounded border border-red-100 shrink-0">
                         {Math.floor(recordingTime / 60)}:{recordingTime % 60 < 10 ? '0' : ''}{recordingTime % 60}
                       </span>
-                      <div className="flex items-center space-x-0.5 ml-1">
-                        <span className="w-1 h-3 bg-red-400 rounded-full animate-pulse"></span>
-                        <span className="w-1 h-5 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></span>
-                        <span className="w-1 h-2 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></span>
-                        <span className="w-1 h-4 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: '75ms' }}></span>
-                      </div>
                     </div>
 
                     <button
                       type="button"
                       onClick={cancelRecording}
-                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors cursor-pointer shrink-0"
                       title="Discard recording"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={16} />
                     </button>
 
                     <button
                       type="button"
                       onClick={stopRecording}
-                      className="px-3 py-1.5 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      className="px-2.5 py-1 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors font-semibold text-xs flex items-center gap-1 cursor-pointer shrink-0 shadow-xs"
                       title="Stop recording"
                     >
-                      <Square size={14} className="fill-current" /> Done
+                      <Square size={12} className="fill-current" /> Done
                     </button>
                   </div>
                 ) : (
-                  <div className="flex space-x-2">
+                  <div className="flex items-center space-x-1.5 sm:space-x-2 w-full min-w-0">
                     <input
                       type="file"
                       accept="image/*"
@@ -426,7 +465,7 @@ const EventSupport = () => {
                     />
                     <label
                       htmlFor="image-upload"
-                      className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                      className="w-9 h-9 sm:w-10 sm:h-10 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
                       title="Attach image"
                     >
                       <ImageIcon size={18} />
@@ -434,7 +473,7 @@ const EventSupport = () => {
                     <button
                       type="button"
                       onClick={startRecording}
-                      className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                      className="w-9 h-9 sm:w-10 sm:h-10 bg-gray-100 text-gray-600 rounded-xl hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
                       title="Record voice note"
                     >
                       <Mic size={18} />
@@ -446,15 +485,15 @@ const EventSupport = () => {
                       onChange={(e) => setMessage(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                       placeholder="Type your message..."
-                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none text-sm"
+                      className="flex-1 min-w-0 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none text-xs sm:text-sm bg-gray-50/50 focus:bg-white transition-colors"
                     />
                     <button
                       onClick={handleSendMessage}
                       disabled={(!message.trim() && !selectedImage && !audioBase64) || sendingMessage}
-                      className="px-4 py-2 bg-[#5b52f6] text-white rounded-lg hover:bg-[#4a42d4] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0 flex items-center justify-center"
+                      className="w-9 h-9 sm:w-10 sm:h-10 bg-[#5b52f6] text-white rounded-xl hover:bg-[#4a42d4] transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center justify-center shadow-xs active:scale-95"
                       title="Send message"
                     >
-                      <Send size={18} />
+                      <Send size={16} />
                     </button>
                   </div>
                 )}

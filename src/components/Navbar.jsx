@@ -47,52 +47,16 @@ const Navbar = () => {
   }, [location.pathname, isAuthenticated, currentLinks.length]);
 
   return (
-    <nav className="glass-panel sticky top-0 z-50 border-b border-gray-200/50">
+    <nav className="glass-panel sticky top-0 z-50 border-b border-gray-200/50" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
-                                                <svg 
-              viewBox="0 0 100 60" 
-              className="w-16 h-10 transform group-hover:scale-105 transition-all duration-300 drop-shadow-xl"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <linearGradient id="silverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#ffffff" />
-                  <stop offset="50%" stopColor="#f8fafc" />
-                  <stop offset="100%" stopColor="#cbd5e1" />
-                </linearGradient>
-                <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#d946ef" />
-                  <stop offset="100%" stopColor="#4c1d95" />
-                </linearGradient>
-                <clipPath id="clipTopLeft">
-                  <rect x="0" y="0" width="60" height="30" />
-                </clipPath>
-                <filter id="bevel3D" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="2" dy="4" stdDeviation="3" floodOpacity="0.2" result="dropShadow" />
-                  <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur" />
-                  <feOffset dx="-1.5" dy="-1.5" result="offsetBlur" />
-                  <feComposite in="SourceGraphic" in2="offsetBlur" operator="arithmetic" k2="1" k3="-1" result="highlightMask" />
-                  <feFlood floodColor="white" floodOpacity="0.9" />
-                  <feComposite in2="highlightMask" operator="in" result="highlight" />
-                  <feOffset in="SourceAlpha" dx="2" dy="2" result="offsetBlur2" />
-                  <feComposite in="SourceGraphic" in2="offsetBlur2" operator="arithmetic" k2="1" k3="-1" result="shadowMask" />
-                  <feFlood floodColor="#000000" floodOpacity="0.5" />
-                  <feComposite in2="shadowMask" operator="in" result="shadow" />
-                  <feMerge>
-                    <feMergeNode in="dropShadow" />
-                    <feMergeNode in="SourceGraphic" />
-                    <feMergeNode in="shadow" />
-                    <feMergeNode in="highlight" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <rect x="12" y="10" width="46" height="40" rx="20" fill="none" stroke="url(#silverGrad)" strokeWidth="12" filter="url(#bevel3D)" />
-              <rect x="42" y="10" width="46" height="40" rx="20" fill="none" stroke="url(#purpleGrad)" strokeWidth="12" filter="url(#bevel3D)" />
-              <rect x="12" y="10" width="46" height="40" rx="20" fill="none" stroke="url(#silverGrad)" strokeWidth="12" clipPath="url(#clipTopLeft)" filter="url(#bevel3D)" />
-            </svg>
+            <img
+              src="/crewlink_logo_transparent.png"
+              alt="CrewLink Logo"
+              className="h-10 w-auto transform group-hover:scale-105 transition-all duration-300 drop-shadow-md"
+            />
             <span className="text-2xl font-bold text-accent tracking-tight">
               CrewLink
             </span>

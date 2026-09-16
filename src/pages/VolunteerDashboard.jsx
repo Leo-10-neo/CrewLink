@@ -820,9 +820,9 @@ const VolunteerDashboard = () => {
           </div>
         </div>
       )}
-    </>
-  );
-};
+      </>
+    );
+  };
 
   const renderAttendance = () => (
     <div className="max-w-5xl mx-auto animate-fade-in pb-12">

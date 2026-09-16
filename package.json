@@ -8,13 +8,16 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "tunnel": "node run_tunnel.cjs",
     "android:open": "npx cap open android",
     "android:sync": "npm run build && npx cap sync android",
-    "android:build": "npm run build && npx cap sync android && cd android && .\\gradlew.bat assembleDebug --no-daemon"
+    "android:build": "npm run build && npx cap sync android && cd android && .\\gradlew.bat assembleDebug --no-daemon && powershell -Command \"Copy-Item .\\app\\build\\outputs\\apk\\debug\\app-debug.apk -Destination $env:USERPROFILE\\OneDrive\\Desktop\\CrewLink.apk -Force; Copy-Item .\\app\\build\\outputs\\apk\\debug\\app-debug.apk -Destination ..\\CrewLink-debug.apk -Force; Copy-Item .\\app\\build\\outputs\\apk\\debug\\app-debug.apk -Destination ..\\CrewLink.apk -Force\""
   },
   "dependencies": {
     "@capacitor/android": "^8.5.1",
     "@capacitor/core": "^8.5.1",
+    "@capacitor/status-bar": "^8.0.3",
+    "@fontsource/poppins": "^5.3.0",
     "@react-oauth/google": "^0.13.5",
     "axios": "^1.20.0",
     "lucide-react": "^1.39.0",

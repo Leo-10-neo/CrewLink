@@ -4,7 +4,8 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 
-dotenv.config();
+const envPath = path.join(__dirname, '.env');
+dotenv.config({ path: envPath });
 
 const app = express();
 
@@ -14,8 +15,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected successfully'))
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/event-management';
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log(`MongoDB connected successfully to ${MONGODB_URI}`))
   .catch((err) => console.error('MongoDB connection error:', err));
 
 // Routes
@@ -50,13 +52,22 @@ if (fs.existsSync(clientDistPath)) {
 
 // Direct APK Download route for mobile devices
 app.get('/download-apk', (req, res) => {
-  const apkPath = path.join(__dirname, '../CrewLink-debug.apk');
+  const candidatePaths = [
+    path.join(__dirname, '../CrewLink-debug.apk'),
+    path.join(__dirname, '../CrewLink.apk'),
+    path.join(__dirname, '../android/app/build/outputs/apk/debug/app-debug.apk'),
+  ];
+
+  const apkPath = candidatePaths.find(p => fs.existsSync(p));
+  if (!apkPath) {
+    return res.status(404).send('APK file not found. Please build the Android app first.');
+  }
+
+  res.setHeader('Content-Type', 'application/vnd.android.package-archive');
   res.download(apkPath, 'CrewLink.apk', (err) => {
-    if (err) {
+    if (err && !res.headersSent) {
       console.error('APK download error:', err);
-      if (!res.headersSent) {
-        res.status(404).send('APK file not found. Please build it first.');
-      }
+      res.status(500).send('Error serving APK file.');
     }
   });
 });
@@ -67,7 +78,7 @@ app.get('/api/test', (req, res) => {
 });
 
 // SPA fallback: Serve frontend index.html for all other web routes, or API status if dist not present
-app.get('*', (req, res) => {
+app.use((req, res) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/download-apk')) {
     return res.status(404).json({ error: 'API endpoint not found' });
   }

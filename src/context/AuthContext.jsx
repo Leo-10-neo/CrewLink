@@ -54,7 +54,8 @@ export const AuthProvider = ({ children }) => {
       const isNetworkError = !error.response || error.code === 'ERR_NETWORK';
       return { 
         success: false, 
-        message: serverMessage || (isNetworkError ? 'Cannot connect to backend server. Make sure phone is on the same Wi-Fi as your PC.' : 'Invalid email or password. Please try again.') 
+        isNetworkError,
+        message: serverMessage || (isNetworkError ? 'Cannot connect to backend server. Using mobile data or changed Wi-Fi? Check Server Settings.' : 'Invalid email or password. Please try again.') 
       };
     }
   };

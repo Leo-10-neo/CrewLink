@@ -86,7 +86,7 @@ const VoiceNotePlayer = ({ src, variant = 'light' }) => {
   return (
     <div className={`flex items-center gap-2.5 py-1.5 px-2.5 rounded-xl select-none ${
       isDarkTheme ? 'bg-black/20 text-white' : 'bg-gray-50/90 text-gray-800 border border-gray-200/80'
-    }`} style={{ minWidth: '220px', maxWidth: '280px' }}>
+    }`} style={{ minWidth: '160px', maxWidth: '280px', width: '100%' }}>
       <audio ref={audioRef} src={src} preload="metadata" />
 
       {/* Play/Pause button */}

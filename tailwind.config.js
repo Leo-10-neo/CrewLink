@@ -18,7 +18,8 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Outfit', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['Poppins', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        poppins: ['Poppins', 'sans-serif'],
         serif: ['"Playfair Display"', 'Georgia', 'Cambria', 'Times New Roman', 'Times', 'serif'],
       },
       boxShadow: {

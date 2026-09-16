@@ -160,7 +160,7 @@ export default function AdminDashboard() {
     <aside className={`admin-sidebar ${mobileMenuOpen ? 'open' : ''}`}>
       <div className="brand-lockup" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span className="brand-mark"><svg width="46" height="32" viewBox="0 0 46 32" fill="none" aria-hidden="true"><circle cx="15" cy="16" r="12" stroke="#fff" strokeWidth="4" /><circle cx="31" cy="16" r="12" stroke="#9b4de8" strokeWidth="4" /></svg></span>
+          <span className="brand-mark"><img src="/crewlink_logo_transparent.png" alt="CrewLink" style={{ height: '32px', width: 'auto' }} /></span>
           <strong>CrewLink</strong>
         </div>
         <button 
@@ -475,6 +475,38 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
     }
   }, [tasks]);
 
+  // Live polling for chat messages when chat modal is open (every 2 seconds)
+  useEffect(() => {
+    if (!showChatModal || !selectedTaskForChat?._id) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get(`${API_URL}/volunteer/admin/tasks/${selectedTaskForChat._id}`, config);
+        const newMsgs = res.data?.chatMessages || [];
+        setChatMessages(prevMsgs => {
+          if (
+            newMsgs.length !== prevMsgs.length ||
+            (newMsgs.length > 0 &&
+              prevMsgs.length > 0 &&
+              newMsgs[newMsgs.length - 1]?.timestamp !== prevMsgs[prevMsgs.length - 1]?.timestamp)
+          ) {
+            setTimeout(() => {
+              if (chatMessagesEndRef.current) {
+                chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+              }
+            }, 100);
+            return newMsgs;
+          }
+          return prevMsgs;
+        });
+      } catch (err) {
+        // Silent catch for background polling
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [showChatModal, selectedTaskForChat?._id]);
+
   const markAttendance = async (task, status) => {
     try {
       const res = await axios.patch(
@@ -657,7 +689,7 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
       <div className="overflow-x-auto w-full">
         <table className="w-full text-left border-collapse" style={{ minWidth: '950px' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #e6ebf2', color: '#5e789b', font: '13px monospace', letterSpacing: '.6px' }}>
+            <tr style={{ borderBottom: '1px solid #e6ebf2', color: '#5e789b', font: "500 13px 'Poppins', sans-serif", letterSpacing: '.6px' }}>
               <th 
                 style={{ padding: '16px 14px', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}
                 onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
@@ -1058,7 +1090,7 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     placeholder="Type your message..."
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-sm"
+                    className="flex-1 min-w-0 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-sm"
                   />
                   <button
                     onClick={handleSendMessage}
