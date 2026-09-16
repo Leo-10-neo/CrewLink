@@ -643,34 +643,50 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
     cancelRecording();
   };
 
-  const handleSendMessage = async () => {
-    if (!message.trim() && !selectedImage && !audioBase64) return;
+  const handleSendMessage = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const textToSend = message.trim();
+    const imageToSend = selectedImage;
+    const audioToSend = audioBase64;
+    if (!textToSend && !imageToSend && !audioToSend) return;
 
+    // Immediately clear input box so it empties instantly!
+    setMessage('');
+    setSelectedImage(null);
+    setImagePreview(null);
+    clearRecording();
     setSendingMessage(true);
-    try {
-      const newMessage = {
-        sender: user?._id || 'admin',
-        senderName: user?.fullName || user?.username || 'Admin',
-        senderRole: 'admin',
-        text: message || '',
-        image: selectedImage || '',
-        audio: audioBase64 || '',
-        timestamp: new Date().toISOString()
-      };
 
+    const newMessage = {
+      sender: user?._id || 'admin',
+      senderName: user?.fullName || user?.username || 'Admin',
+      senderRole: 'admin',
+      text: textToSend,
+      image: imageToSend || '',
+      audio: audioToSend || '',
+      timestamp: new Date().toISOString()
+    };
+
+    // Optimistically show message bubble immediately!
+    setChatMessages(prev => [...prev, newMessage]);
+    setTimeout(() => {
+      if (chatMessagesEndRef.current) {
+        chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 50);
+
+    try {
       const res = await axios.post(
         `${API_URL}/volunteer/admin/tasks/${selectedTaskForChat._id}/chat`,
         { message: newMessage },
         config
       );
 
-      setChatMessages(res.data.chatMessages || []);
-      setMessage('');
-      setSelectedImage(null);
-      setImagePreview(null);
-      clearRecording();
+      if (res.data?.chatMessages) {
+        setChatMessages(res.data.chatMessages);
+      }
       
-      // Auto-scroll to bottom after sending message
+      // Auto-scroll to bottom
       setTimeout(() => {
         if (chatMessagesEndRef.current) {
           chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -678,6 +694,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
       }, 100);
     } catch (error) {
       console.error('Error sending message:', error);
+      // Restore text if send failed
+      setMessage(textToSend);
     } finally {
       setSendingMessage(false);
     }
@@ -1169,7 +1187,10 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
             </div>
             <div className="mt-4">
               {/* Quick Replies Bar */}
-              <div className="mb-3 pb-2 border-b border-gray-100 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+              <div 
+                className="mb-3 pb-2 border-b border-gray-100 flex items-center gap-1.5 overflow-x-auto [&::-webkit-scrollbar]:hidden"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 shrink-0 mr-1 flex items-center gap-1">
                   <Sparkles size={11} className="text-indigo-500" /> Quick Replies:
                 </span>
@@ -1304,7 +1325,12 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
                     type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage(e);
+                      }
+                    }}
                     placeholder="Type your message..."
                     className="flex-1 min-w-0 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none text-sm"
                   />

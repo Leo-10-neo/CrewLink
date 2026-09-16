@@ -1289,7 +1289,10 @@ const VolunteerDashboard = () => {
               className="w-full bg-white/80 border border-gray-200 text-sm text-gray-800 rounded-xl py-2 pl-10 pr-4 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
             />
           </div>
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+          <div 
+            className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
             {categories.map(cat => (
               <button
                 key={cat}

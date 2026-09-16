@@ -116,32 +116,48 @@ const EventSupport = () => {
     }
   }, [location.state]);
 
-  const handleSendMessage = async () => {
-    if (!message.trim() && !selectedImage && !audioBase64) return;
+  const handleSendMessage = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const textToSend = message.trim();
+    const imageToSend = selectedImage;
+    const audioToSend = audioBase64;
+    if (!textToSend && !imageToSend && !audioToSend) return;
 
+    // Immediately clear inputs so the type box is emptied instantly!
+    setMessage('');
+    setSelectedImage(null);
+    setImagePreview(null);
+    clearRecording();
     setSendingMessage(true);
-    try {
-      const newMessage = {
-        sender: user._id,
-        senderName: user.fullName || user.username,
-        senderRole: user.role,
-        text: message || '',
-        image: selectedImage || '',
-        audio: audioBase64 || '',
-        timestamp: new Date().toISOString()
-      };
 
+    const newMessage = {
+      sender: user._id,
+      senderName: user.fullName || user.username,
+      senderRole: user.role,
+      text: textToSend,
+      image: imageToSend || '',
+      audio: audioToSend || '',
+      timestamp: new Date().toISOString()
+    };
+
+    // Optimistically show message bubble immediately!
+    setChatMessages((prev) => [...prev, newMessage]);
+    setTimeout(() => {
+      if (chatMessagesEndRef.current) {
+        chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 50);
+
+    try {
       const { data } = await axios.post(
         `${API}/volunteer/tasks/${taskId}/chat`,
         { message: newMessage },
         { headers }
       );
 
-      setChatMessages(data.chatMessages || []);
-      setMessage('');
-      setSelectedImage(null);
-      setImagePreview(null);
-      clearRecording();
+      if (data?.chatMessages) {
+        setChatMessages(data.chatMessages);
+      }
       
       // Auto-scroll to bottom after sending message
       setTimeout(() => {
@@ -151,6 +167,7 @@ const EventSupport = () => {
       }, 100);
     } catch (error) {
       console.error('Error sending message:', error);
+      setMessage(textToSend);
     } finally {
       setSendingMessage(false);
     }
@@ -410,7 +427,10 @@ const EventSupport = () => {
               {/* Message Input */}
               <div className="p-2.5 sm:p-3.5 border-t border-gray-100 bg-white min-w-0">
                 {/* Quick Replies Bar */}
-                <div className="mb-2.5 pb-2 border-b border-gray-50 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                <div 
+                  className="mb-2.5 pb-2 border-b border-gray-50 flex items-center gap-1.5 overflow-x-auto [&::-webkit-scrollbar]:hidden"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
                   <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 shrink-0 mr-1 flex items-center gap-1">
                     <Sparkles size={11} className="text-indigo-500" /> Quick Replies:
                   </span>
@@ -542,7 +562,12 @@ const EventSupport = () => {
                       type="text"
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage(e);
+                        }
+                      }}
                       placeholder="Type your message..."
                       className="flex-1 min-w-0 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none text-xs sm:text-sm bg-gray-50/50 focus:bg-white transition-colors"
                     />
