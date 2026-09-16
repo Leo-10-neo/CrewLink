@@ -55,3 +55,7 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Local database and binaries
+cloudflared.exe
+mongodb_data/
