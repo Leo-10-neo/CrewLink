@@ -1224,11 +1224,11 @@ const VolunteerDashboard = () => {
       {/* Main area */}
       <div className="flex-1 md:ml-[260px] ml-0 flex flex-col min-h-screen w-full max-w-full bg-transparent overflow-x-hidden">
         {/* Mobile Header (visible only on < md) */}
-        <header className="md:hidden sticky top-0 z-30 bg-[#0b132c] text-white px-4 py-3 flex items-center justify-between border-b border-slate-800 shadow-md">
+        <header className="md:hidden sticky top-0 z-30 glass-panel border-b border-gray-200/50 backdrop-blur-md px-4 py-3 flex items-center justify-between shadow-2xs">
           <div className="flex items-center space-x-2.5">
             <button 
               onClick={() => setMobileMenuOpen(true)} 
-              className="p-1.5 -ml-1 text-gray-300 hover:text-white rounded-lg hover:bg-white/10 focus:outline-none"
+              className="p-1.5 -ml-1 text-gray-700 hover:text-gray-900 rounded-lg hover:bg-gray-100/60 focus:outline-none"
               aria-label="Open menu"
             >
               <Menu size={22} />
@@ -1237,19 +1237,19 @@ const VolunteerDashboard = () => {
               <img 
                 src="/crewlink_logo_transparent.png" 
                 alt="CrewLink Logo" 
-                className="h-6 w-auto" 
+                className="h-7 w-auto drop-shadow-xs" 
               />
-              <span className="font-bold text-base tracking-tight">CrewLink</span>
+              <span className="font-bold text-lg text-accent tracking-tight">CrewLink</span>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-[#1c2744] text-purple-300 px-2.5 py-0.5 rounded-full border border-purple-500/30">
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full border border-purple-200">
               Volunteer
             </span>
             <div className="relative">
               <button 
                 onClick={() => setShowNotifications(!showNotifications)} 
-                className="p-1.5 text-gray-300 hover:text-white relative rounded-lg hover:bg-white/10"
+                className="p-1.5 text-gray-700 hover:text-gray-900 relative rounded-lg hover:bg-gray-100/60"
                 aria-label="Notifications"
               >
                 <Bell size={19} />
@@ -1382,19 +1382,19 @@ const VolunteerDashboard = () => {
       </div>
 
       {/* Mobile Bottom Navigation Bar for Volunteers */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-[#0b132c]/95 backdrop-blur-md border-t border-slate-800 flex items-center justify-around py-1 px-1 z-30 shadow-lg" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 6px)' }}>
+      <nav className="md:hidden fixed bottom-0 inset-x-0 glass-panel border-t border-gray-200/60 backdrop-blur-md flex items-center justify-around py-1.5 px-1 z-30 shadow-lg" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 6px)' }}>
         {navItems.map(({ id, label, icon: Icon }) => {
           const isActive = activeTab === id;
           return (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all flex-1 max-w-[72px] ${
-                isActive ? 'text-purple-400 font-bold scale-105' : 'text-gray-400 hover:text-gray-200'
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all flex-1 max-w-[72px] ${
+                isActive ? 'text-accent font-bold scale-105' : 'text-gray-500 hover:text-gray-800'
               }`}
             >
-              <div className={`p-1 rounded-lg ${isActive ? 'bg-purple-500/20' : ''}`}>
-                <Icon size={18} className={isActive ? 'text-purple-400' : 'text-gray-400'} />
+              <div className={`p-1 rounded-lg ${isActive ? 'bg-purple-100' : ''}`}>
+                <Icon size={18} className={isActive ? 'text-accent' : 'text-gray-500'} />
               </div>
               <span className="text-[10px] tracking-tight mt-0.5 truncate w-full text-center">
                 {label.replace('My ', '')}
