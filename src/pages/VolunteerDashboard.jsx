@@ -1172,18 +1172,12 @@ const VolunteerDashboard = () => {
       <div className={`fixed inset-y-0 left-0 z-50 w-[270px] bg-[#0b132c] text-gray-300 flex flex-col transform transition-transform duration-300 ease-in-out md:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Logo and close button */}
         <div className="px-6 py-6 flex items-center justify-between">
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
-            <svg width="38" height="28" viewBox="0 0 44 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="vRingGrad" x1="0" y1="0" x2="44" y2="30" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#ffffff"/>
-                  <stop offset="50%" stopColor="#c084fc"/>
-                  <stop offset="100%" stopColor="#8b5cf6"/>
-                </linearGradient>
-              </defs>
-              <circle cx="14" cy="15" r="11" stroke="#ffffff" strokeWidth="3.5" fill="none"/>
-              <circle cx="30" cy="15" r="11" stroke="url(#vRingGrad)" strokeWidth="3.5" fill="none"/>
-            </svg>
+          <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => navigate('/')}>
+            <img 
+              src="/crewlink_logo_transparent.png" 
+              alt="CrewLink Logo" 
+              className="h-8 w-auto transform group-hover:scale-105 transition-all duration-300 drop-shadow-md" 
+            />
             <span className="text-2xl font-bold text-white tracking-tight">CrewLink</span>
           </div>
           <button 
@@ -1240,10 +1234,11 @@ const VolunteerDashboard = () => {
               <Menu size={22} />
             </button>
             <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
-              <svg width="28" height="20" viewBox="0 0 44 30" fill="none">
-                <circle cx="14" cy="15" r="11" stroke="#ffffff" strokeWidth="3.5" fill="none"/>
-                <circle cx="30" cy="15" r="11" stroke="#8b5cf6" strokeWidth="3.5" fill="none"/>
-              </svg>
+              <img 
+                src="/crewlink_logo_transparent.png" 
+                alt="CrewLink Logo" 
+                className="h-6 w-auto" 
+              />
               <span className="font-bold text-base tracking-tight">CrewLink</span>
             </div>
           </div>
@@ -1469,10 +1464,11 @@ const VolunteerDashboard = () => {
 
                 {/* Brand Header */}
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <svg width="28" height="20" viewBox="0 0 44 30" fill="none">
-                    <circle cx="14" cy="15" r="11" stroke="#5b52f6" strokeWidth="3.5" fill="none"/>
-                    <circle cx="30" cy="15" r="11" stroke="#8b5cf6" strokeWidth="3.5" fill="none"/>
-                  </svg>
+                  <img 
+                    src="/crewlink_logo_transparent.png" 
+                    alt="CrewLink Logo" 
+                    className="h-6 w-auto" 
+                  />
                   <span className="text-xs tracking-[0.3em] font-bold text-gray-600 uppercase font-sans">CREWLINK VOLUNTEER NETWORK</span>
                 </div>
 

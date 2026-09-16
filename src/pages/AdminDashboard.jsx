@@ -1369,10 +1369,11 @@ const CertificatesView = ({ certificates, pendingVolunteers, onGenerate, token }
 
                 {/* Brand Header */}
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <svg width="28" height="20" viewBox="0 0 44 30" fill="none">
-                    <circle cx="14" cy="15" r="11" stroke="#5b52f6" strokeWidth="3.5" fill="none"/>
-                    <circle cx="30" cy="15" r="11" stroke="#8b5cf6" strokeWidth="3.5" fill="none"/>
-                  </svg>
+                  <img 
+                    src="/crewlink_logo_transparent.png" 
+                    alt="CrewLink Logo" 
+                    className="h-6 w-auto" 
+                  />
                   <span className="text-xs tracking-[0.3em] font-bold text-gray-600 uppercase font-sans">CREWLINK VOLUNTEER NETWORK</span>
                 </div>
 
