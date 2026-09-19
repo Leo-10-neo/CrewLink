@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Award, Bell, CalendarDays, Camera, Check, ClipboardCheck, Grid2X2, LogOut, Menu, Plus, Search, Sparkles, Trash2, UsersRound, X, Edit, MessageSquare, Image as ImageIcon, Download, Printer, Mic, Square, Send, ArrowUp, ArrowDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
@@ -18,7 +18,16 @@ export default function AdminDashboard() {
   const { user, token, logout } = useAuth();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState('overview');
+  const location = useLocation();
+  const [activeView, setActiveView] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') === 'tasks' || params.get('taskId') || sessionStorage.getItem('openChatForTask')) {
+        return 'tasks';
+      }
+    } catch (e) {}
+    return 'overview';
+  });
   const [events, setEvents] = useState([]);
   const [users, setUsers] = useState([]);
   const [certificates, setCertificates] = useState([]);
@@ -35,6 +44,14 @@ export default function AdminDashboard() {
   const [toast, setToast] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openChatTaskId, setOpenChatTaskId] = useState(null);
+  const [activeChatTaskId, setActiveChatTaskId] = useState(null);
+  const activeChatTaskIdRef = useRef(null);
+
+  const handleChatActiveChange = (taskId) => {
+    setActiveChatTaskId(taskId);
+    activeChatTaskIdRef.current = taskId;
+  };
+
   const config = { headers: { Authorization: `Bearer ${token}` } };
 
   const fetchData = async () => {
@@ -71,14 +88,39 @@ export default function AdminDashboard() {
             
             if (latestNew && (!latestOld || latestNew._id !== latestOld._id)) {
               if (!latestNew.read) {
-                showNotification({
-                  title: 'CrewLink • Admin',
-                  message: latestNew.message,
-                  time: 'now',
-                  onClick: () => {
-                    handleNotificationClick(latestNew);
+                const isChatMessage = latestNew.type === 'chat_message' || 
+                  (latestNew.message && (
+                    latestNew.message.toLowerCase().includes('message from') ||
+                    latestNew.message.toLowerCase().includes('voice note from')
+                  ));
+
+                const currentChatTask = activeChatTaskIdRef.current;
+                const notifTaskId = latestNew.taskId || (latestNew.link && latestNew.link.match(/taskId=([a-zA-Z0-9]+)/)?.[1]);
+
+                // While messaging: if any chat modal is open and this is a chat message,
+                // or if it matches the current open chat, DO NOT display the popup notification!
+                const isCurrentlyMessaging = Boolean(
+                  currentChatTask && (
+                    isChatMessage || 
+                    (notifTaskId && String(currentChatTask) === String(notifTaskId))
+                  )
+                );
+
+                if (!isCurrentlyMessaging) {
+                  showNotification({
+                    title: 'CrewLink • Admin',
+                    message: latestNew.message,
+                    time: 'now',
+                    onClick: () => {
+                      handleNotificationClick(latestNew);
+                    }
+                  });
+                } else {
+                  // Admin is actively viewing/participating in this chat! Mark notification as read so it doesn't leave an unread badge
+                  if (latestNew._id) {
+                    axios.put(`${API_URL}/notifications/${latestNew._id}/read`, {}, config).catch(() => {});
                   }
-                });
+                }
                 fetchData(); // Auto-refresh dashboard counts and data
               }
             }
@@ -307,7 +349,7 @@ export default function AdminDashboard() {
         {activeView === 'overview' && <Overview events={events} users={users} pending={pending.length} onVolunteersClick={() => setActiveView('volunteers')} />}
         {activeView === 'events' && <EventsView events={visibleEvents} formatDate={formatDate} onEdit={editEvent} onDelete={deleteEvent} onStatus={updateStatus} />}
         {activeView === 'volunteers' && <VolunteersView volunteers={volunteers} events={events} onAssign={assignVolunteer} onUpdateStatus={updateVolunteerStatus} onViewProfile={setViewingProfile} onDelete={deleteVolunteer} />}
-        {activeView === 'tasks' && <TasksView token={token} volunteers={volunteers} events={events} refreshTrigger={notifications[0]?._id} user={user} initialOpenChatTaskId={openChatTaskId} onChatOpened={() => setOpenChatTaskId(null)} />}
+        {activeView === 'tasks' && <TasksView token={token} volunteers={volunteers} events={events} refreshTrigger={notifications[0]?._id} user={user} initialOpenChatTaskId={openChatTaskId} onChatOpened={() => setOpenChatTaskId(null)} onChatActiveChange={handleChatActiveChange} />}
         {activeView === 'certificates' && <CertificatesView certificates={certificates} pendingVolunteers={pendingVolunteers} onGenerate={fetchData} token={token} />}
       </section>
     </main>
@@ -494,7 +536,7 @@ const VolunteersView = ({ volunteers, events, onAssign, onUpdateStatus, onViewPr
     </div>
   );
 };
-const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpenChatTaskId, onChatOpened }) => {
+const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpenChatTaskId, onChatOpened, onChatActiveChange }) => {
   const [tasks, setTasks] = useState([]);
   const [applications, setApplications] = useState([]);
   const [loadingApplications, setLoadingApplications] = useState(false);
@@ -534,6 +576,19 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
       } catch (e) {}
     }
   };
+
+  // Sync active chat task with parent AdminDashboard to suppress notifications while messaging
+  useEffect(() => {
+    if (onChatActiveChange) {
+      onChatActiveChange(showChatModal && selectedTaskForChat ? (selectedTaskForChat._id || selectedTaskForChat) : null);
+    }
+  }, [showChatModal, selectedTaskForChat?._id]);
+
+  useEffect(() => {
+    return () => {
+      if (onChatActiveChange) onChatActiveChange(null);
+    };
+  }, []);
 
   const getTaskTime = (t) => {
     const d = t?.startTime || t?.dueDate || t?.event?.date;
@@ -796,6 +851,7 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
     setSelectedImage(null);
     setImagePreview(null);
     cancelRecording();
+    if (onChatActiveChange) onChatActiveChange(null);
   };
 
   const handleSendMessage = async (e) => {
