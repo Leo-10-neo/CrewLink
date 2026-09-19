@@ -156,11 +156,7 @@ const VolunteerDashboard = () => {
                 message: latestNew.message,
                 time: 'now',
                 onClick: () => {
-                  if (latestNew.taskId) {
-                    navigate(`/volunteer/event-support/${latestNew.taskId}`, { state: { fromNotification: true } });
-                  } else {
-                    setShowNotifications(true);
-                  }
+                  handleNotificationClick(latestNew);
                 }
               });
               // Instantly refresh all tabs so volunteer sees approved/rejected status, new tasks, attendance without refreshing
@@ -241,13 +237,48 @@ const VolunteerDashboard = () => {
   };
 
   const handleNotificationClick = (notification) => {
-    if (!notification.read) {
+    if (!notification) return;
+    if (!notification.read && notification._id) {
       markNotificationAsRead(notification._id);
     }
-    if (notification.link) {
-      // Navigate to the chat with state to indicate it came from notification
+    setShowNotifications(false);
+
+    // 1. If it has a taskId or chat link, open event support chat directly!
+    if (notification.taskId) {
+      navigate(`/volunteer/event-support/${notification.taskId}`, { state: { fromNotification: true } });
+      return;
+    }
+    if (notification.link && notification.link.includes('/volunteer/event-support/')) {
       navigate(notification.link, { state: { fromNotification: true } });
-      setShowNotifications(false);
+      return;
+    }
+
+    // 2. Task applications / approvals
+    if (notification.type === 'task_applied' || notification.type === 'task_approved' || 
+        (notification.message && notification.message.toLowerCase().includes('application'))) {
+      setActiveTab('events');
+      return;
+    }
+
+    // 3. Completed tasks / reviews
+    if (notification.type === 'task_completed' || 
+        (notification.message && notification.message.toLowerCase().includes('task'))) {
+      setActiveTab('tasks');
+      return;
+    }
+
+    // 4. Certificates
+    if (notification.type === 'certificate_pending' || 
+        (notification.message && notification.message.toLowerCase().includes('certificate'))) {
+      setActiveTab('certificates');
+      return;
+    }
+
+    // Fallback
+    if (notification.link) {
+      navigate(notification.link, { state: { fromNotification: true } });
+    } else {
+      setActiveTab('events');
     }
   };
 

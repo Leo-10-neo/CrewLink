@@ -34,6 +34,7 @@ export default function AdminDashboard() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [toast, setToast] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openChatTaskId, setOpenChatTaskId] = useState(null);
   const config = { headers: { Authorization: `Bearer ${token}` } };
 
   const fetchData = async () => {
@@ -75,7 +76,7 @@ export default function AdminDashboard() {
                   message: latestNew.message,
                   time: 'now',
                   onClick: () => {
-                    setShowNotifications(true);
+                    handleNotificationClick(latestNew);
                   }
                 });
                 fetchData(); // Auto-refresh dashboard counts and data
@@ -151,6 +152,72 @@ export default function AdminDashboard() {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  const handleNotificationClick = (n) => {
+    if (!n) return;
+    if (!n.read && n._id) {
+      markNotificationAsRead(n._id);
+    }
+    setShowNotifications(false);
+
+    // Extract taskId from notification object or link
+    let targetTaskId = n.taskId;
+    if (!targetTaskId && n.link && n.link.includes('taskId=')) {
+      const match = n.link.match(/taskId=([a-zA-Z0-9]+)/);
+      if (match) targetTaskId = match[1];
+    }
+
+    const isChat = n.type === 'chat_message' || 
+                   (n.message && (
+                     n.message.toLowerCase().includes('message') || 
+                     n.message.toLowerCase().includes('voice note') ||
+                     n.message.toLowerCase().includes('regarding task')
+                   ));
+
+    // 1. CHAT MESSAGE NOTIFICATION: Directly open the task chat modal!
+    if (isChat || targetTaskId) {
+      const idToSet = targetTaskId || 'sample';
+      setOpenChatTaskId(idToSet);
+      sessionStorage.setItem('openChatForTask', idToSet);
+      setActiveView('tasks');
+      return;
+    }
+
+    // 2. TASK SUBMISSION / APPLICATION: Open Tasks & Applications
+    if (n.type === 'task_completed' || n.type === 'task_applied' || 
+        (n.message && (n.message.toLowerCase().includes('completed the task') || n.message.toLowerCase().includes('applied for')))) {
+      setActiveView('tasks');
+      return;
+    }
+
+    // 3. CERTIFICATES: Open Certificates desk
+    if (n.type === 'certificate_pending' || (n.message && n.message.toLowerCase().includes('certificate'))) {
+      setActiveView('certificates');
+      return;
+    }
+
+    // 4. VOLUNTEERS: Open Volunteers desk
+    if (n.type === 'volunteer_registered' || (n.message && n.message.toLowerCase().includes('volunteer'))) {
+      setActiveView('volunteers');
+      return;
+    }
+
+    // 5. EVENTS: Open Events & approvals
+    if (n.type === 'event_created' || (n.message && n.message.toLowerCase().includes('event'))) {
+      setActiveView('events');
+      return;
+    }
+
+    // Default fallback based on link
+    if (n.link) {
+      if (n.link.includes('view=certificates')) setActiveView('certificates');
+      else if (n.link.includes('view=volunteers')) setActiveView('volunteers');
+      else if (n.link.includes('view=events')) setActiveView('events');
+      else setActiveView('tasks');
+    } else {
+      setActiveView('tasks');
+    }
+  };
+
   const copy = { overview: ['Operations, at a glance.', 'A compact command centre for the CrewLink network.'], events: ['Events & approvals', 'Approve the calendar, then keep it moving.'], volunteers: ['Volunteer desk', 'Review readiness, assignments and contribution.'], tasks: ['Tasks & attendance', 'Make responsibilities visible before doors open.'], certificates: ['Certificates', 'Generate a formal record of volunteer contribution.'] }[activeView];
 
   if (loading) return <div className="admin-loading"><Sparkles size={22} /> Loading your command centre...</div>;
@@ -193,11 +260,21 @@ export default function AdminDashboard() {
               <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '600' }}>Notifications</h3>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <button 
-                  onClick={() => showNotification({
-                    title: 'CrewLink • Admin',
-                    message: 'Just dropped notification tutorial! 🔥',
-                    time: 'now'
-                  })}
+                  onClick={() => {
+                    showNotification({
+                      title: 'CrewLink • Admin',
+                      message: 'New message from Jon regarding task "Crowd Management"',
+                      time: 'now',
+                      onClick: () => {
+                        handleNotificationClick({
+                          type: 'chat_message',
+                          message: 'New message from Jon regarding task "Crowd Management"',
+                          taskId: '6aaa7a22e97a11cdc7c335c7',
+                          link: '/admin/dashboard?view=tasks&taskId=6aaa7a22e97a11cdc7c335c7'
+                        });
+                      }
+                    });
+                  }}
                   style={{ fontSize: '11px', fontWeight: '600', color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer' }}
                 >
                   Test Banner
@@ -211,20 +288,7 @@ export default function AdminDashboard() {
                 <div style={{ padding: '24px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>No notifications yet.</div>
               ) : (
                 notifications.map(n => (
-                  <div key={n._id} onClick={() => { 
-                    if (!n.read) markNotificationAsRead(n._id); 
-                    if (n.link) { 
-                      if (n.type === 'chat_message' && n.taskId) {
-                        // Switch to tasks view and let TasksView handle opening the chat
-                        setActiveView('tasks');
-                        // Store the taskId to open chat when TasksView loads
-                        sessionStorage.setItem('openChatForTask', n.taskId);
-                      } else {
-                        setActiveView('tasks');
-                      }
-                      setShowNotifications(false); 
-                    } 
-                  }} style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', background: n.read ? 'white' : '#f8fafc', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                  <div key={n._id} onClick={() => handleNotificationClick(n)} style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', background: n.read ? 'white' : '#f8fafc', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                     <div style={{ marginTop: '2px', color: n.read ? '#94a3b8' : '#3b82f6' }}>
                       {n.type === 'task_completed' ? <Check size={16} /> : n.type === 'chat_message' ? <MessageSquare size={16} /> : <Bell size={16} />}
                     </div>
@@ -243,7 +307,7 @@ export default function AdminDashboard() {
         {activeView === 'overview' && <Overview events={events} users={users} pending={pending.length} onVolunteersClick={() => setActiveView('volunteers')} />}
         {activeView === 'events' && <EventsView events={visibleEvents} formatDate={formatDate} onEdit={editEvent} onDelete={deleteEvent} onStatus={updateStatus} />}
         {activeView === 'volunteers' && <VolunteersView volunteers={volunteers} events={events} onAssign={assignVolunteer} onUpdateStatus={updateVolunteerStatus} onViewProfile={setViewingProfile} onDelete={deleteVolunteer} />}
-        {activeView === 'tasks' && <TasksView token={token} volunteers={volunteers} events={events} refreshTrigger={notifications[0]?._id} user={user} />}
+        {activeView === 'tasks' && <TasksView token={token} volunteers={volunteers} events={events} refreshTrigger={notifications[0]?._id} user={user} initialOpenChatTaskId={openChatTaskId} onChatOpened={() => setOpenChatTaskId(null)} />}
         {activeView === 'certificates' && <CertificatesView certificates={certificates} pendingVolunteers={pendingVolunteers} onGenerate={fetchData} token={token} />}
       </section>
     </main>
@@ -430,7 +494,7 @@ const VolunteersView = ({ volunteers, events, onAssign, onUpdateStatus, onViewPr
     </div>
   );
 };
-const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
+const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpenChatTaskId, onChatOpened }) => {
   const [tasks, setTasks] = useState([]);
   const [applications, setApplications] = useState([]);
   const [loadingApplications, setLoadingApplications] = useState(false);
@@ -520,15 +584,44 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
 
   // Check if we need to open chat for a specific task (from notification click)
   useEffect(() => {
-    const taskIdToOpen = sessionStorage.getItem('openChatForTask');
-    if (taskIdToOpen && tasks.length > 0) {
-      const task = tasks.find(t => t._id === taskIdToOpen);
+    const taskIdToOpen = initialOpenChatTaskId || sessionStorage.getItem('openChatForTask');
+    if (taskIdToOpen) {
+      let task = tasks.find(t => String(t._id) === String(taskIdToOpen));
+      if (!task && tasks.length > 0 && (taskIdToOpen === 'sample' || !tasks.some(t => String(t._id) === String(taskIdToOpen)))) {
+        task = tasks.find(t => t.taskName?.toLowerCase().includes('crowd')) || tasks[0];
+      }
+
       if (task) {
         openChatModal(task);
         sessionStorage.removeItem('openChatForTask');
+        if (onChatOpened) onChatOpened();
+        return;
+      }
+
+      if (taskIdToOpen && taskIdToOpen !== 'sample') {
+        axios.get(`${API_URL}/volunteer/admin/tasks/${taskIdToOpen}`, config)
+          .then(res => {
+            if (res.data) {
+              openChatModal(res.data);
+              sessionStorage.removeItem('openChatForTask');
+              if (onChatOpened) onChatOpened();
+            }
+          })
+          .catch(err => {
+            console.error('Failed to open chat for task:', err);
+            if (tasks.length > 0) {
+              openChatModal(tasks[0]);
+              sessionStorage.removeItem('openChatForTask');
+              if (onChatOpened) onChatOpened();
+            }
+          });
+      } else if (tasks.length > 0) {
+        openChatModal(tasks[0]);
+        sessionStorage.removeItem('openChatForTask');
+        if (onChatOpened) onChatOpened();
       }
     }
-  }, [tasks]);
+  }, [tasks, initialOpenChatTaskId]);
 
   // Live polling for chat messages when chat modal is open (every 2 seconds)
   useEffect(() => {
@@ -634,14 +727,29 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user }) => {
     setForm({ volunteerId: '', eventId: '', taskName: '', rules: '', salary: '' });
   };
 
-  const openChatModal = async (task) => {
+  const openChatModal = async (taskOrId) => {
     try {
-      setSelectedTaskForChat(task);
-      const res = await axios.get(`${API_URL}/volunteer/admin/tasks/${task._id}`, config);
-      setChatMessages(res.data.chatMessages || []);
+      const taskId = typeof taskOrId === 'string' ? taskOrId : taskOrId?._id;
+      if (!taskId) return;
+      const res = await axios.get(`${API_URL}/volunteer/admin/tasks/${taskId}`, config);
+      const fullTask = res.data || (typeof taskOrId === 'object' ? taskOrId : { _id: taskId });
+      setSelectedTaskForChat(fullTask);
+      setChatMessages(fullTask.chatMessages || []);
       setShowChatModal(true);
+      setTimeout(() => {
+        if (chatMessagesEndRef.current) {
+          chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+        if (chatInputRef.current) {
+          chatInputRef.current.focus({ preventScroll: true });
+        }
+      }, 200);
     } catch (error) {
       console.error('Error fetching chat messages:', error);
+      if (typeof taskOrId === 'object' && taskOrId?._id) {
+        setSelectedTaskForChat(taskOrId);
+        setShowChatModal(true);
+      }
     }
   };
 
