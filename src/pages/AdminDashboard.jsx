@@ -50,6 +50,9 @@ export default function AdminDashboard() {
   const handleChatActiveChange = (taskId) => {
     setActiveChatTaskId(taskId);
     activeChatTaskIdRef.current = taskId;
+    if (typeof window !== 'undefined') {
+      window.__ACTIVE_CHAT_TASK_ID__ = taskId;
+    }
   };
 
   const config = { headers: { Authorization: `Bearer ${token}` } };

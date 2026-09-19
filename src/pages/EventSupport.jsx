@@ -57,6 +57,17 @@ const EventSupport = () => {
   };
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.__ACTIVE_CHAT_TASK_ID__ = taskId;
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.__ACTIVE_CHAT_TASK_ID__ = null;
+      }
+    };
+  }, [taskId]);
+
+  useEffect(() => {
     // Prevent any horizontal scroll on mount
     window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
 

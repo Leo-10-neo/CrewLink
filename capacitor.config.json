@@ -11,6 +11,10 @@
       "overlaysWebView": false,
       "style": "LIGHT",
       "backgroundColor": "#ffffff"
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_crewlink",
+      "iconColor": "#7c3aed"
     }
   }
 }

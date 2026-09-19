@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
+import axios from 'axios';
 import NotificationBanner from '../components/NotificationBanner';
+import { API_URL } from '../services/api';
 
 const NotificationContext = createContext(null);
 
@@ -50,6 +54,79 @@ export const NotificationProvider = ({ children }) => {
   const [isExiting, setIsExiting] = useState(false);
   const timerRef = useRef(null);
   const exitTimerRef = useRef(null);
+  const seenNotificationIdsRef = useRef(new Set());
+
+  // 1. Initialize Native Android Notification Channel and Web Permissions
+  useEffect(() => {
+    const setupOutsideNotifications = async () => {
+      // Android Native System Notifications via Capacitor
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const perm = await LocalNotifications.checkPermissions();
+          if (perm.display !== 'granted') {
+            await LocalNotifications.requestPermissions();
+          }
+
+          // Create High-Priority Notification Channel for Android
+          await LocalNotifications.createChannel({
+            id: 'crewlink_alerts',
+            name: 'CrewLink Alerts',
+            description: 'Real-time task messages and event updates',
+            importance: 5, // High: Drops down heads-up notification outside the app
+            visibility: 1, // Visible on lockscreen
+            sound: 'beep.wav',
+            vibration: true,
+            lights: true,
+            lightColor: '#7c3aed'
+          });
+
+          // Handle user tapping the notification in Android notification bar outside the app
+          LocalNotifications.addListener('localNotificationActionPerformed', (notificationAction) => {
+            const extra = notificationAction?.notification?.extra;
+            if (extra) {
+              if (extra.taskId) {
+                try {
+                  const userStr = localStorage.getItem('user');
+                  const user = userStr ? JSON.parse(userStr) : {};
+                  if (user.role === 'admin') {
+                    window.location.href = `/admin/dashboard?view=tasks&taskId=${extra.taskId}`;
+                  } else {
+                    window.location.href = `/volunteer/event-support/${extra.taskId}`;
+                  }
+                } catch (e) {
+                  if (extra.link) window.location.href = extra.link;
+                }
+              } else if (extra.link) {
+                window.location.href = extra.link;
+              }
+            }
+          });
+        } catch (e) {
+          console.log('Native notification setup error:', e);
+        }
+      } else if (typeof window !== 'undefined' && 'Notification' in window) {
+        // Desktop / Mobile Browser System Notifications
+        if (Notification.permission === 'default') {
+          Notification.requestPermission().catch(() => {});
+        }
+      }
+    };
+
+    setupOutsideNotifications();
+
+    // Also ask for browser notification permission on first user click if not granted yet
+    const handleFirstInteraction = () => {
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+      }
+      window.removeEventListener('click', handleFirstInteraction);
+    };
+    window.addEventListener('click', handleFirstInteraction);
+
+    return () => {
+      window.removeEventListener('click', handleFirstInteraction);
+    };
+  }, []);
 
   const hideNotification = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -63,13 +140,92 @@ export const NotificationProvider = ({ children }) => {
   const showNotification = useCallback((data) => {
     if (!data || (!data.message && !data.title)) return;
 
+    // Deduplication check
+    if (data.id) {
+      if (seenNotificationIdsRef.current.has(data.id)) return;
+      seenNotificationIdsRef.current.add(data.id);
+    }
+
+    // Check if suppressed because actively messaging in this task
+    const activeChatTaskId = typeof window !== 'undefined' ? window.__ACTIVE_CHAT_TASK_ID__ : null;
+    const notifTaskId = data.taskId || (data.link && data.link.match(/taskId=([a-zA-Z0-9]+)/)?.[1]);
+    const isMessagingThisTask = Boolean(
+      activeChatTaskId && (
+        !notifTaskId ||
+        String(activeChatTaskId) === String(notifTaskId) ||
+        (data.message && data.message.toLowerCase().includes(String(activeChatTaskId).toLowerCase()))
+      )
+    );
+
+    if (isMessagingThisTask) {
+      return;
+    }
+
+    const title = data.title || 'CrewLink';
+    const message = data.message || '';
+
+    // ==========================================
+    // 1. OUTSIDE THE APP: Native Android Notification
+    // ==========================================
+    if (Capacitor.isNativePlatform()) {
+      try {
+        LocalNotifications.schedule({
+          notifications: [
+            {
+              id: Math.floor(Math.random() * 2147483640) + 1,
+              title,
+              body: message,
+              channelId: 'crewlink_alerts',
+              smallIcon: 'ic_stat_crewlink',
+              iconColor: '#7c3aed',
+              extra: {
+                taskId: notifTaskId || null,
+                link: data.link || null,
+                type: data.type || null
+              }
+            }
+          ]
+        }).catch(err => console.log('LocalNotifications schedule error:', err));
+      } catch (err) {
+        console.log('Local notification error:', err);
+      }
+    }
+
+    // ==========================================
+    // 2. OUTSIDE THE APP: Web Browser System Notification
+    // ==========================================
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        try {
+          const sysNotif = new Notification(title, {
+            body: message,
+            icon: '/crewlink_app_icon_badge.png',
+            badge: '/crewlink_app_icon_badge.png',
+            tag: String(data.id || Date.now()),
+            renotify: true
+          });
+          sysNotif.onclick = () => {
+            window.focus();
+            if (data.onClick) data.onClick();
+            else if (data.link) window.location.href = data.link;
+            sysNotif.close();
+          };
+        } catch (_) {}
+      } else if (Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+      }
+    }
+
+    // ==========================================
+    // 3. INSIDE THE APP: In-App Popup Banner
+    // ==========================================
     if (timerRef.current) clearTimeout(timerRef.current);
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
 
     const newNotification = {
-      id: Date.now() + Math.random(),
-      title: data.title || 'CrewLink',
-      message: data.message || '',
+      id: data.id || (Date.now() + Math.random()),
+      title,
+      message,
       time: data.time || 'now',
       type: data.type || 'info',
       icon: data.icon || null,
@@ -99,6 +255,83 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [hideNotification]);
 
+  // 4. Global polling for notifications so notifications work outside dashboards & outside the app
+  useEffect(() => {
+    let intervalId = null;
+    let lastSeenId = null;
+    let initialized = false;
+
+    const pollGlobalNotifications = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const userStr = localStorage.getItem('user');
+        if (!token || !userStr) return;
+
+        const user = JSON.parse(userStr);
+        const endpoint = user.role === 'admin' ? `${API_URL}/notifications/admin` : `${API_URL}/notifications`;
+        const res = await axios.get(endpoint, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const list = res.data || [];
+        if (list.length === 0) return;
+
+        const latest = list[0];
+        if (!initialized) {
+          lastSeenId = latest._id;
+          initialized = true;
+          return;
+        }
+
+        if (latest && latest._id !== lastSeenId) {
+          lastSeenId = latest._id;
+          if (!latest.read) {
+            const notifTaskId = latest.taskId || (latest.link && latest.link.match(/taskId=([a-zA-Z0-9]+)/)?.[1]);
+            const isFromAdmin = latest.type === 'chat_message' || (latest.message && latest.message.toLowerCase().includes('admin'));
+            const title = user.role === 'admin' ? 'CrewLink • Admin' : (isFromAdmin ? 'CrewLink • Admin' : 'CrewLink');
+
+            let clickAction = null;
+            if (notifTaskId) {
+              clickAction = () => {
+                if (user.role === 'admin') {
+                  window.location.href = `/admin/dashboard?view=tasks&taskId=${notifTaskId}`;
+                } else {
+                  window.location.href = `/volunteer/event-support/${notifTaskId}`;
+                }
+              };
+            } else if (latest.link) {
+              clickAction = () => { window.location.href = latest.link; };
+            }
+
+            showNotification({
+              id: latest._id,
+              title,
+              message: latest.message,
+              taskId: notifTaskId,
+              link: latest.link,
+              onClick: clickAction
+            });
+          }
+        }
+      } catch (e) {}
+    };
+
+    pollGlobalNotifications();
+    intervalId = setInterval(pollGlobalNotifications, 2500);
+
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        pollGlobalNotifications();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [showNotification]);
+
   // Clean up on unmount
   useEffect(() => {
     return () => {
@@ -124,7 +357,6 @@ export const NotificationProvider = ({ children }) => {
 export const useNotification = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    // Return safe fallback so it never crashes if used outside provider
     return {
       showNotification: (opts) => console.log('Notification:', opts),
       hideNotification: () => {},
