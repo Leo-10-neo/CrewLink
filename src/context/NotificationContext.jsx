@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useRef, useCallback, useEff
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import axios from 'axios';
-import { API_URL } from '../services/api';
+import { API_URL, getApiBase } from '../services/api';
 
 const NotificationContext = createContext(null);
 
@@ -153,8 +153,74 @@ export const NotificationProvider = ({ children }) => {
     };
     window.addEventListener('click', handleFirstInteraction);
 
+    // Check if app was launched via notification click from background service
+    if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) {
+      try {
+        const syncPlugin = Capacitor.Plugins?.CrewLinkSync;
+        if (syncPlugin) {
+          syncPlugin.getInitialTask().then((res) => {
+            if (res && res.taskId) {
+              sessionStorage.setItem('openChatForTask', res.taskId);
+              localStorage.setItem('openChatForTask', res.taskId);
+              window.dispatchEvent(new CustomEvent('crewlink:openChat', { detail: { taskId: res.taskId } }));
+            }
+          }).catch(() => {});
+        }
+      } catch (_) {}
+    }
+
     return () => {
       window.removeEventListener('click', handleFirstInteraction);
+    };
+  }, []);
+
+  // Keep native Android Background Sync Service alive and updated with current auth token
+  useEffect(() => {
+    const syncNativeService = () => {
+      if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) {
+        try {
+          const token = localStorage.getItem('token');
+          const userStr = localStorage.getItem('user');
+          const user = userStr ? JSON.parse(userStr) : null;
+          const syncPlugin = Capacitor.Plugins?.CrewLinkSync;
+
+          if (syncPlugin) {
+            if (token && user) {
+              syncPlugin.syncUser({
+                token,
+                role: user.role || 'volunteer',
+                serverUrl: getApiBase()
+              }).catch(() => {});
+            } else {
+              syncPlugin.clearUser().catch(() => {});
+            }
+          }
+        } catch (e) {
+          console.log('Error syncing native service:', e);
+        }
+      }
+    };
+
+    syncNativeService();
+
+    const handleStorageChange = () => {
+      syncNativeService();
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    const onVisibilityChange = () => {
+      const isForeground = !document.hidden;
+      if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) {
+        try {
+          Capacitor.Plugins?.CrewLinkSync?.setAppForeground({ isForeground }).catch(() => {});
+        } catch (_) {}
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);
 
