@@ -43,9 +43,52 @@ export default function AdminDashboard() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [toast, setToast] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [openChatTaskId, setOpenChatTaskId] = useState(null);
+  const [openChatTaskId, setOpenChatTaskId] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return (
+        params.get('taskId') ||
+        sessionStorage.getItem('openChatForTask') ||
+        localStorage.getItem('openChatForTask') ||
+        null
+      );
+    } catch (e) {
+      return null;
+    }
+  });
   const [activeChatTaskId, setActiveChatTaskId] = useState(null);
   const activeChatTaskIdRef = useRef(null);
+
+  // Listen for real-time notification clicks and custom openChat events
+  useEffect(() => {
+    const handleOpenChatEvent = (e) => {
+      const targetId = e.detail?.taskId;
+      if (targetId) {
+        setActiveView('tasks');
+        setOpenChatTaskId(targetId);
+      }
+    };
+    window.addEventListener('crewlink:openChat', handleOpenChatEvent);
+    return () => window.removeEventListener('crewlink:openChat', handleOpenChatEvent);
+  }, []);
+
+  // Sync with URL query parameters when navigating
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      const urlTaskId = params.get('taskId');
+      const urlView = params.get('view');
+      const storedTaskId = sessionStorage.getItem('openChatForTask') || localStorage.getItem('openChatForTask');
+      const targetId = urlTaskId || storedTaskId;
+
+      if (targetId) {
+        setActiveView('tasks');
+        setOpenChatTaskId(targetId);
+      } else if (urlView) {
+        setActiveView(urlView);
+      }
+    } catch (e) {}
+  }, [location.search]);
 
   const handleChatActiveChange = (taskId) => {
     setActiveChatTaskId(taskId);
@@ -651,7 +694,7 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
 
   // Check if we need to open chat for a specific task (from notification click)
   useEffect(() => {
-    const taskIdToOpen = initialOpenChatTaskId || sessionStorage.getItem('openChatForTask');
+    const taskIdToOpen = initialOpenChatTaskId || sessionStorage.getItem('openChatForTask') || localStorage.getItem('openChatForTask');
     if (taskIdToOpen) {
       let task = tasks.find(t => String(t._id) === String(taskIdToOpen));
       if (!task && tasks.length > 0 && (taskIdToOpen === 'sample' || !tasks.some(t => String(t._id) === String(taskIdToOpen)))) {
@@ -661,6 +704,7 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
       if (task) {
         openChatModal(task);
         sessionStorage.removeItem('openChatForTask');
+        localStorage.removeItem('openChatForTask');
         if (onChatOpened) onChatOpened();
         return;
       }
@@ -671,6 +715,7 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
             if (res.data) {
               openChatModal(res.data);
               sessionStorage.removeItem('openChatForTask');
+              localStorage.removeItem('openChatForTask');
               if (onChatOpened) onChatOpened();
             }
           })
@@ -679,12 +724,14 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
             if (tasks.length > 0) {
               openChatModal(tasks[0]);
               sessionStorage.removeItem('openChatForTask');
+              localStorage.removeItem('openChatForTask');
               if (onChatOpened) onChatOpened();
             }
           });
       } else if (tasks.length > 0) {
         openChatModal(tasks[0]);
         sessionStorage.removeItem('openChatForTask');
+        localStorage.removeItem('openChatForTask');
         if (onChatOpened) onChatOpened();
       }
     }

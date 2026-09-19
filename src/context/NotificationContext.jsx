@@ -95,20 +95,39 @@ export const NotificationProvider = ({ children }) => {
           LocalNotifications.addListener('localNotificationActionPerformed', (notificationAction) => {
             const extra = notificationAction?.notification?.extra;
             if (extra) {
-              if (extra.taskId) {
-                try {
-                  const userStr = localStorage.getItem('user');
-                  const user = userStr ? JSON.parse(userStr) : {};
-                  if (user.role === 'admin') {
-                    window.location.href = `/admin/dashboard?view=tasks&taskId=${extra.taskId}`;
-                  } else {
-                    window.location.href = `/volunteer/event-support/${extra.taskId}`;
-                  }
-                } catch (e) {
-                  if (extra.link) window.location.href = extra.link;
+              const targetTaskId = extra.taskId || (extra.link && extra.link.match(/taskId=([a-zA-Z0-9]+)/)?.[1]);
+              try {
+                const userStr = localStorage.getItem('user');
+                const user = userStr ? JSON.parse(userStr) : {};
+
+                if (targetTaskId) {
+                  sessionStorage.setItem('openChatForTask', targetTaskId);
+                  localStorage.setItem('openChatForTask', targetTaskId);
                 }
-              } else if (extra.link) {
-                window.location.href = extra.link;
+
+                if (user.role === 'admin') {
+                  const targetUrl = targetTaskId 
+                    ? `/admin/dashboard?view=tasks&taskId=${targetTaskId}` 
+                    : (extra.link || '/admin/dashboard?view=tasks');
+
+                  if (targetTaskId) {
+                    window.dispatchEvent(new CustomEvent('crewlink:openChat', { detail: { taskId: targetTaskId } }));
+                  }
+
+                  if (window.location.pathname.startsWith('/admin/dashboard')) {
+                    window.history.pushState({}, '', targetUrl);
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  } else {
+                    window.location.href = targetUrl;
+                  }
+                } else {
+                  const targetUrl = targetTaskId 
+                    ? `/volunteer/event-support/${targetTaskId}` 
+                    : (extra.link || '/volunteer/dashboard');
+                  window.location.href = targetUrl;
+                }
+              } catch (e) {
+                if (extra.link) window.location.href = extra.link;
               }
             }
           });
@@ -249,8 +268,28 @@ export const NotificationProvider = ({ children }) => {
           });
           sysNotif.onclick = () => {
             window.focus();
-            if (data.onClick) data.onClick();
-            else if (data.link) window.location.href = data.link;
+            if (notifTaskId) {
+              sessionStorage.setItem('openChatForTask', notifTaskId);
+              localStorage.setItem('openChatForTask', notifTaskId);
+              window.dispatchEvent(new CustomEvent('crewlink:openChat', { detail: { taskId: notifTaskId } }));
+            }
+            if (data.onClick) {
+              data.onClick();
+            } else if (notifTaskId) {
+              try {
+                const userStr = localStorage.getItem('user');
+                const user = userStr ? JSON.parse(userStr) : {};
+                if (user.role === 'admin') {
+                  window.location.href = `/admin/dashboard?view=tasks&taskId=${notifTaskId}`;
+                } else {
+                  window.location.href = `/volunteer/event-support/${notifTaskId}`;
+                }
+              } catch (_) {
+                if (data.link) window.location.href = data.link;
+              }
+            } else if (data.link) {
+              window.location.href = data.link;
+            }
             sysNotif.close();
           };
         } catch (_) {}
