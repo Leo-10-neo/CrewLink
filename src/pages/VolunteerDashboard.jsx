@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import {
   LayoutDashboard, User, ClipboardList, Clock, Award,
   LogOut, Search, Bell, CalendarDays, CheckCircle2, X, MessageSquare, Download, FileText, Lock, Menu,
@@ -14,6 +15,7 @@ const API = `${API_URL}/volunteer`;
 
 const VolunteerDashboard = () => {
   const { user, token, logout } = useAuth();
+  const { showNotification } = useNotification();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('events');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -149,13 +151,23 @@ const VolunteerDashboard = () => {
           const latestOld = prev[0];
           if (latestNew && (!latestOld || latestNew._id !== latestOld._id)) {
             if (!latestNew.read) {
-              setToast(latestNew.message);
+              showNotification({
+                title: 'CrewLink',
+                message: latestNew.message,
+                time: 'now',
+                onClick: () => {
+                  if (latestNew.taskId) {
+                    navigate(`/volunteer/event-support/${latestNew.taskId}`, { state: { fromNotification: true } });
+                  } else {
+                    setShowNotifications(true);
+                  }
+                }
+              });
               // Instantly refresh all tabs so volunteer sees approved/rejected status, new tasks, attendance without refreshing
               fetchEventsWithStatus(false);
               fetchTasks();
               fetchOverview();
               fetchAttendance();
-              setTimeout(() => setToast(''), 6000);
             }
           }
           return data || [];
@@ -186,9 +198,12 @@ const VolunteerDashboard = () => {
     return () => clearInterval(interval);
   }, [activeTab]);
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3000);
+  const showToast = (msg, title = 'CrewLink') => {
+    showNotification({
+      title,
+      message: msg,
+      time: 'now'
+    });
   };
 
   const handleLogout = () => { logout(); navigate('/'); };
@@ -1730,15 +1745,6 @@ const VolunteerDashboard = () => {
 
   return (
     <div className="min-h-screen flex bg-transparent overflow-x-hidden">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-lg flex items-center space-x-3 animate-fade-in">
-          <CheckCircle2 size={18} className="text-green-400" />
-          <span className="text-sm font-medium">{toast}</span>
-          <button onClick={() => setToast('')} className="text-gray-400 hover:text-white"><X size={16} /></button>
-        </div>
-      )}
-
       {/* Mobile Drawer Backdrop */}
       {mobileMenuOpen && (
         <div 
@@ -1842,7 +1848,17 @@ const VolunteerDashboard = () => {
                 <div className="absolute right-0 mt-2 w-72 bg-white text-gray-900 rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
                   <div className="p-3.5 border-b border-gray-100 flex justify-between items-center">
                     <h3 className="font-semibold text-sm text-gray-900">Notifications</h3>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
+                      <button 
+                        onClick={() => showNotification({
+                          title: 'CrewLink',
+                          message: 'Just dropped notification tutorial! 🔥',
+                          time: 'now'
+                        })}
+                        className="text-[11px] font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded transition-colors"
+                      >
+                        Test
+                      </button>
                       {unreadCount > 0 && (
                         <button onClick={markAllNotificationsAsRead} className="text-xs text-blue-600 hover:text-blue-700">Mark read</button>
                       )}
@@ -1902,7 +1918,17 @@ const VolunteerDashboard = () => {
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
                   <div className="p-4 border-b border-gray-100 flex justify-between items-center">
                     <h3 className="font-semibold text-gray-900">Notifications</h3>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
+                      <button 
+                        onClick={() => showNotification({
+                          title: 'CrewLink',
+                          message: 'Just dropped notification tutorial! 🔥',
+                          time: 'now'
+                        })}
+                        className="text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded-md transition-colors"
+                      >
+                        Test Banner
+                      </button>
                       {unreadCount > 0 && (
                         <button 
                           onClick={markAllNotificationsAsRead} 

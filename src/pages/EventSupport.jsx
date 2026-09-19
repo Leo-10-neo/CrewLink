@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import axios from 'axios';
 import { ArrowLeft, Send, User, Clock, FileText, MessageSquare, Image as ImageIcon, X, Mic, Square, Trash2, Sparkles } from 'lucide-react';
 import VoiceNotePlayer from '../components/VoiceNotePlayer';
@@ -11,6 +12,7 @@ import { API_URL as API } from '../services/api';
 const EventSupport = () => {
   const { taskId } = useParams();
   const { user, token } = useAuth();
+  const { showNotification } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
   const chatInputRef = useRef(null);
@@ -77,6 +79,18 @@ const EventSupport = () => {
               prevMsgs.length > 0 &&
               newMsgs[newMsgs.length - 1]?.timestamp !== prevMsgs[prevMsgs.length - 1]?.timestamp)
           ) {
+            // If new incoming message is from someone else, show the iOS notification popup!
+            if (newMsgs.length > prevMsgs.length) {
+              const latestMsg = newMsgs[newMsgs.length - 1];
+              if (latestMsg && latestMsg.sender && String(latestMsg.sender) !== String(user?._id)) {
+                showNotification({
+                  title: `${latestMsg.senderName || 'Admin'} (${latestMsg.senderRole === 'admin' ? 'Admin' : 'Volunteer'})`,
+                  message: latestMsg.text || (latestMsg.audio ? '🎤 Voice message' : '📷 Image attachment'),
+                  time: 'now'
+                });
+              }
+            }
+
             setTimeout(() => {
               if (chatMessagesEndRef.current) {
                 chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });

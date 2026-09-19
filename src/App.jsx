@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import Navbar from './components/Navbar';
 import AnimatedBackground from './components/AnimatedBackground';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -16,9 +17,10 @@ import EventSupport from './pages/EventSupport';
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AnimatedBackground />
-        <Routes>
+      <NotificationProvider>
+        <Router>
+          <AnimatedBackground />
+          <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/events" element={<Events />} />
@@ -72,8 +74,9 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
-    </AuthProvider>
-  );
+    </NotificationProvider>
+  </AuthProvider>
+);
 }
 
 export default App;

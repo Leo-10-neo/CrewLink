@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Award, Bell, CalendarDays, Camera, Check, ClipboardCheck, Grid2X2, LogOut, Menu, Plus, Search, Sparkles, Trash2, UsersRound, X, Edit, MessageSquare, Image as ImageIcon, Download, Printer, Mic, Square, Send, ArrowUp, ArrowDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import VoiceNotePlayer from '../components/VoiceNotePlayer';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { API_BASE, API_URL } from '../services/api';
@@ -15,6 +16,7 @@ const navItems = [
 
 export default function AdminDashboard() {
   const { user, token, logout } = useAuth();
+  const { showNotification } = useNotification();
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState('overview');
   const [events, setEvents] = useState([]);
@@ -68,9 +70,15 @@ export default function AdminDashboard() {
             
             if (latestNew && (!latestOld || latestNew._id !== latestOld._id)) {
               if (!latestNew.read) {
-                setToast(latestNew.message);
+                showNotification({
+                  title: 'CrewLink • Admin',
+                  message: latestNew.message,
+                  time: 'now',
+                  onClick: () => {
+                    setShowNotifications(true);
+                  }
+                });
                 fetchData(); // Auto-refresh dashboard counts and data
-                setTimeout(() => setToast(''), 6000);
               }
             }
             return res.data || [];
@@ -147,13 +155,6 @@ export default function AdminDashboard() {
 
   if (loading) return <div className="admin-loading"><Sparkles size={22} /> Loading your command centre...</div>;
   return <div className="admin-shell">
-    {toast && (
-      <div style={{ position: 'fixed', top: '24px', right: '24px', zIndex: 9999, background: '#1e293b', color: 'white', padding: '14px 20px', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', gap: '12px', border: '1px solid #334155' }}>
-        <Bell size={18} style={{ color: '#60a5fa' }} />
-        <span style={{ fontSize: '14px', fontWeight: '500' }}>{toast}</span>
-        <button onClick={() => setToast('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0', display: 'flex', marginLeft: '8px' }}><X size={16} /></button>
-      </div>
-    )}
     {mobileMenuOpen && (
       <div className="admin-drawer-backdrop" onClick={() => setMobileMenuOpen(false)} />
     )}
@@ -190,7 +191,17 @@ export default function AdminDashboard() {
           <div style={{ position: 'absolute', top: '100%', right: '0', marginTop: '12px', width: '320px', background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)', zIndex: 50, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
             <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '600' }}>Notifications</h3>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button 
+                  onClick={() => showNotification({
+                    title: 'CrewLink • Admin',
+                    message: 'Just dropped notification tutorial! 🔥',
+                    time: 'now'
+                  })}
+                  style={{ fontSize: '11px', fontWeight: '600', color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer' }}
+                >
+                  Test Banner
+                </button>
                 {unreadCount > 0 && <button onClick={markAllNotificationsAsRead} style={{ fontSize: '12px', color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer' }}>Mark all as read</button>}
                 {notifications.length > 0 && <button onClick={clearAllNotifications} style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>Clear all</button>}
               </div>
