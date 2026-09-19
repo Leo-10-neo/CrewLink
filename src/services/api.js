@@ -11,7 +11,7 @@ const formatUrl = (raw) => {
   return url;
 };
 
-export const PUBLIC_INTERNET_URL = 'https://became-undo-bonds-discusses.trycloudflare.com';
+export const PUBLIC_INTERNET_URL = 'https://cities-gives-preferred-shareware.trycloudflare.com';
 
 // Dynamic host detection with support for custom user-configured server URL
 export const getApiBase = () => {
@@ -98,13 +98,47 @@ export const testServerConnection = async (testUrl) => {
   }
 };
 
+export const RAW_REGISTRY_URL = 'https://raw.githubusercontent.com/Leo-10-neo/CrewLink/main/current_tunnel_url.txt';
 export const CLOUD_REGISTRY_URL = 'https://api.github.com/repos/Leo-10-neo/CrewLink/contents/current_tunnel_url.txt';
+export const LAN_WIFI_URL = 'http://192.168.0.121:5000';
 
 export const autoDiscoverTunnelUrl = async () => {
+  // 1. Check if the built-in PUBLIC_INTERNET_URL is active and responsive
+  if (PUBLIC_INTERNET_URL) {
+    try {
+      const test = await testServerConnection(PUBLIC_INTERNET_URL);
+      if (test.success) {
+        setApiBase(PUBLIC_INTERNET_URL);
+        return { success: true, url: PUBLIC_INTERNET_URL };
+      }
+    } catch (_) {}
+  }
+
+  // 2. Query Raw GitHub Registry (fast, unthrottled, no headers required)
+  try {
+    const res = await axios.get(`${RAW_REGISTRY_URL}?_cb=${Date.now()}`, {
+      timeout: 5000,
+    });
+    if (res.data && typeof res.data === 'string' && res.data.includes('trycloudflare.com')) {
+      const liveUrl = formatUrl(res.data.trim());
+      const test = await testServerConnection(liveUrl);
+      if (test.success) {
+        setApiBase(liveUrl);
+        return { success: true, url: liveUrl };
+      }
+    }
+  } catch (err) {
+    console.warn('Auto-discovery from Raw Registry failed:', err.message);
+  }
+
+  // 3. Fallback to GitHub REST API Registry
   try {
     const res = await axios.get(CLOUD_REGISTRY_URL, {
-      headers: { Accept: 'application/vnd.github.v3.raw' },
-      timeout: 6000,
+      headers: { 
+        Accept: 'application/vnd.github.v3.raw',
+        'User-Agent': 'CrewLink-Mobile'
+      },
+      timeout: 5000,
     });
     if (res.data && typeof res.data === 'string' && res.data.includes('trycloudflare.com')) {
       const liveUrl = formatUrl(res.data.trim());
@@ -117,6 +151,16 @@ export const autoDiscoverTunnelUrl = async () => {
   } catch (err) {
     console.warn('Auto-discovery from Cloud Registry failed:', err.message);
   }
+
+  // 4. Fallback to local Wi-Fi IP if phone is on the same local network
+  try {
+    const test = await testServerConnection(LAN_WIFI_URL);
+    if (test.success) {
+      setApiBase(LAN_WIFI_URL);
+      return { success: true, url: LAN_WIFI_URL };
+    }
+  } catch (_) {}
+
   return { success: false };
 };
 

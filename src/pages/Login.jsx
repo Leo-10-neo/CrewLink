@@ -53,11 +53,16 @@ const Login = () => {
 
       try {
         const test = await testServerConnection(active);
-        if (!test.success) {
+        if (test.success) {
+          setIsNetworkErr(false);
+          setApiError('');
+        } else {
           const disc = await autoDiscoverTunnelUrl();
           if (disc.success) {
             setCurrentApiBase(disc.url);
             setServerUrlInput(disc.url);
+            setIsNetworkErr(false);
+            setApiError('');
           }
         }
       } catch (_) {}
@@ -428,7 +433,11 @@ const Login = () => {
                     setIsTestingServer(false);
                     if (res.success) {
                       setServerUrlInput(res.url);
+                      setCurrentApiBase(res.url);
+                      setApiBase(res.url);
                       setServerTestStatus({ success: true, message: `Connected! Live server: ${res.url}` });
+                      setApiError('');
+                      setIsNetworkErr(false);
                     } else {
                       setServerTestStatus({ success: false, message: 'Could not auto-detect live tunnel.' });
                     }
