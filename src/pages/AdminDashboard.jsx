@@ -514,8 +514,26 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
   const [showImagePreview, setShowImagePreview] = useState(null);
   const [sortOrder, setSortOrder] = useState('asc');
   const chatMessagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
   const chatInputRef = useRef(null);
   const config = { headers: { Authorization: `Bearer ${token}` } };
+
+  const scrollToBottom = (behavior = 'smooth') => {
+    if (chatContainerRef.current) {
+      try {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        chatContainerRef.current.scrollTo({
+          top: chatContainerRef.current.scrollHeight,
+          behavior
+        });
+      } catch (e) {}
+    }
+    if (chatMessagesEndRef.current) {
+      try {
+        chatMessagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+      } catch (e) {}
+    }
+  };
 
   const getTaskTime = (t) => {
     const d = t?.startTime || t?.dueDate || t?.event?.date;
@@ -639,10 +657,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
               newMsgs[newMsgs.length - 1]?.timestamp !== prevMsgs[prevMsgs.length - 1]?.timestamp)
           ) {
             setTimeout(() => {
-              if (chatMessagesEndRef.current) {
-                chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-              }
-            }, 100);
+              scrollToBottom('smooth');
+            }, 80);
             return newMsgs;
           }
           return prevMsgs;
@@ -654,6 +670,19 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
 
     return () => clearInterval(interval);
   }, [showChatModal, selectedTaskForChat?._id]);
+
+  // Always ensure chat messages are scrolled to the bottom when chat modal is open and messages load
+  useEffect(() => {
+    if (showChatModal && chatMessages.length > 0) {
+      scrollToBottom('auto');
+      const t1 = setTimeout(() => scrollToBottom('smooth'), 120);
+      const t2 = setTimeout(() => scrollToBottom('smooth'), 350);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [showChatModal, chatMessages.length]);
 
   const markAttendance = async (task, status) => {
     // Instant optimistic update
@@ -737,18 +766,23 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
       setChatMessages(fullTask.chatMessages || []);
       setShowChatModal(true);
       setTimeout(() => {
-        if (chatMessagesEndRef.current) {
-          chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
+        scrollToBottom('auto');
         if (chatInputRef.current) {
           chatInputRef.current.focus({ preventScroll: true });
         }
-      }, 200);
+      }, 80);
+      setTimeout(() => {
+        scrollToBottom('smooth');
+      }, 300);
+      setTimeout(() => {
+        scrollToBottom('smooth');
+      }, 650);
     } catch (error) {
       console.error('Error fetching chat messages:', error);
       if (typeof taskOrId === 'object' && taskOrId?._id) {
         setSelectedTaskForChat(taskOrId);
         setShowChatModal(true);
+        setTimeout(() => scrollToBottom('smooth'), 200);
       }
     }
   };
@@ -794,9 +828,7 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
     // Optimistically show message bubble immediately!
     setChatMessages(prev => [...prev, newMessage]);
     setTimeout(() => {
-      if (chatMessagesEndRef.current) {
-        chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-      }
+      scrollToBottom('smooth');
     }, 50);
 
     try {
@@ -812,10 +844,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
       
       // Auto-scroll to bottom
       setTimeout(() => {
-        if (chatMessagesEndRef.current) {
-          chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
+        scrollToBottom('smooth');
+      }, 80);
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -840,9 +870,7 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
       // Optimistic message update
       setChatMessages(prev => [...prev, newMessage]);
       setTimeout(() => {
-        if (chatMessagesEndRef.current) {
-          chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
+        scrollToBottom('smooth');
       }, 50);
 
       const res = await axios.post(
@@ -851,6 +879,9 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
         config
       );
       setChatMessages(res.data.chatMessages || []);
+      setTimeout(() => {
+        scrollToBottom('smooth');
+      }, 80);
     } catch (error) {
       console.error('Error sending quick message:', error);
     } finally {
@@ -1246,8 +1277,11 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
               <h2>Chat with {selectedTaskForChat?.volunteer?.fullName || selectedTaskForChat?.volunteer?.username || 'Volunteer'}</h2>
               <button type="button" onClick={closeChatModal}><X size={20} /></button>
             </div>
-            <div className="mt-4 flex-1 overflow-y-auto" style={{ maxHeight: '400px', display: 'flex', flexDirection: 'column' }}>
-              <div className="flex-1 overflow-y-auto space-y-3 p-4 bg-gray-50 rounded-lg">
+            <div className="mt-4 flex-1 flex flex-col min-h-0" style={{ maxHeight: '420px' }}>
+              <div 
+                ref={chatContainerRef}
+                className="flex-1 overflow-y-auto space-y-3 p-4 bg-gray-50 rounded-lg min-h-0"
+              >
                 {chatMessages.length === 0 ? (
                   <div className="text-center text-gray-400 py-8">
                     <MessageSquare size={32} className="mx-auto mb-2 opacity-50" />

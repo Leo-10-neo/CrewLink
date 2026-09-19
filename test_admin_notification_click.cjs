@@ -12,6 +12,8 @@ const fs = require('fs');
     deviceScaleFactor: 1.5
   });
   const page = await context.newPage();
+  page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+  page.on('pageerror', err => console.log('PAGE ERROR:', err.message));
 
   // 1. Go to origin and set admin session
   await page.goto('http://localhost:5000');

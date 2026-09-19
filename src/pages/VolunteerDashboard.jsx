@@ -260,11 +260,11 @@ const VolunteerDashboard = () => {
     }
 
     if (targetTaskId) {
-      navigate(`/volunteer/event-support/${targetTaskId}`, { state: { fromNotification: true } });
+      navigate(`/volunteer/event-support/${targetTaskId}`, { state: { fromNotification: Date.now() } });
       return;
     }
     if (notification.link && notification.link.includes('/volunteer/event-support/')) {
-      navigate(notification.link, { state: { fromNotification: true } });
+      navigate(notification.link, { state: { fromNotification: Date.now() } });
       return;
     }
 

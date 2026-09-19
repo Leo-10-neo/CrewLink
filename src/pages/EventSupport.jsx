@@ -41,94 +41,137 @@ const EventSupport = () => {
 
   const headers = { Authorization: `Bearer ${token}` };
 
+  const scrollToBottom = (behavior = 'smooth') => {
+    if (chatContainerRef.current) {
+      try {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        chatContainerRef.current.scrollTo({
+          top: chatContainerRef.current.scrollHeight,
+          behavior
+        });
+      } catch (e) {}
+    }
+    if (chatMessagesEndRef.current) {
+      try {
+        chatMessagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+      } catch (e) {}
+    }
+  };
+
   useEffect(() => {
     // Prevent any horizontal scroll on mount
     window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
 
     const fetchTaskDetails = async () => {
-      try {
-        setLoading(true);
-        const { data } = await axios.get(`${API}/volunteer/tasks/${taskId}`, { headers });
-        setTask(data);
-        setEvent(data.event);
-        setChatMessages(data.chatMessages || []);
-      } catch (error) {
-        console.error('Error fetching task details:', error);
-      } finally {
-        setLoading(false);
-      }
+    try {
+      setLoading(true);
+      const { data } = await axios.get(`${API}/volunteer/tasks/${taskId}`, { headers });
+      setTask(data);
+      setEvent(data.event);
+      setChatMessages(data.chatMessages || []);
+      setTimeout(() => scrollToBottom('auto'), 50);
+      setTimeout(() => scrollToBottom('smooth'), 200);
+    } catch (error) {
+      console.error('Error fetching task details:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (taskId) {
+    fetchTaskDetails();
+  }
+}, [taskId]);
+
+// Always ensure chat messages are scrolled to the bottom when messages load or change
+useEffect(() => {
+  if (chatMessages.length > 0) {
+    scrollToBottom('auto');
+    const t1 = setTimeout(() => scrollToBottom('smooth'), 100);
+    const t2 = setTimeout(() => scrollToBottom('smooth'), 350);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
+  }
+}, [chatMessages.length]);
 
-    if (taskId) {
-      fetchTaskDetails();
-    }
-  }, [taskId]);
+// Live polling for chat messages every 2 seconds without page refresh
+useEffect(() => {
+  if (!taskId) return;
 
-  // Live polling for chat messages every 2 seconds without page refresh
-  useEffect(() => {
-    if (!taskId) return;
-
-    const interval = setInterval(async () => {
-      try {
-        const { data } = await axios.get(`${API}/volunteer/tasks/${taskId}`, { headers });
-        const newMsgs = data?.chatMessages || [];
-        setChatMessages((prevMsgs) => {
-          if (
-            newMsgs.length !== prevMsgs.length ||
-            (newMsgs.length > 0 &&
-              prevMsgs.length > 0 &&
-              newMsgs[newMsgs.length - 1]?.timestamp !== prevMsgs[prevMsgs.length - 1]?.timestamp)
-          ) {
-            // If new incoming message is from someone else, show the iOS notification popup!
-            if (newMsgs.length > prevMsgs.length) {
-              const latestMsg = newMsgs[newMsgs.length - 1];
-              if (latestMsg && latestMsg.sender && String(latestMsg.sender) !== String(user?._id)) {
-                showNotification({
-                  title: `${latestMsg.senderName || 'Admin'} (${latestMsg.senderRole === 'admin' ? 'Admin' : 'Volunteer'})`,
-                  message: latestMsg.text || (latestMsg.audio ? '🎤 Voice message' : '📷 Image attachment'),
-                  time: 'now'
-                });
-              }
+  const interval = setInterval(async () => {
+    try {
+      const { data } = await axios.get(`${API}/volunteer/tasks/${taskId}`, { headers });
+      const newMsgs = data?.chatMessages || [];
+      setChatMessages((prevMsgs) => {
+        if (
+          newMsgs.length !== prevMsgs.length ||
+          (newMsgs.length > 0 &&
+            prevMsgs.length > 0 &&
+            newMsgs[newMsgs.length - 1]?.timestamp !== prevMsgs[prevMsgs.length - 1]?.timestamp)
+        ) {
+          // If new incoming message is from someone else, show the iOS notification popup!
+          if (newMsgs.length > prevMsgs.length) {
+            const latestMsg = newMsgs[newMsgs.length - 1];
+            if (latestMsg && latestMsg.sender && String(latestMsg.sender) !== String(user?._id)) {
+              showNotification({
+                title: `${latestMsg.senderName || 'Admin'} (${latestMsg.senderRole === 'admin' ? 'Admin' : 'Volunteer'})`,
+                message: latestMsg.text || (latestMsg.audio ? '🎤 Voice message' : '📷 Image attachment'),
+                time: 'now'
+              });
             }
-
-            setTimeout(() => {
-              if (chatMessagesEndRef.current) {
-                chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-              }
-            }, 100);
-            return newMsgs;
           }
-          return prevMsgs;
-        });
-      } catch (error) {
-        // Silent catch for background polling
-      }
-    }, 2000);
 
-    return () => clearInterval(interval);
-  }, [taskId, token]);
-
-  // Auto-scroll to chat and focus input when coming from notification
-  useEffect(() => {
-    if (location.state?.fromNotification) {
-      setTimeout(() => {
-        // Scroll to the chat section cleanly without horizontal drift
-        const chatSection = document.getElementById('chat-section');
-        if (chatSection) {
-          chatSection.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
-          // Add a temporary highlight effect
-          chatSection.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
           setTimeout(() => {
-            chatSection.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
-          }, 2000);
+            scrollToBottom('smooth');
+          }, 80);
+          return newMsgs;
         }
-        // Focus the input safely without viewport jump
-        if (chatInputRef.current) {
-          chatInputRef.current.focus({ preventScroll: true });
-        }
-      }, 500);
+        return prevMsgs;
+      });
+    } catch (error) {
+      // Silent catch for background polling
     }
-  }, [location.state]);
+  }, 2000);
+
+  return () => clearInterval(interval);
+}, [taskId, token]);
+
+// Auto-scroll to chat and focus input when coming from notification
+useEffect(() => {
+  if (location.state?.fromNotification) {
+    setTimeout(() => {
+      // Scroll page to the chat section cleanly without horizontal drift
+      const chatSection = document.getElementById('chat-section');
+      if (chatSection) {
+        chatSection.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+        chatSection.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+        setTimeout(() => {
+          chatSection.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+        }, 2000);
+      }
+      // Scroll the inner message container all the way to the bottom to display latest messages
+      scrollToBottom('auto');
+      if (chatInputRef.current) {
+        chatInputRef.current.focus({ preventScroll: true });
+      }
+    }, 150);
+
+    const t2 = setTimeout(() => {
+      scrollToBottom('smooth');
+    }, 450);
+
+    const t3 = setTimeout(() => {
+      scrollToBottom('smooth');
+    }, 850);
+
+    return () => {
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }
+}, [location.state, taskId]);
 
   const handleSendMessage = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
@@ -160,9 +203,7 @@ const EventSupport = () => {
     // Optimistically show message bubble immediately!
     setChatMessages((prev) => [...prev, newMessage]);
     setTimeout(() => {
-      if (chatMessagesEndRef.current) {
-        chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-      }
+      scrollToBottom('smooth');
     }, 50);
 
     try {
@@ -178,10 +219,8 @@ const EventSupport = () => {
       
       // Auto-scroll to bottom after sending message
       setTimeout(() => {
-        if (chatMessagesEndRef.current) {
-          chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
+        scrollToBottom('smooth');
+      }, 80);
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -205,9 +244,7 @@ const EventSupport = () => {
 
       setChatMessages((prev) => [...prev, newMessage]);
       setTimeout(() => {
-        if (chatMessagesEndRef.current) {
-          chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
+        scrollToBottom('smooth');
       }, 50);
 
       const { data } = await axios.post(
@@ -216,6 +253,9 @@ const EventSupport = () => {
         { headers }
       );
       setChatMessages(data.chatMessages || []);
+      setTimeout(() => {
+        scrollToBottom('smooth');
+      }, 80);
     } catch (error) {
       console.error('Error sending quick message:', error);
     } finally {
