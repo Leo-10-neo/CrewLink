@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useRef, useCallback, useEff
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import axios from 'axios';
-import NotificationBanner from '../components/NotificationBanner';
 import { API_URL } from '../services/api';
 
 const NotificationContext = createContext(null);
@@ -260,44 +259,16 @@ export const NotificationProvider = ({ children }) => {
       }
     }
 
-    // ==========================================
-    // 3. INSIDE THE APP: In-App Popup Banner
-    // ==========================================
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
-
-    const newNotification = {
-      id: data.id || notifUniqueKey,
-      title,
-      message,
-      time: data.time || 'now',
-      type: data.type || 'info',
-      icon: data.icon || null,
-      onClick: data.onClick || null,
-      duration: data.duration !== undefined ? data.duration : 5500,
-    };
-
-    setIsExiting(false);
-    setNotification(newNotification);
-
-    // Play subtle chime unless explicitly muted
+    // Subtle sound chime or vibration on incoming message (if app is open)
     if (data.sound !== false) {
       playNotificationSound();
     }
-
-    // Trigger subtle mobile vibration if supported
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       try {
         navigator.vibrate([35, 45, 35]);
       } catch (_) {}
     }
-
-    if (newNotification.duration > 0) {
-      timerRef.current = setTimeout(() => {
-        hideNotification();
-      }, newNotification.duration);
-    }
-  }, [hideNotification]);
+  }, []);
 
   // 4. Global polling for notifications so notifications work outside dashboards & outside the app
   useEffect(() => {
@@ -388,15 +359,8 @@ export const NotificationProvider = ({ children }) => {
   }, []);
 
   return (
-    <NotificationContext.Provider value={{ showNotification, hideNotification, notification }}>
+    <NotificationContext.Provider value={{ showNotification, hideNotification, notification: null }}>
       {children}
-      {notification && (
-        <NotificationBanner
-          notification={notification}
-          isExiting={isExiting}
-          onDismiss={hideNotification}
-        />
-      )}
     </NotificationContext.Provider>
   );
 };
