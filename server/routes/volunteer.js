@@ -400,13 +400,25 @@ router.post('/tasks/:id/chat', auth, async (req, res) => {
     
     console.log('Creating notifications for admins. Found admins:', admins.length);
     
+    let adminNotifMessage = '';
+    if (message.text && message.text.trim()) {
+      const textPreview = message.text.trim().length > 90
+        ? message.text.trim().substring(0, 87) + '...'
+        : message.text.trim();
+      adminNotifMessage = `New message from ${message.senderName || 'Volunteer'} regarding task "${task.taskName}": "${textPreview}"`;
+    } else if (message.audio) {
+      adminNotifMessage = `🎤 New voice note from ${message.senderName || 'Volunteer'} regarding task "${task.taskName}"`;
+    } else if (message.image) {
+      adminNotifMessage = `📷 ${message.senderName || 'Volunteer'} sent a photo regarding task "${task.taskName}"`;
+    } else {
+      adminNotifMessage = `New message from ${message.senderName || 'Volunteer'} regarding task "${task.taskName}"`;
+    }
+
     for (const admin of admins) {
       try {
         await Notification.create({
           userId: admin._id,
-          message: message.audio && !message.text 
-            ? `New voice note from ${message.senderName} regarding task "${task.taskName}"`
-            : `New message from ${message.senderName} regarding task "${task.taskName}"`,
+          message: adminNotifMessage,
           type: 'chat_message',
           link: `/admin/dashboard?view=tasks&taskId=${task._id}`,
           taskId: task._id
@@ -886,16 +898,28 @@ router.post('/admin/tasks/:id/chat', adminAuth, async (req, res) => {
     console.log('Creating notification for volunteer:', task.volunteer);
     
     try {
+      let notifMessage = '';
+      if (message.text && message.text.trim()) {
+        const textPreview = message.text.trim().length > 90
+          ? message.text.trim().substring(0, 87) + '...'
+          : message.text.trim();
+        notifMessage = `New message from Admin regarding task "${task.taskName}": "${textPreview}"`;
+      } else if (message.audio) {
+        notifMessage = `🎤 New voice note from Admin regarding task "${task.taskName}"`;
+      } else if (message.image) {
+        notifMessage = `📷 Admin sent a photo regarding task "${task.taskName}"`;
+      } else {
+        notifMessage = `New message from Admin regarding task "${task.taskName}"`;
+      }
+
       await Notification.create({
         userId: task.volunteer,
-        message: message.audio && !message.text
-          ? `New voice note from Admin regarding task "${task.taskName}"`
-          : `New message from Admin regarding task "${task.taskName}"`,
+        message: notifMessage,
         type: 'chat_message',
         link: `/volunteer/event-support/${task._id}`,
         taskId: task._id
       });
-      console.log('Notification created successfully for volunteer');
+      console.log('Notification created successfully for volunteer with text preview');
     } catch (error) {
       console.error('Error creating notification for volunteer:', error);
     }

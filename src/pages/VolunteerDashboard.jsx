@@ -151,8 +151,10 @@ const VolunteerDashboard = () => {
           const latestOld = prev[0];
           if (latestNew && (!latestOld || latestNew._id !== latestOld._id)) {
             if (!latestNew.read) {
+              const isFromAdmin = latestNew.type === 'chat_message' || 
+                (latestNew.message && latestNew.message.toLowerCase().includes('admin'));
               showNotification({
-                title: 'CrewLink',
+                title: isFromAdmin ? 'CrewLink • Admin' : 'CrewLink',
                 message: latestNew.message,
                 time: 'now',
                 onClick: () => {
@@ -243,9 +245,22 @@ const VolunteerDashboard = () => {
     }
     setShowNotifications(false);
 
-    // 1. If it has a taskId or chat link, open event support chat directly!
-    if (notification.taskId) {
-      navigate(`/volunteer/event-support/${notification.taskId}`, { state: { fromNotification: true } });
+    // 1. If it has a taskId, chat link, or mentions a task, open event support chat directly!
+    let targetTaskId = notification.taskId;
+    if (!targetTaskId && notification.link) {
+      const match = notification.link.match(/event-support\/([a-zA-Z0-9]+)/);
+      if (match) targetTaskId = match[1];
+    }
+    if (!targetTaskId && notification.message) {
+      const taskMatch = notification.message.match(/regarding task ["']([^"']+)["']/i);
+      if (taskMatch && tasks && tasks.length > 0) {
+        const found = tasks.find(t => t.taskName?.toLowerCase() === taskMatch[1].toLowerCase());
+        if (found) targetTaskId = found._id;
+      }
+    }
+
+    if (targetTaskId) {
+      navigate(`/volunteer/event-support/${targetTaskId}`, { state: { fromNotification: true } });
       return;
     }
     if (notification.link && notification.link.includes('/volunteer/event-support/')) {
@@ -732,20 +747,30 @@ const VolunteerDashboard = () => {
                       ) : null}
                     </div>
                   </div>
-                  {t.status !== 'completed' && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => {
-                        if (t.status === 'pending') {
-                          handleUpdateTaskStatus(t._id, 'in-progress');
-                        } else {
-                          setCompletingTask(t);
-                        }
-                      }}
-                      className="px-3 py-1.5 bg-blue-50 text-blue-700 font-medium text-xs rounded-lg hover:bg-blue-100 transition-colors"
+                      onClick={() => navigate(`/volunteer/event-support/${t._id}`)}
+                      className="px-2.5 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1 border border-purple-200/60 shadow-2xs cursor-pointer"
+                      title="Chat with Admin"
                     >
-                      {t.status === 'pending' ? 'Start' : 'Complete'}
+                      <MessageSquare size={13} />
+                      <span>Chat</span>
                     </button>
-                  )}
+                    {t.status !== 'completed' && (
+                      <button
+                        onClick={() => {
+                          if (t.status === 'pending') {
+                            handleUpdateTaskStatus(t._id, 'in-progress');
+                          } else {
+                            setCompletingTask(t);
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-blue-50 text-blue-700 font-medium text-xs rounded-lg hover:bg-blue-100 transition-colors"
+                      >
+                        {t.status === 'pending' ? 'Start' : 'Complete'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -809,20 +834,30 @@ const VolunteerDashboard = () => {
                       </span>
                     </td>
                     <td className="py-5 px-6 text-right">
-                      {t.status !== 'completed' && (
+                      <div className="inline-flex items-center gap-2">
                         <button
-                          onClick={() => {
-                            if (t.status === 'pending') {
-                              handleUpdateTaskStatus(t._id, 'in-progress');
-                            } else {
-                              setCompletingTask(t);
-                            }
-                          }}
-                          className="px-4 py-1.5 bg-blue-50 text-blue-700 font-medium text-sm rounded-lg hover:bg-blue-100 transition-colors"
+                          onClick={() => navigate(`/volunteer/event-support/${t._id}`)}
+                          className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-medium text-xs rounded-lg border border-purple-200/60 shadow-2xs transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                          title="Chat with Admin"
                         >
-                          {t.status === 'pending' ? 'Start task' : 'Complete task'}
+                          <MessageSquare size={14} />
+                          <span>Chat</span>
                         </button>
-                      )}
+                        {t.status !== 'completed' && (
+                          <button
+                            onClick={() => {
+                              if (t.status === 'pending') {
+                                handleUpdateTaskStatus(t._id, 'in-progress');
+                              } else {
+                                setCompletingTask(t);
+                              }
+                            }}
+                            className="px-4 py-1.5 bg-blue-50 text-blue-700 font-medium text-sm rounded-lg hover:bg-blue-100 transition-colors"
+                          >
+                            {t.status === 'pending' ? 'Start task' : 'Complete task'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1881,11 +1916,23 @@ const VolunteerDashboard = () => {
                     <h3 className="font-semibold text-sm text-gray-900">Notifications</h3>
                     <div className="flex gap-2 items-center">
                       <button 
-                        onClick={() => showNotification({
-                          title: 'CrewLink',
-                          message: 'Just dropped notification tutorial! 🔥',
-                          time: 'now'
-                        })}
+                        onClick={() => {
+                          const sampleTask = tasks[0] || { _id: '6aaa7a22e97a11cdc7c335c7', taskName: 'Crowd Management' };
+                          const testMsg = 'New message from Admin regarding task "' + (sampleTask.taskName || 'Crowd Management') + '": "Please report to the main gate for briefing"';
+                          showNotification({
+                            title: 'CrewLink • Admin',
+                            message: testMsg,
+                            time: 'now',
+                            onClick: () => {
+                              handleNotificationClick({
+                                type: 'chat_message',
+                                message: testMsg,
+                                taskId: sampleTask._id,
+                                link: `/volunteer/event-support/${sampleTask._id}`
+                              });
+                            }
+                          });
+                        }}
                         className="text-[11px] font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded transition-colors"
                       >
                         Test
@@ -1951,11 +1998,23 @@ const VolunteerDashboard = () => {
                     <h3 className="font-semibold text-gray-900">Notifications</h3>
                     <div className="flex gap-2 items-center">
                       <button 
-                        onClick={() => showNotification({
-                          title: 'CrewLink',
-                          message: 'Just dropped notification tutorial! 🔥',
-                          time: 'now'
-                        })}
+                        onClick={() => {
+                          const sampleTask = tasks[0] || { _id: '6aaa7a22e97a11cdc7c335c7', taskName: 'Crowd Management' };
+                          const testMsg = 'New message from Admin regarding task "' + (sampleTask.taskName || 'Crowd Management') + '": "Please report to the main gate for briefing"';
+                          showNotification({
+                            title: 'CrewLink • Admin',
+                            message: testMsg,
+                            time: 'now',
+                            onClick: () => {
+                              handleNotificationClick({
+                                type: 'chat_message',
+                                message: testMsg,
+                                taskId: sampleTask._id,
+                                link: `/volunteer/event-support/${sampleTask._id}`
+                              });
+                            }
+                          });
+                        }}
                         className="text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded-md transition-colors"
                       >
                         Test Banner
