@@ -109,16 +109,7 @@ export default function AdminDashboard() {
                   )
                 );
 
-                if (!isCurrentlyMessaging) {
-                  showNotification({
-                    title: 'CrewLink • Admin',
-                    message: latestNew.message,
-                    time: 'now',
-                    onClick: () => {
-                      handleNotificationClick(latestNew);
-                    }
-                  });
-                } else {
+                if (isCurrentlyMessaging) {
                   // Admin is actively viewing/participating in this chat! Mark notification as read so it doesn't leave an unread badge
                   if (latestNew._id) {
                     axios.put(`${API_URL}/notifications/${latestNew._id}/read`, {}, config).catch(() => {});

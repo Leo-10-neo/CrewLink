@@ -55,6 +55,18 @@ export const NotificationProvider = ({ children }) => {
   const timerRef = useRef(null);
   const exitTimerRef = useRef(null);
   const seenNotificationIdsRef = useRef(new Set());
+  const recentMessageTimestampsRef = useRef(new Map());
+
+  // Deterministic 31-bit positive integer hash for Android notification slot
+  const getDeterministicNotifId = (key) => {
+    let hash = 0;
+    const s = String(key || 'crewlink');
+    for (let i = 0; i < s.length; i++) {
+      hash = ((hash << 5) - hash) + s.charCodeAt(i);
+      hash |= 0;
+    }
+    return (Math.abs(hash) % 2147483640) + 1;
+  };
 
   // 1. Initialize Native Android Notification Channel and Web Permissions
   useEffect(() => {
@@ -140,11 +152,8 @@ export const NotificationProvider = ({ children }) => {
   const showNotification = useCallback((data) => {
     if (!data || (!data.message && !data.title)) return;
 
-    // Deduplication check
-    if (data.id) {
-      if (seenNotificationIdsRef.current.has(data.id)) return;
-      seenNotificationIdsRef.current.add(data.id);
-    }
+    const title = data.title || 'CrewLink';
+    const message = data.message || '';
 
     // Check if suppressed because actively messaging in this task
     const activeChatTaskId = typeof window !== 'undefined' ? window.__ACTIVE_CHAT_TASK_ID__ : null;
@@ -158,11 +167,46 @@ export const NotificationProvider = ({ children }) => {
     );
 
     if (isMessagingThisTask) {
+      if (data.id) {
+        try {
+          const token = localStorage.getItem('token');
+          if (token) {
+            axios.put(`${API_URL}/notifications/${data.id}/read`, {}, {
+              headers: { Authorization: `Bearer ${token}` }
+            }).catch(() => {});
+          }
+        } catch (_) {}
+      }
       return;
     }
 
-    const title = data.title || 'CrewLink';
-    const message = data.message || '';
+    // 1. Deduplication check by ID
+    if (data.id) {
+      if (seenNotificationIdsRef.current.has(data.id)) return;
+      seenNotificationIdsRef.current.add(data.id);
+    }
+
+    // 2. Strict Content Debouncing across all triggers (suppress identical content within 8 seconds)
+    const contentKey = `${title}:::${message}`.toLowerCase().trim();
+    const now = Date.now();
+    const lastTriggeredTime = recentMessageTimestampsRef.current.get(contentKey);
+    if (lastTriggeredTime && (now - lastTriggeredTime) < 8000) {
+      return;
+    }
+    recentMessageTimestampsRef.current.set(contentKey, now);
+
+    // Garbage-collect stale keys
+    if (recentMessageTimestampsRef.current.size > 150) {
+      for (const [k, timestamp] of recentMessageTimestampsRef.current.entries()) {
+        if (now - timestamp > 25000) {
+          recentMessageTimestampsRef.current.delete(k);
+        }
+      }
+    }
+
+    // Deterministic 31-bit integer ID for Android (ensures Android updates the same slot rather than duplicating)
+    const notifUniqueKey = data.id || contentKey;
+    const androidNotifId = getDeterministicNotifId(notifUniqueKey);
 
     // ==========================================
     // 1. OUTSIDE THE APP: Native Android Notification
@@ -172,7 +216,7 @@ export const NotificationProvider = ({ children }) => {
         LocalNotifications.schedule({
           notifications: [
             {
-              id: Math.floor(Math.random() * 2147483640) + 1,
+              id: androidNotifId,
               title,
               body: message,
               channelId: 'crewlink_alerts',
@@ -201,8 +245,8 @@ export const NotificationProvider = ({ children }) => {
             body: message,
             icon: '/crewlink_app_icon_badge.png',
             badge: '/crewlink_app_icon_badge.png',
-            tag: String(data.id || Date.now()),
-            renotify: true
+            tag: String(data.id || notifUniqueKey),
+            renotify: false
           });
           sysNotif.onclick = () => {
             window.focus();
@@ -223,7 +267,7 @@ export const NotificationProvider = ({ children }) => {
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
 
     const newNotification = {
-      id: data.id || (Date.now() + Math.random()),
+      id: data.id || notifUniqueKey,
       title,
       message,
       time: data.time || 'now',
@@ -279,6 +323,7 @@ export const NotificationProvider = ({ children }) => {
         const latest = list[0];
         if (!initialized) {
           lastSeenId = latest._id;
+          if (latest._id) seenNotificationIdsRef.current.add(latest._id);
           initialized = true;
           return;
         }
@@ -286,6 +331,8 @@ export const NotificationProvider = ({ children }) => {
         if (latest && latest._id !== lastSeenId) {
           lastSeenId = latest._id;
           if (!latest.read) {
+            if (seenNotificationIdsRef.current.has(latest._id)) return;
+
             const notifTaskId = latest.taskId || (latest.link && latest.link.match(/taskId=([a-zA-Z0-9]+)/)?.[1]);
             const isFromAdmin = latest.type === 'chat_message' || (latest.message && latest.message.toLowerCase().includes('admin'));
             const title = user.role === 'admin' ? 'CrewLink • Admin' : (isFromAdmin ? 'CrewLink • Admin' : 'CrewLink');

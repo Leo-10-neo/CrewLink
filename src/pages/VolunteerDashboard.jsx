@@ -150,23 +150,11 @@ const VolunteerDashboard = () => {
           const latestNew = (data || [])[0];
           const latestOld = prev[0];
           if (latestNew && (!latestOld || latestNew._id !== latestOld._id)) {
-            if (!latestNew.read) {
-              const isFromAdmin = latestNew.type === 'chat_message' || 
-                (latestNew.message && latestNew.message.toLowerCase().includes('admin'));
-              showNotification({
-                title: isFromAdmin ? 'CrewLink • Admin' : 'CrewLink',
-                message: latestNew.message,
-                time: 'now',
-                onClick: () => {
-                  handleNotificationClick(latestNew);
-                }
-              });
               // Instantly refresh all tabs so volunteer sees approved/rejected status, new tasks, attendance without refreshing
               fetchEventsWithStatus(false);
               fetchTasks();
               fetchOverview();
               fetchAttendance();
-            }
           }
           return data || [];
         });
