@@ -202,6 +202,7 @@ public class CrewLinkBackgroundService extends Service {
 
             int status = conn.getResponseCode();
             if (status == 200) {
+                consecutiveNetworkErrors = 0;
                 InputStream is = conn.getInputStream();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(is));
                 StringBuilder response = new StringBuilder();
@@ -261,14 +262,53 @@ public class CrewLinkBackgroundService extends Service {
                         }
                     }
                 }
+            } else {
+                handleNetworkFailure(prefs);
             }
         } catch (Exception e) {
             Log.d(TAG, "Fetch notifications exception: " + e.getMessage());
+            handleNetworkFailure(prefs);
         } finally {
             if (conn != null) {
                 conn.disconnect();
             }
         }
+    }
+
+    private int consecutiveNetworkErrors = 0;
+
+    private void handleNetworkFailure(SharedPreferences prefs) {
+        consecutiveNetworkErrors++;
+        if (consecutiveNetworkErrors >= 2) {
+            String updatedUrl = fetchLiveUrlFromRegistry();
+            if (updatedUrl != null && !updatedUrl.isEmpty()) {
+                Log.d(TAG, "Native service self-healed tunnel URL from registry: " + updatedUrl);
+                prefs.edit().putString(KEY_SERVER_URL, updatedUrl).apply();
+                consecutiveNetworkErrors = 0;
+            }
+        }
+    }
+
+    private String fetchLiveUrlFromRegistry() {
+        HttpURLConnection conn = null;
+        try {
+            URL url = new URL("https://raw.githubusercontent.com/Leo-10-neo/CrewLink/main/current_tunnel_url.txt?_cb=" + System.currentTimeMillis());
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(4000);
+            conn.setReadTimeout(4000);
+            if (conn.getResponseCode() == 200) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                String line = reader.readLine();
+                reader.close();
+                if (line != null && line.contains("trycloudflare.com")) {
+                    return line.trim();
+                }
+            }
+        } catch (Exception ignored) {}
+        finally {
+            if (conn != null) conn.disconnect();
+        }
+        return null;
     }
 
     private void showChatMessageNotification(int notifId, String title, String message, String taskId, String role, String link) {

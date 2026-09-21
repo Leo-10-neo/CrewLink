@@ -1,6 +1,8 @@
 const { spawn, execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const https = require('https');
 
 const cloudflaredExe = path.join(__dirname, 'cloudflared.exe');
 
@@ -16,79 +18,130 @@ if (!fs.existsSync(cloudflaredExe)) {
   }
 }
 
-console.log('\n🚀 Launching Cloudflare Tunnel for CrewLink Backend on port 5000...\n');
+let child = null;
+let currentTunnelUrl = '';
+let consecutiveFailures = 0;
+let isRestarting = false;
 
-const child = spawn(cloudflaredExe, ['tunnel', '--url', 'http://localhost:5000'], {
-  stdio: ['ignore', 'pipe', 'pipe']
-});
+function pingUrl(urlStr) {
+  return new Promise((resolve) => {
+    try {
+      const parsed = new URL(urlStr);
+      const req = https.get(parsed, { timeout: 8000 }, (res) => {
+        resolve(res.statusCode >= 200 && res.statusCode < 400);
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => {
+        req.destroy();
+        resolve(false);
+      });
+    } catch (_) {
+      resolve(false);
+    }
+  });
+}
 
-let tunnelUrlFound = false;
+function startTunnel() {
+  if (isRestarting) return;
+  isRestarting = true;
 
-const onData = (chunk) => {
-  const text = chunk.toString();
-  
-  if (!tunnelUrlFound) {
-    const match = text.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
-    if (match) {
-      tunnelUrlFound = true;
-      const tunnelUrl = match[0];
+  if (child) {
+    try {
+      child.kill();
+    } catch (_) {}
+    child = null;
+  }
 
-      // Save to file for easy reference
-      fs.writeFileSync(path.join(__dirname, 'current_tunnel_url.txt'), tunnelUrl, 'utf8');
+  console.log('\n🚀 Starting Cloudflare Tunnel Watchdog for port 5000...');
+  let tunnelUrlFound = false;
 
-      // Update PUBLIC_INTERNET_URL in src/services/api.js so builds stay in sync
-      try {
-        const apiJsPath = path.join(__dirname, 'src', 'services', 'api.js');
-        if (fs.existsSync(apiJsPath)) {
-          let apiContent = fs.readFileSync(apiJsPath, 'utf8');
-          apiContent = apiContent.replace(/export const PUBLIC_INTERNET_URL = '[^']+';/, `export const PUBLIC_INTERNET_URL = '${tunnelUrl}';`);
-          fs.writeFileSync(apiJsPath, apiContent, 'utf8');
+  child = spawn(cloudflaredExe, ['tunnel', '--url', 'http://localhost:5000'], {
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+
+  const onData = (chunk) => {
+    const text = chunk.toString();
+
+    if (!tunnelUrlFound) {
+      const match = text.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
+      if (match) {
+        tunnelUrlFound = true;
+        isRestarting = false;
+        consecutiveFailures = 0;
+        currentTunnelUrl = match[0];
+
+        console.log('================================================================');
+        console.log('🎉 CREWLINK TUNNEL ONLINE & LIVE!');
+        console.log('================================================================');
+        console.log(`🌐 URL: 👉  ${currentTunnelUrl}\n`);
+
+        // 1. Save locally
+        fs.writeFileSync(path.join(__dirname, 'current_tunnel_url.txt'), currentTunnelUrl, 'utf8');
+
+        // 2. Update api.js
+        try {
+          const apiJsPath = path.join(__dirname, 'src', 'services', 'api.js');
+          if (fs.existsSync(apiJsPath)) {
+            let apiContent = fs.readFileSync(apiJsPath, 'utf8');
+            apiContent = apiContent.replace(/export const PUBLIC_INTERNET_URL = '[^']+';/, `export const PUBLIC_INTERNET_URL = '${currentTunnelUrl}';`);
+            fs.writeFileSync(apiJsPath, apiContent, 'utf8');
+          }
+        } catch (_) {}
+
+        // 3. Auto-publish to GitHub Cloud Registry so mobile devices auto-sync
+        try {
+          execSync('git add current_tunnel_url.txt && git commit -m "Auto-update tunnel URL" && git push origin main', { stdio: 'ignore' });
+          console.log('📡 Published active tunnel URL to GitHub Cloud Registry!');
+        } catch (err) {
+          console.log('ℹ️  GitHub cloud registry push skipped or up to date.');
         }
-      } catch (_) {}
 
-      // Push to GitHub repository so mobile devices auto-resolve the URL
-      try {
-        execSync('git add current_tunnel_url.txt && git commit -m "Auto-update tunnel URL" && git push origin main', { stdio: 'ignore' });
-        console.log('📡 Published active tunnel URL to GitHub Cloud Registry for Mobile Data auto-sync!');
-      } catch (err) {
-        console.log('ℹ️  GitHub cloud registry push skipped or up to date.');
+        // 4. Clipboard copy
+        try {
+          execSync(`powershell -Command "Set-Clipboard -Value '${currentTunnelUrl}'"`, { stdio: 'ignore' });
+        } catch (_) {}
       }
+    }
+  };
 
-      // Attempt clipboard copy
-      try {
-        execSync(`powershell -Command "Set-Clipboard -Value '${tunnelUrl}'"`, { stdio: 'ignore' });
-      } catch (_) {}
+  child.stdout.on('data', onData);
+  child.stderr.on('data', onData);
 
-      console.log('================================================================');
-      console.log('🎉 CREWLINK INTERNET TUNNEL IS LIVE & READY!');
-      console.log('================================================================');
-      console.log(`\n🌐 Public Tunnel URL:`);
-      console.log(`   👉  ${tunnelUrl}\n`);
-      console.log(`📋 Copied to clipboard automatically!\n`);
-      console.log('📱 HOW TO CONNECT FROM YOUR PHONE (Mobile Data / 4G / 5G):');
-      console.log('1. Open the CrewLink app on your phone.');
-      console.log('2. Tap the Server badge in the top-right corner (or in the red error box).');
-      console.log(`3. Enter or paste this URL:`);
-      console.log(`   ${tunnelUrl}`);
-      console.log('4. Tap "Test Connection" (it will show a green checkmark), then tap "Save & Apply"!');
-      console.log('\n📥 TO DIRECTLY DOWNLOAD THE APK TO YOUR PHONE:');
-      console.log(`   Open your phone browser and visit:`);
-      console.log(`   ${tunnelUrl}/download-apk`);
-      console.log('\n================================================================');
-      console.log('ℹ️  Keep this window open while using the app over mobile data.');
-      console.log('    Press Ctrl+C to stop the tunnel.\n');
+  child.on('close', (code) => {
+    console.warn(`⚠️ Tunnel process exited (code ${code}). Auto-restarting in 2 seconds...`);
+    isRestarting = false;
+    setTimeout(startTunnel, 2000);
+  });
+
+  child.on('error', (err) => {
+    console.error(`❌ Tunnel process error:`, err.message);
+    isRestarting = false;
+    setTimeout(startTunnel, 3000);
+  });
+}
+
+// Active Health Monitor: Every 15 seconds, ping tunnel to ensure it never freezes after sleep
+setInterval(async () => {
+  if (!currentTunnelUrl || isRestarting) return;
+
+  const isAlive = await pingUrl(`${currentTunnelUrl}/api/test`);
+  if (isAlive) {
+    consecutiveFailures = 0;
+  } else {
+    consecutiveFailures++;
+    console.warn(`⚠️ Tunnel health check failed (${consecutiveFailures}/2)...`);
+    if (consecutiveFailures >= 2) {
+      console.warn('🔄 Tunnel appears unresponsive (PC may have slept). Restarting tunnel now...');
+      consecutiveFailures = 0;
+      startTunnel();
     }
   }
-};
+}, 15000);
 
-child.stdout.on('data', onData);
-child.stderr.on('data', onData);
-
-child.on('close', (code) => {
-  console.log(`\nTunnel closed (exit code ${code}).`);
-});
+// Start on launch
+startTunnel();
 
 process.on('SIGINT', () => {
-  child.kill();
+  if (child) child.kill();
   process.exit();
 });

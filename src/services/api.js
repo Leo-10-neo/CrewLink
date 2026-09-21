@@ -11,10 +11,19 @@ const formatUrl = (raw) => {
   return url;
 };
 
-export const PUBLIC_INTERNET_URL = 'https://forward-festival-img-bureau.trycloudflare.com';
+export const PUBLIC_INTERNET_URL = 'https://billing-catalogue-seriously-elementary.trycloudflare.com';
+export const RAW_REGISTRY_URL = 'https://raw.githubusercontent.com/Leo-10-neo/CrewLink/main/current_tunnel_url.txt';
+export const CLOUD_REGISTRY_URL = 'https://api.github.com/repos/Leo-10-neo/CrewLink/contents/current_tunnel_url.txt';
+export const LAN_WIFI_URL = 'http://192.168.0.121:5000';
+
+let inMemoryApiBase = '';
 
 // Dynamic host detection with support for custom user-configured server URL
 export const getApiBase = () => {
+  if (inMemoryApiBase) {
+    return inMemoryApiBase;
+  }
+
   // 1. User-configured server URL (persisted on the device in localStorage)
   if (typeof window !== 'undefined') {
     const custom = localStorage.getItem('crewlink_api_base');
@@ -23,7 +32,7 @@ export const getApiBase = () => {
     }
   }
 
-  // 2. Build-time environment variable (e.g. Render or production URL)
+  // 2. Build-time environment variable
   let base = import.meta.env.VITE_API_BASE;
   if (base) {
     return formatUrl(base);
@@ -65,30 +74,43 @@ export const getApiBase = () => {
 };
 
 export const setApiBase = (url) => {
+  if (!url) return getApiBase();
+  const formatted = formatUrl(url);
+  inMemoryApiBase = formatted;
+
   if (typeof window !== 'undefined') {
-    if (url && url.trim()) {
-      const formatted = formatUrl(url);
-      localStorage.setItem('crewlink_api_base', formatted);
-      return formatted;
-    } else {
-      localStorage.removeItem('crewlink_api_base');
-      return getApiBase();
-    }
+    localStorage.setItem('crewlink_api_base', formatted);
+    // Also notify native Android background service if available
+    try {
+      if (Capacitor?.isNativePlatform?.()) {
+        const token = localStorage.getItem('token');
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        if (token && user) {
+          Capacitor.Plugins?.CrewLinkSync?.syncUser({
+            token,
+            role: user.role || 'volunteer',
+            serverUrl: formatted,
+          }).catch(() => {});
+        }
+      }
+    } catch (_) {}
   }
-  return url;
+  return formatted;
 };
 
 export const resetApiBase = () => {
+  inMemoryApiBase = '';
   if (typeof window !== 'undefined') {
     localStorage.removeItem('crewlink_api_base');
   }
   return getApiBase();
 };
 
-export const testServerConnection = async (testUrl) => {
+export const testServerConnection = async (testUrl, timeoutMs = 4000) => {
   const target = formatUrl(testUrl || getApiBase());
   try {
-    const res = await axios.get(`${target}/api/test`, { timeout: 6000 });
+    const res = await axios.get(`${target}/api/test`, { timeout: timeoutMs });
     return { success: true, url: target, data: res.data };
   } catch (err) {
     const errMsg = err.code === 'ECONNABORTED' 
@@ -98,70 +120,82 @@ export const testServerConnection = async (testUrl) => {
   }
 };
 
-export const RAW_REGISTRY_URL = 'https://raw.githubusercontent.com/Leo-10-neo/CrewLink/main/current_tunnel_url.txt';
-export const CLOUD_REGISTRY_URL = 'https://api.github.com/repos/Leo-10-neo/CrewLink/contents/current_tunnel_url.txt';
-export const LAN_WIFI_URL = 'http://192.168.0.121:5000';
+let discoveryPromise = null;
 
-export const autoDiscoverTunnelUrl = async () => {
-  // 1. Check if the built-in PUBLIC_INTERNET_URL is active and responsive
-  if (PUBLIC_INTERNET_URL) {
+// Multi-tier fast auto-discovery that races available candidates
+export const autoDiscoverTunnelUrl = async (force = false) => {
+  if (discoveryPromise && !force) {
+    return discoveryPromise;
+  }
+
+  discoveryPromise = (async () => {
+    // 1. Gather all potential candidates
+    const candidates = [];
+
+    // Local Wi-Fi candidate (super fast on home network)
+    candidates.push(LAN_WIFI_URL);
+
+    // Built-in public URL
+    if (PUBLIC_INTERNET_URL) {
+      candidates.push(PUBLIC_INTERNET_URL);
+    }
+
+    // Query GitHub Raw Registry
     try {
-      const test = await testServerConnection(PUBLIC_INTERNET_URL);
-      if (test.success) {
-        setApiBase(PUBLIC_INTERNET_URL);
-        return { success: true, url: PUBLIC_INTERNET_URL };
+      const rawRes = await axios.get(`${RAW_REGISTRY_URL}?_cb=${Date.now()}`, { timeout: 3500 });
+      if (rawRes.data && typeof rawRes.data === 'string' && rawRes.data.includes('trycloudflare.com')) {
+        candidates.unshift(formatUrl(rawRes.data.trim()));
       }
     } catch (_) {}
-  }
 
-  // 2. Query Raw GitHub Registry (fast, unthrottled, no headers required)
-  try {
-    const res = await axios.get(`${RAW_REGISTRY_URL}?_cb=${Date.now()}`, {
-      timeout: 5000,
-    });
-    if (res.data && typeof res.data === 'string' && res.data.includes('trycloudflare.com')) {
-      const liveUrl = formatUrl(res.data.trim());
-      const test = await testServerConnection(liveUrl);
-      if (test.success) {
-        setApiBase(liveUrl);
-        return { success: true, url: liveUrl };
+    // Fallback: GitHub REST API
+    try {
+      const apiRes = await axios.get(CLOUD_REGISTRY_URL, {
+        headers: { 
+          Accept: 'application/vnd.github.v3.raw',
+          'User-Agent': 'CrewLink-Mobile'
+        },
+        timeout: 3500,
+      });
+      if (apiRes.data && typeof apiRes.data === 'string' && apiRes.data.includes('trycloudflare.com')) {
+        const ghUrl = formatUrl(apiRes.data.trim());
+        if (!candidates.includes(ghUrl)) {
+          candidates.push(ghUrl);
+        }
       }
-    }
-  } catch (err) {
-    console.warn('Auto-discovery from Raw Registry failed:', err.message);
-  }
+    } catch (_) {}
 
-  // 3. Fallback to GitHub REST API Registry
-  try {
-    const res = await axios.get(CLOUD_REGISTRY_URL, {
-      headers: { 
-        Accept: 'application/vnd.github.v3.raw',
-        'User-Agent': 'CrewLink-Mobile'
-      },
-      timeout: 5000,
-    });
-    if (res.data && typeof res.data === 'string' && res.data.includes('trycloudflare.com')) {
-      const liveUrl = formatUrl(res.data.trim());
-      const test = await testServerConnection(liveUrl);
-      if (test.success) {
-        setApiBase(liveUrl);
-        return { success: true, url: liveUrl };
+    // Deduplicate
+    const uniqueCandidates = [...new Set(candidates.filter(Boolean))];
+
+    // Race candidates in parallel to find the fastest responsive server
+    try {
+      const winningUrl = await Promise.any(
+        uniqueCandidates.map(async (candidate) => {
+          const test = await testServerConnection(candidate, 3500);
+          if (test.success) {
+            return candidate;
+          }
+          throw new Error(`Failed to connect to ${candidate}`);
+        })
+      );
+
+      if (winningUrl) {
+        setApiBase(winningUrl);
+        console.log('✅ CrewLink API Connected to:', winningUrl);
+        return { success: true, url: winningUrl };
       }
-    }
-  } catch (err) {
-    console.warn('Auto-discovery from Cloud Registry failed:', err.message);
-  }
+    } catch (_) {}
 
-  // 4. Fallback to local Wi-Fi IP if phone is on the same local network
+    return { success: false };
+  })();
+
   try {
-    const test = await testServerConnection(LAN_WIFI_URL);
-    if (test.success) {
-      setApiBase(LAN_WIFI_URL);
-      return { success: true, url: LAN_WIFI_URL };
-    }
-  } catch (_) {}
-
-  return { success: false };
+    const result = await discoveryPromise;
+    return result;
+  } finally {
+    discoveryPromise = null;
+  }
 };
 
 export const API_BASE = getApiBase();
@@ -172,85 +206,96 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 15000,
 });
 
 // Dynamically use the active base URL and add authorization token
 api.interceptors.request.use(
   (config) => {
     config.baseURL = `${getApiBase()}/api`;
-    const token = localStorage.getItem('token');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-let isAutoDiscovering = false;
+// Automatic silent recovery: on any network disconnect, auto-discover live server and retry
+let isRetrying = false;
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (!error.response && originalRequest && !originalRequest._retryNetwork) {
+    const isNetworkError = !error.response || error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED';
+
+    if (isNetworkError && originalRequest && !originalRequest._retryNetwork && !isRetrying) {
       originalRequest._retryNetwork = true;
-      if (!isAutoDiscovering) {
-        isAutoDiscovering = true;
-        try {
-          const discovered = await autoDiscoverTunnelUrl();
-          if (discovered.success) {
-            originalRequest.baseURL = `${discovered.url}/api`;
-            return api(originalRequest);
-          }
-        } catch (_) {
-          // ignore
-        } finally {
-          isAutoDiscovering = false;
+      isRetrying = true;
+
+      try {
+        console.warn('Network issue detected. Auto-reconnecting to live CrewLink API...');
+        const discovered = await autoDiscoverTunnelUrl(true);
+        if (discovered.success) {
+          originalRequest.baseURL = `${discovered.url}/api`;
+          return api(originalRequest);
         }
+      } catch (_) {
+        // Fall through to reject
+      } finally {
+        isRetrying = false;
       }
     }
     return Promise.reject(error);
   }
 );
 
+// Proactive background keep-alive monitor (keeps connection live while app is open)
+if (typeof window !== 'undefined') {
+  // 1. Check on initial page/app mount
+  setTimeout(() => {
+    autoDiscoverTunnelUrl(false).catch(() => {});
+  }, 500);
+
+  // 2. Check whenever user returns to the app (phone unlock, app switcher)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      testServerConnection(getApiBase(), 2500).then((res) => {
+        if (!res.success) {
+          autoDiscoverTunnelUrl(true).catch(() => {});
+        }
+      }).catch(() => {});
+    }
+  });
+
+  // 3. Periodic silent heartbeat every 30 seconds
+  setInterval(() => {
+    if (!document.hidden) {
+      testServerConnection(getApiBase(), 3000).then((res) => {
+        if (!res.success) {
+          autoDiscoverTunnelUrl(true).catch(() => {});
+        }
+      }).catch(() => {});
+    }
+  }, 30000);
+}
+
 // Auth API
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
-  googleLogin: (token) => api.post('/auth/google', { token }),
   register: (userData) => api.post('/auth/register', userData),
-  logout: () => api.post('/auth/logout'),
-  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
-  resetPassword: (token, password) => api.post('/auth/reset-password', { token, password }),
-  getProfile: () => api.get('/auth/profile'),
-  updateProfile: (userData) => api.put('/auth/profile', userData),
+  googleLogin: (token) => api.post('/auth/google', { token }),
+  getCurrentUser: () => api.get('/auth/me'),
 };
 
 // Events API
 export const eventsAPI = {
-  getAllEvents: () => api.get('/events'),
-  getEventById: (id) => api.get(`/events/${id}`),
-  createEvent: (eventData) => api.post('/events', eventData),
-  updateEvent: (id, eventData) => api.put(`/events/${id}`, eventData),
-  deleteEvent: (id) => api.delete(`/events/${id}`),
-  joinEvent: (id) => api.post(`/events/${id}/join`),
-  leaveEvent: (id) => api.post(`/events/${id}/leave`),
-};
-
-// Applications API
-export const applicationsAPI = {
-  getMyApplications: () => api.get('/applications/my'),
-  createApplication: (applicationData) => api.post('/applications', applicationData),
-  updateApplication: (id, status) => api.put(`/applications/${id}`, { status }),
-  deleteApplication: (id) => api.delete(`/applications/${id}`),
-};
-
-// Notifications API
-export const notificationsAPI = {
-  getNotifications: () => api.get('/notifications'),
-  markAsRead: (id) => api.put(`/notifications/${id}/read`),
-  markAllAsRead: () => api.put('/notifications/read-all'),
+  getAll: (params) => api.get('/events', { params }),
+  getById: (id) => api.get(`/events/${id}`),
+  create: (eventData) => api.post('/events', eventData),
+  update: (id, eventData) => api.put(`/events/${id}`, eventData),
+  delete: (id) => api.delete(`/events/${id}`),
 };
 
 export default api;
