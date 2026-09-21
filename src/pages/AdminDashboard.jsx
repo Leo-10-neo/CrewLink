@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { Award, Bell, CalendarDays, Camera, Check, ClipboardCheck, Grid2X2, LogOut, Menu, Plus, Search, Sparkles, Trash2, UsersRound, X, Edit, MessageSquare, Image as ImageIcon, Download, Printer, Mic, Square, Send, ArrowUp, ArrowDown, Smartphone, QrCode, Copy, ExternalLink, CheckCircle2, ShieldCheck, PhoneCall } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
@@ -1732,12 +1733,71 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
         const volunteerName = upiModalTask.volunteer?.fullName || upiModalTask.volunteer?.username || 'Volunteer';
         const taskName = upiModalTask.taskName || 'Event Support';
         const upiPayee = (upiForm.upiId || '').trim();
+        const fixedAmount = Number(upiForm.amount || 0).toFixed(2);
+        const trRef = (upiForm.utr || ('CL' + Date.now())).slice(0, 35);
         const upiUri = upiPayee 
-          ? `upi://pay?pa=${encodeURIComponent(upiPayee)}&pn=${encodeURIComponent(volunteerName)}&am=${encodeURIComponent(upiForm.amount || '0')}&cu=INR&tn=${encodeURIComponent('CrewLink: ' + taskName)}`
+          ? `upi://pay?pa=${encodeURIComponent(upiPayee)}&pn=${encodeURIComponent(volunteerName)}&am=${encodeURIComponent(fixedAmount)}&mam=${encodeURIComponent(fixedAmount)}&cu=INR&tn=${encodeURIComponent('CrewLink: ' + taskName)}&tr=${encodeURIComponent(trRef)}`
           : '';
         const qrUrl = upiUri 
           ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(upiUri)}&size=190x190&margin=3` 
           : '';
+
+        const handleOpenUpi = async (targetApp = 'any') => {
+          if (!upiPayee) {
+            setToast('Please enter a valid UPI ID or phone number first');
+            return;
+          }
+
+          let effectivePayee = upiPayee;
+          if (/^\d{10}$/.test(effectivePayee)) {
+            if (targetApp === 'gpay') effectivePayee = `${effectivePayee}@okaxis`;
+            else if (targetApp === 'phonepe') effectivePayee = `${effectivePayee}@ybl`;
+            else if (targetApp === 'paytm') effectivePayee = `${effectivePayee}@paytm`;
+            else effectivePayee = `${effectivePayee}@upi`;
+          }
+
+          const targetUpiUri = `upi://pay?pa=${encodeURIComponent(effectivePayee)}&pn=${encodeURIComponent(volunteerName)}&am=${encodeURIComponent(fixedAmount)}&mam=${encodeURIComponent(fixedAmount)}&cu=INR&tn=${encodeURIComponent('CrewLink: ' + taskName)}&tr=${encodeURIComponent(trRef)}`;
+
+          // 1. Try native Capacitor plugin if running on mobile app
+          try {
+            const syncPlugin = Capacitor?.Plugins?.CrewLinkSync;
+            if (syncPlugin && typeof syncPlugin.openUpiApp === 'function') {
+              await syncPlugin.openUpiApp({
+                upiUri: targetUpiUri,
+                app: targetApp,
+                amount: fixedAmount
+              });
+              return;
+            }
+          } catch (e) {
+            console.warn('Native openUpiApp invocation failed, falling back:', e);
+          }
+
+          // 2. Android Chrome / Mobile Browser Intent scheme fallback
+          const isAndroid = /android/i.test(navigator.userAgent);
+          if (isAndroid) {
+            let intentUrl = `intent://pay?pa=${encodeURIComponent(effectivePayee)}&pn=${encodeURIComponent(volunteerName)}&am=${encodeURIComponent(fixedAmount)}&mam=${encodeURIComponent(fixedAmount)}&cu=INR&tn=${encodeURIComponent('CrewLink: ' + taskName)}&tr=${encodeURIComponent(trRef)}#Intent;scheme=upi;`;
+            if (targetApp === 'gpay') {
+              intentUrl += 'package=com.google.android.apps.nbu.paisa.user;end';
+            } else if (targetApp === 'phonepe') {
+              intentUrl += 'package=com.phonepe.app;end';
+            } else if (targetApp === 'paytm') {
+              intentUrl += 'package=net.one97.paytm;end';
+            } else {
+              intentUrl += 'end';
+            }
+
+            try {
+              window.location.href = intentUrl;
+              return;
+            } catch (err) {
+              console.warn('Failed to open intent URL, falling back to standard URI');
+            }
+          }
+
+          // 3. Fallback standard URI
+          window.location.href = targetUpiUri;
+        };
 
         return (
           <div className="modal-backdrop" style={{ zIndex: 1050 }}>
@@ -1888,36 +1948,87 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                   />
                 </div>
 
-                {/* QR Code Scan & Deep Link Box */}
+                {/* QR Code Scan & Direct UPI Payment Box */}
                 {upiPayee && (
-                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-                    <div className="bg-white p-2 rounded-lg border border-gray-200 shadow-2xs shrink-0">
-                      <img 
-                        src={qrUrl} 
-                        alt="Scan UPI QR" 
-                        className="w-32 h-32 object-contain"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs font-bold text-gray-800">
-                        <QrCode size={14} className="text-purple-600" />
-                        <span>Scan &amp; Pay via Any UPI App</span>
+                  <div className="p-4 bg-gradient-to-br from-slate-50 via-purple-50/25 to-indigo-50/20 border border-purple-100 rounded-2xl space-y-3.5 shadow-2xs">
+                    
+                    {/* QR Code & Description */}
+                    <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                      <div className="bg-white p-2.5 rounded-xl border border-gray-200 shadow-2xs shrink-0 flex flex-col items-center">
+                        <img 
+                          src={qrUrl} 
+                          alt="Scan UPI QR" 
+                          className="w-32 h-32 object-contain"
+                          loading="lazy"
+                        />
+                        <span className="text-[10px] font-bold text-emerald-700 mt-1 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-full">
+                          Fixed ₹{fixedAmount}
+                        </span>
                       </div>
-                      <p className="text-[11px] text-gray-500 leading-relaxed">
-                        Scan using Google Pay, PhonePe, Paytm, or BHIM. Amount (₹{upiForm.amount}) and payee details are pre-filled.
-                      </p>
-                      <div className="pt-1">
-                        <a
-                          href={upiUri}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs font-bold text-gray-800">
+                          <QrCode size={14} className="text-purple-600" />
+                          <span>Direct UPI Payment • Fixed Price</span>
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-relaxed">
+                          Pay fixed amount <strong className="text-emerald-700 font-bold">₹{fixedAmount}</strong> to <strong className="text-purple-700 font-mono">{upiPayee}</strong>. Click below to launch Google Pay, PhonePe, or any installed UPI app directly:
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Direct App Quick Action Buttons */}
+                    <div className="space-y-2 pt-2 border-t border-purple-100/80">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {/* Direct Google Pay Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenUpi('gpay')}
+                          className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 bg-[#1F1F1F] hover:bg-black active:scale-[0.98] text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer border border-gray-800"
                         >
-                          <Smartphone size={13} />
-                          <span>Open in Installed UPI App</span>
-                          <ExternalLink size={11} className="opacity-70" />
-                        </a>
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center font-black text-[11px] text-blue-600 shadow-2xs">
+                              G
+                            </div>
+                            <span>Google Pay</span>
+                          </div>
+                          <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md font-mono text-[11px] font-bold">
+                            ₹{fixedAmount}
+                          </span>
+                        </button>
+
+                        {/* Direct PhonePe Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenUpi('phonepe')}
+                          className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 bg-[#5f259f] hover:bg-[#4d1d82] active:scale-[0.98] text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer border border-purple-800"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center font-black text-[11px] text-[#5f259f] shadow-2xs">
+                              पे
+                            </div>
+                            <span>PhonePe</span>
+                          </div>
+                          <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md font-mono text-[11px] font-bold">
+                            ₹{fixedAmount}
+                          </span>
+                        </button>
                       </div>
+
+                      {/* Generic "Open in Installed UPI App" Master Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleOpenUpi('any')}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-800 active:scale-[0.98] text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
+                      >
+                        <Smartphone size={14} />
+                        <span>Open in Installed UPI App</span>
+                        <ExternalLink size={12} className="opacity-80" />
+                        <span className="ml-auto bg-white/20 text-white px-2 py-0.5 rounded-md font-mono text-[11px]">
+                          Fixed ₹{fixedAmount}
+                        </span>
+                      </button>
                     </div>
+
                   </div>
                 )}
 
