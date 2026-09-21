@@ -10,6 +10,7 @@ const volunteerProfileSchema = new mongoose.Schema({
   fullName: { type: String, default: '' },
   city: { type: String, default: '' },
   phone: { type: String, default: '' },
+  upiId: { type: String, default: '' },
   photo: { type: String, default: '' },
   aadharNo: { type: String, default: '' },
   panCardNo: { type: String, default: '' },

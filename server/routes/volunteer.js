@@ -30,7 +30,7 @@ router.get('/profile', auth, async (req, res) => {
   try {
     const User = require('../models/User');
     const user = await User.findById(req.userId);
-    let profile = await VolunteerProfile.findOne({ user: req.userId }).populate('user', 'username email photo aadharNo panCardNo address age fullName gender phone city skills availability experience preferredEventTypes languages emergencyContact bloodGroup');
+    let profile = await VolunteerProfile.findOne({ user: req.userId }).populate('user', 'username email photo aadharNo panCardNo address age fullName gender phone upiId city skills availability experience preferredEventTypes languages emergencyContact bloodGroup');
 
     if (!profile) {
       profile = await VolunteerProfile.create({
@@ -38,6 +38,7 @@ router.get('/profile', auth, async (req, res) => {
         fullName: user?.fullName || user?.username || '',
         city: user?.city || '',
         phone: user?.phone || '',
+        upiId: user?.upiId || '',
         photo: user?.photo || '',
         aadharNo: user?.aadharNo || '',
         panCardNo: user?.panCardNo || '',
@@ -57,6 +58,7 @@ router.get('/profile', auth, async (req, res) => {
         fullName: profile.fullName || user?.fullName || user?.username || '',
         city: profile.city || user?.city || '',
         phone: profile.phone || user?.phone || '',
+        upiId: profile.upiId || user?.upiId || '',
         photo: profile.photo || user?.photo || '',
         aadharNo: profile.aadharNo || user?.aadharNo || '',
         panCardNo: profile.panCardNo || user?.panCardNo || '',
@@ -76,7 +78,7 @@ router.get('/profile', auth, async (req, res) => {
       await profile.save();
     }
 
-    profile = await VolunteerProfile.findById(profile._id).populate('user', 'username email photo aadharNo panCardNo address age fullName gender phone city skills availability experience preferredEventTypes languages emergencyContact bloodGroup');
+    profile = await VolunteerProfile.findById(profile._id).populate('user', 'username email photo aadharNo panCardNo address age fullName gender phone upiId city skills availability experience preferredEventTypes languages emergencyContact bloodGroup');
     res.json(profile);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -87,7 +89,7 @@ router.get('/profile', auth, async (req, res) => {
 router.put('/profile', auth, async (req, res) => {
   try {
     const User = require('../models/User');
-    const { fullName, city, phone, skills, availability, experience, preferredEventTypes, photo, aadharNo, panCardNo, address, age, gender, languages, emergencyContact, bloodGroup } = req.body;
+    const { fullName, city, phone, upiId, skills, availability, experience, preferredEventTypes, photo, aadharNo, panCardNo, address, age, gender, languages, emergencyContact, bloodGroup } = req.body;
     let profile = await VolunteerProfile.findOne({ user: req.userId });
     if (!profile) {
       profile = await VolunteerProfile.create({ user: req.userId });
@@ -108,6 +110,7 @@ router.put('/profile', auth, async (req, res) => {
       fullName: fullName ?? profile.fullName ?? '',
       city: city ?? profile.city ?? '',
       phone: phone ?? profile.phone ?? '',
+      upiId: upiId ?? profile.upiId ?? '',
       photo: photo ?? profile.photo ?? '',
       aadharNo: aadharNo ?? profile.aadharNo ?? '',
       panCardNo: panCardNo ?? profile.panCardNo ?? '',
@@ -130,6 +133,7 @@ router.put('/profile', auth, async (req, res) => {
         fullName: fullName || user.fullName || '',
         city: city || user.city || '',
         phone: phone || user.phone || '',
+        upiId: upiId ?? user.upiId ?? '',
         photo: photo || user.photo || '',
         aadharNo: aadharNo || user.aadharNo || '',
         panCardNo: panCardNo || user.panCardNo || '',
@@ -147,7 +151,7 @@ router.put('/profile', auth, async (req, res) => {
       await user.save();
     }
 
-    profile = await VolunteerProfile.findById(profile._id).populate('user', 'username email photo aadharNo panCardNo address age fullName gender phone city skills availability experience preferredEventTypes languages emergencyContact bloodGroup');
+    profile = await VolunteerProfile.findById(profile._id).populate('user', 'username email photo aadharNo panCardNo address age fullName gender phone upiId city skills availability experience preferredEventTypes languages emergencyContact bloodGroup');
     res.json(profile);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -686,19 +690,30 @@ const { adminAuth } = require('../middleware/auth');
 router.get('/admin/tasks', adminAuth, async (req, res) => {
   try {
     const tasks = await VolunteerTask.find()
-      .populate('volunteer', 'username fullName')
+      .populate('volunteer', 'username fullName phone upiId email')
       .populate('event', 'title date')
       .sort({ dueDate: 1, createdAt: -1 })
       .lean();
 
     const attendances = await Attendance.find().lean();
+    const profiles = await VolunteerProfile.find().lean();
+
     const tasksWithAtt = tasks.map(t => {
+      const prof = profiles.find(p => p.user && t.volunteer && p.user.toString() === t.volunteer._id.toString());
+      const volPhone = t.volunteer?.phone || prof?.phone || '';
+      const volUpiId = t.volunteer?.upiId || prof?.upiId || '';
+
       const att = attendances.find(a => 
         (a.task && a.task.toString() === t._id.toString()) ||
         (!a.task && a.volunteer?.toString() === t.volunteer?._id?.toString() && a.event?.toString() === t.event?._id?.toString())
       );
       return {
         ...t,
+        volunteer: t.volunteer ? {
+          ...t.volunteer,
+          phone: volPhone,
+          upiId: volUpiId
+        } : null,
         attendanceStatus: (att && att.status !== 'pending') ? att.status : null
       };
     });
@@ -798,24 +813,39 @@ router.delete('/admin/tasks/:id', adminAuth, async (req, res) => {
 // PATCH approve task payment (admin)
 router.patch('/admin/tasks/:id/payment', adminAuth, async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, paymentMethod, upiPhone, upiId, transactionId, paidAmount } = req.body;
     const newStatus = status || 'approved';
+
+    const updateData = {
+      paymentStatus: newStatus
+    };
+
+    if (newStatus === 'approved') {
+      updateData.paymentApprovedAt = new Date();
+      updateData.paymentMethod = paymentMethod || 'UPI';
+      if (upiPhone !== undefined) updateData.upiPhone = upiPhone;
+      if (upiId !== undefined) updateData.upiId = upiId;
+      if (transactionId !== undefined) updateData.transactionId = transactionId;
+      if (paidAmount !== undefined) updateData.paidAmount = Number(paidAmount);
+    }
+
     const task = await VolunteerTask.findByIdAndUpdate(
       req.params.id,
-      {
-        paymentStatus: newStatus,
-        ...(newStatus === 'approved' ? { paymentApprovedAt: new Date() } : {})
-      },
+      updateData,
       { new: true }
-    ).populate('volunteer', 'username fullName').populate('event', 'title');
+    ).populate('volunteer', 'username fullName phone upiId email').populate('event', 'title');
 
     if (!task) return res.status(404).json({ message: 'Task not found' });
 
     if (newStatus === 'approved') {
       const Notification = require('../models/Notification');
+      const amount = task.paidAmount || task.salary || 0;
+      const destination = task.upiPhone ? `to ${task.upiPhone}` : (task.upiId ? `to ${task.upiId}` : '');
+      const refNote = task.transactionId ? ` (UTR / Ref: ${task.transactionId})` : '';
+
       await Notification.create({
         userId: task.volunteer._id,
-        message: `Admin has approved your payment of ₹${task.salary || 0} for completing the task "${task.taskName}".`,
+        message: `Admin has paid ₹${amount} via UPI ${destination} for task "${task.taskName}".${refNote}`,
         type: 'success',
         link: '/volunteer/dashboard'
       });

@@ -26,6 +26,27 @@ const volunteerTaskSchema = new mongoose.Schema({
     enum: ['unpaid', 'pending_approval', 'approved'],
     default: 'unpaid'
   },
+  paymentMethod: {
+    type: String,
+    enum: ['UPI', 'Cash', 'Bank Transfer', 'Other'],
+    default: 'UPI'
+  },
+  upiPhone: {
+    type: String,
+    default: ''
+  },
+  upiId: {
+    type: String,
+    default: ''
+  },
+  transactionId: {
+    type: String,
+    default: ''
+  },
+  paidAmount: {
+    type: Number,
+    default: 0
+  },
   paymentApprovedAt: {
     type: Date
   },

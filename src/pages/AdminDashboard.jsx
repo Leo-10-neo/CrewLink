@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Award, Bell, CalendarDays, Camera, Check, ClipboardCheck, Grid2X2, LogOut, Menu, Plus, Search, Sparkles, Trash2, UsersRound, X, Edit, MessageSquare, Image as ImageIcon, Download, Printer, Mic, Square, Send, ArrowUp, ArrowDown } from 'lucide-react';
+import { Award, Bell, CalendarDays, Camera, Check, ClipboardCheck, Grid2X2, LogOut, Menu, Plus, Search, Sparkles, Trash2, UsersRound, X, Edit, MessageSquare, Image as ImageIcon, Download, Printer, Mic, Square, Send, ArrowUp, ArrowDown, Smartphone, QrCode, Copy, ExternalLink, CheckCircle2, ShieldCheck, PhoneCall } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import VoiceNotePlayer from '../components/VoiceNotePlayer';
@@ -591,6 +591,11 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [showImagePreview, setShowImagePreview] = useState(null);
+  const [upiModalTask, setUpiModalTask] = useState(null);
+  const [upiForm, setUpiForm] = useState({ phone: '', upiId: '', amount: '', utr: '' });
+  const [receiptModalTask, setReceiptModalTask] = useState(null);
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
+  const [copiedField, setCopiedField] = useState(null);
   const [sortOrder, setSortOrder] = useState('asc');
   const chatMessagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -832,6 +837,79 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
       await axios.delete(`${API_URL}/volunteer/admin/tasks/${taskId}`, config);
       fetchTasks();
     } catch {}
+  };
+
+  const openUpiPaymentModal = (task) => {
+    const rawPhone = task.volunteer?.phone || '';
+    const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+    const volUpi = task.volunteer?.upiId || (cleanPhone ? `${cleanPhone}@upi` : '');
+    const amount = task.salary || 200;
+    const autoUtr = 'UPI' + Math.floor(100000000000 + Math.random() * 900000000000);
+    setUpiForm({
+      phone: rawPhone,
+      upiId: volUpi,
+      amount: String(amount),
+      utr: autoUtr
+    });
+    setUpiModalTask(task);
+  };
+
+  const handleCopy = (text, fieldName) => {
+    if (!text) return;
+    try {
+      navigator.clipboard?.writeText(text);
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch {}
+  };
+
+  const handleApplyHandle = (suffix) => {
+    const cleanPhone = (upiForm.phone || '').replace(/\D/g, '').slice(-10);
+    if (cleanPhone) {
+      setUpiForm(prev => ({ ...prev, upiId: `${cleanPhone}${suffix}` }));
+    }
+  };
+
+  const handleConfirmUpiPayment = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!upiModalTask) return;
+    if (!upiForm.phone && !upiForm.upiId) {
+      alert('Please enter a Phone number or UPI ID for the volunteer.');
+      return;
+    }
+    setPaymentSubmitting(true);
+    const taskId = upiModalTask._id;
+    try {
+      // Instant optimistic update
+      setTasks(prev => prev.map(t => t._id === taskId ? {
+        ...t,
+        paymentStatus: 'approved',
+        paymentMethod: 'UPI',
+        upiPhone: upiForm.phone,
+        upiId: upiForm.upiId,
+        transactionId: upiForm.utr,
+        paidAmount: Number(upiForm.amount),
+        paymentApprovedAt: new Date().toISOString()
+      } : t));
+
+      await axios.patch(`${API_URL}/volunteer/admin/tasks/${taskId}/payment`, {
+        status: 'approved',
+        paymentMethod: 'UPI',
+        upiPhone: upiForm.phone,
+        upiId: upiForm.upiId,
+        transactionId: upiForm.utr,
+        paidAmount: Number(upiForm.amount)
+      }, config);
+
+      setUpiModalTask(null);
+      fetchTasks();
+    } catch (err) {
+      console.error('Error confirming payment:', err);
+      alert(err.response?.data?.message || 'Failed to record payment');
+      fetchTasks();
+    } finally {
+      setPaymentSubmitting(false);
+    }
   };
 
   const approvePayment = async (taskId) => {
@@ -1208,7 +1286,21 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                       </div>
                     </td>
                     <td style={{ padding: '18px 14px' }}>
-                      <span style={{ color: '#475569', fontSize: '14px' }}>{task.volunteer?.fullName || task.volunteer?.username || ''}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <span style={{ color: '#1e293b', fontSize: '14px', fontWeight: '500' }}>{task.volunteer?.fullName || task.volunteer?.username || ''}</span>
+                        {task.volunteer?.phone ? (
+                          <span style={{ color: '#64748b', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ opacity: 0.8 }}>📞</span> {task.volunteer.phone}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: '11px' }}>No phone registered</span>
+                        )}
+                        {task.volunteer?.upiId && (
+                          <span style={{ color: '#7c3aed', fontSize: '11px', fontFamily: 'monospace' }}>
+                            UPI: {task.volunteer.upiId}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: '18px 14px' }}>
                       <span style={{ color: '#5b52f6', fontSize: '14px', fontWeight: '600' }}>{task.event?.title || ''}</span>
@@ -1216,22 +1308,32 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                     <td style={{ padding: '18px 14px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <span style={{ color: '#10b981', fontSize: '14px', fontWeight: 'bold' }}>₹{task.salary || 0}</span>
-                        {task.status === 'completed' ? (
-                          task.paymentStatus === 'approved' ? (
-                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[11px] font-semibold inline-block whitespace-nowrap border border-emerald-200/60 w-fit">
-                              ✓ Approved
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => approvePayment(task._id)}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-xs font-semibold shadow-xs transition-colors whitespace-nowrap cursor-pointer w-fit"
-                              title="Click to approve payment"
-                            >
-                              Approve Pay
-                            </button>
-                          )
+                        {task.paymentStatus === 'approved' ? (
+                          <button
+                            onClick={() => setReceiptModalTask(task)}
+                            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded text-[11px] font-semibold inline-flex items-center gap-1.5 whitespace-nowrap border border-emerald-200/80 w-fit cursor-pointer transition-colors shadow-2xs"
+                            title="View UPI Receipt"
+                          >
+                            <ShieldCheck size={12} className="text-emerald-600" />
+                            <span>✓ Paid via UPI</span>
+                          </button>
+                        ) : task.status === 'completed' ? (
+                          <button
+                            onClick={() => openUpiPaymentModal(task)}
+                            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-all whitespace-nowrap cursor-pointer w-fit inline-flex items-center gap-1.5 transform active:scale-95"
+                            title="Pay volunteer via UPI by phone number"
+                          >
+                            <Smartphone size={13} />
+                            <span>Pay via UPI</span>
+                          </button>
                         ) : (
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>Pending work</span>
+                          <button
+                            onClick={() => openUpiPaymentModal(task)}
+                            className="bg-gray-100 hover:bg-purple-50 text-gray-700 hover:text-purple-700 px-2 py-0.5 rounded text-[11px] font-medium border border-gray-200 hover:border-purple-200 transition-colors whitespace-nowrap cursor-pointer w-fit"
+                            title="Advance UPI payment"
+                          >
+                            Pay Early UPI
+                          </button>
                         )}
                       </div>
                     </td>
@@ -1618,6 +1720,337 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
             </div>
             <div className="modal-actions mt-6">
               <button onClick={() => setShowImagePreview(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          ADMIN UPI PAYMENT MODAL
+      ───────────────────────────────────────────────────────────── */}
+      {upiModalTask && (() => {
+        const volunteerName = upiModalTask.volunteer?.fullName || upiModalTask.volunteer?.username || 'Volunteer';
+        const taskName = upiModalTask.taskName || 'Event Support';
+        const upiPayee = (upiForm.upiId || '').trim();
+        const upiUri = upiPayee 
+          ? `upi://pay?pa=${encodeURIComponent(upiPayee)}&pn=${encodeURIComponent(volunteerName)}&am=${encodeURIComponent(upiForm.amount || '0')}&cu=INR&tn=${encodeURIComponent('CrewLink: ' + taskName)}`
+          : '';
+        const qrUrl = upiUri 
+          ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(upiUri)}&size=190x190&margin=3` 
+          : '';
+
+        return (
+          <div className="modal-backdrop" style={{ zIndex: 1050 }}>
+            <div className="event-modal" style={{ maxWidth: '520px', width: '95%', maxHeight: '92vh', overflowY: 'auto', padding: '24px', borderRadius: '18px' }}>
+              
+              {/* Modal Header */}
+              <div className="flex items-start justify-between pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg shadow-2xs">
+                    ₹
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 leading-tight">Pay Volunteer via UPI</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">Direct phone &amp; UPI payment with real-time receipt</p>
+                  </div>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setUpiModalTask(null)}
+                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Volunteer & Task Summary Card */}
+              <div className="mt-4 p-3.5 bg-gradient-to-br from-purple-50/70 via-indigo-50/40 to-blue-50/30 rounded-xl border border-purple-100/80 flex items-center justify-between">
+                <div className="min-w-0 pr-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-gray-900 text-sm truncate">{volunteerName}</span>
+                    <span className="text-[11px] bg-purple-200/60 text-purple-800 font-semibold px-2 py-0.5 rounded-full">Volunteer</span>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-0.5 font-medium truncate">
+                    📋 {taskName} {upiModalTask.event?.title ? `• ${upiModalTask.event.title}` : ''}
+                  </div>
+                  {upiModalTask.volunteer?.phone && (
+                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-1.5 font-mono">
+                      <span>📞 {upiModalTask.volunteer.phone}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(upiModalTask.volunteer.phone, 'phone')}
+                        className="text-[11px] text-purple-700 hover:underline font-sans cursor-pointer"
+                      >
+                        {copiedField === 'phone' ? '✓ Copied' : 'Copy'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="text-right shrink-0 bg-white/90 px-3 py-2 rounded-lg border border-purple-100 shadow-2xs">
+                  <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Salary</span>
+                  <span className="text-xl font-black text-emerald-600">₹{upiForm.amount}</span>
+                </div>
+              </div>
+
+              {/* UPI & Phone Input Section */}
+              <form onSubmit={handleConfirmUpiPayment} className="mt-4 space-y-3.5">
+                {/* Phone Number Field */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-gray-700">Volunteer Phone Number</label>
+                    {upiForm.phone && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <a 
+                          href={`tel:${upiForm.phone}`} 
+                          className="text-blue-600 hover:underline inline-flex items-center gap-1"
+                        >
+                          <PhoneCall size={11} /> Call
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(upiForm.phone, 'inputPhone')}
+                          className="text-purple-600 hover:underline cursor-pointer"
+                        >
+                          {copiedField === 'inputPhone' ? '✓ Copied' : 'Copy'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    type="tel"
+                    required
+                    value={upiForm.phone}
+                    onChange={e => setUpiForm(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="e.g. 9876543210"
+                    className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-400 outline-none font-mono"
+                  />
+                </div>
+
+                {/* UPI ID (VPA) Field with Quick Handle Chips */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-gray-700">Volunteer UPI ID (VPA)</label>
+                    {upiForm.upiId && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(upiForm.upiId, 'upiId')}
+                        className="text-xs text-purple-600 hover:underline cursor-pointer inline-flex items-center gap-1"
+                      >
+                        <Copy size={11} />
+                        {copiedField === 'upiId' ? '✓ Copied' : 'Copy UPI ID'}
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={upiForm.upiId}
+                    onChange={e => setUpiForm(prev => ({ ...prev, upiId: e.target.value }))}
+                    placeholder="e.g. 9876543210@upi or volunteer@okaxis"
+                    className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-400 outline-none font-mono font-medium"
+                  />
+
+                  {/* App suffix handle shortcuts */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                    <span className="text-[11px] text-gray-500">Quick handles:</span>
+                    {[
+                      { name: 'BHIM', suffix: '@upi' },
+                      { name: 'PhonePe', suffix: '@ybl' },
+                      { name: 'Google Pay', suffix: '@okaxis' },
+                      { name: 'Paytm', suffix: '@paytm' }
+                    ].map(h => (
+                      <button
+                        key={h.suffix}
+                        type="button"
+                        onClick={() => handleApplyHandle(h.suffix)}
+                        className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
+                          upiForm.upiId.endsWith(h.suffix) 
+                            ? 'bg-purple-100 border-purple-300 text-purple-800 font-semibold' 
+                            : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        {h.name} ({h.suffix})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Amount Field */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 block mb-1">Payment Amount (₹)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={upiForm.amount}
+                    onChange={e => setUpiForm(prev => ({ ...prev, amount: e.target.value }))}
+                    className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-400 outline-none font-semibold text-emerald-700"
+                  />
+                </div>
+
+                {/* QR Code Scan & Deep Link Box */}
+                {upiPayee && (
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                    <div className="bg-white p-2 rounded-lg border border-gray-200 shadow-2xs shrink-0">
+                      <img 
+                        src={qrUrl} 
+                        alt="Scan UPI QR" 
+                        className="w-32 h-32 object-contain"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs font-bold text-gray-800">
+                        <QrCode size={14} className="text-purple-600" />
+                        <span>Scan &amp; Pay via Any UPI App</span>
+                      </div>
+                      <p className="text-[11px] text-gray-500 leading-relaxed">
+                        Scan using Google Pay, PhonePe, Paytm, or BHIM. Amount (₹{upiForm.amount}) and payee details are pre-filled.
+                      </p>
+                      <div className="pt-1">
+                        <a
+                          href={upiUri}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                        >
+                          <Smartphone size={13} />
+                          <span>Open in Installed UPI App</span>
+                          <ExternalLink size={11} className="opacity-70" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* UTR / Reference ID Field */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-gray-700">
+                      Transaction Reference / UTR Number
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setUpiForm(prev => ({ ...prev, utr: 'UPI' + Math.floor(100000000000 + Math.random() * 900000000000) }))}
+                      className="text-[11px] text-purple-600 hover:underline cursor-pointer"
+                    >
+                      Regenerate Ref
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={upiForm.utr}
+                    onChange={e => setUpiForm(prev => ({ ...prev, utr: e.target.value }))}
+                    placeholder="Enter 12-digit UTR from payment receipt"
+                    className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-400 outline-none font-mono text-gray-700"
+                  />
+                  <span className="text-[11px] text-gray-400 mt-1 block">
+                    Recorded on the volunteer's receipt for audit and confirmation.
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setUpiModalTask(null)}
+                    disabled={paymentSubmitting}
+                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={paymentSubmitting}
+                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <Check size={14} />
+                    <span>{paymentSubmitting ? 'Recording Payment...' : `Confirm Payment (₹${upiForm.amount})`}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ─────────────────────────────────────────────────────────────
+          ADMIN UPI RECEIPT MODAL
+      ───────────────────────────────────────────────────────────── */}
+      {receiptModalTask && (
+        <div className="modal-backdrop" style={{ zIndex: 1050 }}>
+          <div className="event-modal" style={{ maxWidth: '440px', width: '95%', padding: '24px', borderRadius: '18px' }}>
+            <div className="flex items-start justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <ShieldCheck size={18} />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">UPI Payment Receipt</h2>
+                  <p className="text-[11px] text-emerald-600 font-semibold">Payment Verified &amp; Completed</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReceiptModalTask(null)}
+                className="p-1 text-gray-400 hover:text-gray-700 rounded-md hover:bg-gray-100 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-4 p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 text-center">
+              <span className="text-[11px] uppercase font-bold text-emerald-800 tracking-wider block">Amount Paid</span>
+              <span className="text-3xl font-black text-emerald-600 my-1 block">
+                ₹{receiptModalTask.paidAmount || receiptModalTask.salary || 0}
+              </span>
+              <span className="text-xs text-emerald-700 font-medium inline-block bg-white px-2.5 py-0.5 rounded-full border border-emerald-200 shadow-2xs">
+                Paid via UPI
+              </span>
+            </div>
+
+            <div className="mt-4 divide-y divide-gray-100 text-xs">
+              <div className="py-2 flex justify-between">
+                <span className="text-gray-500 font-medium">Volunteer</span>
+                <span className="font-bold text-gray-800">{receiptModalTask.volunteer?.fullName || receiptModalTask.volunteer?.username || '—'}</span>
+              </div>
+              <div className="py-2 flex justify-between">
+                <span className="text-gray-500 font-medium">Phone Paid To</span>
+                <span className="font-mono text-gray-800">{receiptModalTask.upiPhone || receiptModalTask.volunteer?.phone || '—'}</span>
+              </div>
+              <div className="py-2 flex justify-between">
+                <span className="text-gray-500 font-medium">UPI VPA ID</span>
+                <span className="font-mono text-purple-700 font-semibold">{receiptModalTask.upiId || '—'}</span>
+              </div>
+              <div className="py-2 flex justify-between">
+                <span className="text-gray-500 font-medium">Task</span>
+                <span className="font-medium text-gray-800">{receiptModalTask.taskName}</span>
+              </div>
+              <div className="py-2 flex justify-between">
+                <span className="text-gray-500 font-medium">Event</span>
+                <span className="font-medium text-gray-800">{receiptModalTask.event?.title || '—'}</span>
+              </div>
+              <div className="py-2 flex justify-between">
+                <span className="text-gray-500 font-medium">Transaction / UTR</span>
+                <span className="font-mono text-gray-800 bg-gray-100 px-1.5 py-0.5 rounded">{receiptModalTask.transactionId || 'Completed'}</span>
+              </div>
+              <div className="py-2 flex justify-between">
+                <span className="text-gray-500 font-medium">Paid On</span>
+                <span className="text-gray-700 font-medium">
+                  {receiptModalTask.paymentApprovedAt 
+                    ? new Date(receiptModalTask.paymentApprovedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : '—'}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setReceiptModalTask(null)}
+                className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>

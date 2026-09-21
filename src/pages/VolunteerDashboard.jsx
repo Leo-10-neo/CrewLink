@@ -6,7 +6,7 @@ import { useNotification } from '../context/NotificationContext';
 import {
   LayoutDashboard, User, ClipboardList, Clock, Award,
   LogOut, Search, Bell, CalendarDays, CheckCircle2, X, MessageSquare, Download, FileText, Lock, Menu,
-  ShieldAlert, ScrollText
+  ShieldAlert, ScrollText, ShieldCheck, Smartphone, Copy
 } from 'lucide-react';
 
 import { API_BASE, API_URL } from '../services/api';
@@ -35,6 +35,7 @@ const VolunteerDashboard = () => {
   const [selectedRulesTask, setSelectedRulesTask] = useState(null);
   const [completingTask, setCompletingTask] = useState(null);
   const [taskPhoto, setTaskPhoto] = useState('');
+  const [upiReceiptTask, setUpiReceiptTask] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -91,6 +92,7 @@ const VolunteerDashboard = () => {
         fullName: data.fullName || source.fullName || source.username || '',
         city: data.city || source.city || '',
         phone: data.phone || source.phone || '',
+        upiId: data.upiId || source.upiId || '',
         photo: data.photo || source.photo || '',
         aadharNo: data.aadharNo || source.aadharNo || '',
         panCardNo: data.panCardNo || source.panCardNo || '',
@@ -301,6 +303,7 @@ const VolunteerDashboard = () => {
         fullName: profile?.fullName || profile?.user?.fullName || '',
         city: profile?.city || profile?.user?.city || '',
         phone: profile?.phone || profile?.user?.phone || '',
+        upiId: profile?.upiId || profile?.user?.upiId || '',
         photo: profile?.photo || profile?.user?.photo || '',
         aadharNo: profile?.aadharNo || profile?.user?.aadharNo || '',
         panCardNo: profile?.panCardNo || profile?.user?.panCardNo || '',
@@ -543,6 +546,7 @@ const VolunteerDashboard = () => {
             {field('Full name', 'fullName', 'Your full name')}
             {field('City', 'city', 'e.g. Bengaluru')}
             {field('Phone', 'phone', '9876503333')}
+            {field('UPI ID (for receiving payments)', 'upiId', 'e.g. 9876543210@upi or volunteer@okaxis')}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
               <input
@@ -728,9 +732,17 @@ const VolunteerDashboard = () => {
                       <span className="font-semibold text-emerald-600 text-sm">₹{t.salary || 0}</span>
                       {t.status === 'completed' ? (
                         t.paymentStatus === 'approved' ? (
-                          <span className="text-[10px] font-semibold text-emerald-600">✓ Paid</span>
+                          <button
+                            type="button"
+                            onClick={() => setUpiReceiptTask(t)}
+                            className="text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200/80 cursor-pointer inline-flex items-center gap-1"
+                            title="View UPI payment receipt"
+                          >
+                            <ShieldCheck size={10} />
+                            <span>✓ Paid UPI</span>
+                          </button>
                         ) : (
-                          <span className="text-[10px] font-medium text-amber-600">⏳ Pending</span>
+                          <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">⏳ Awaiting Pay</span>
                         )
                       ) : null}
                     </div>
@@ -803,9 +815,17 @@ const VolunteerDashboard = () => {
                         <span className="font-semibold text-emerald-600">₹{t.salary || 0}</span>
                         {t.status === 'completed' ? (
                           t.paymentStatus === 'approved' ? (
-                            <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1 mt-0.5">✓ Payment Approved</span>
+                            <button
+                              type="button"
+                              onClick={() => setUpiReceiptTask(t)}
+                              className="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5 mt-1 cursor-pointer transition-colors shadow-2xs w-fit"
+                              title="Click to view UPI payment receipt"
+                            >
+                              <ShieldCheck size={13} className="text-emerald-600" />
+                              <span>✓ Paid via UPI (Receipt)</span>
+                            </button>
                           ) : (
-                            <span className="text-xs font-medium text-amber-600 flex items-center gap-1 mt-0.5">⏳ Awaiting Approval</span>
+                            <span className="text-xs font-medium text-amber-600 flex items-center gap-1 mt-0.5">⏳ Awaiting Payment</span>
                           )
                         ) : (
                           <span className="text-xs text-gray-400 mt-0.5">Upon completion</span>
@@ -2209,6 +2229,94 @@ const VolunteerDashboard = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          VOLUNTEER UPI PAYMENT RECEIPT MODAL
+      ───────────────────────────────────────────────────────────── */}
+      {upiReceiptTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 relative">
+            <button
+              onClick={() => setUpiReceiptTask(null)}
+              className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Receipt Header */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shadow-2xs">
+                <ShieldCheck size={26} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 leading-tight">Payment Received</h3>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full mt-0.5">
+                  ✓ Verified via UPI
+                </span>
+              </div>
+            </div>
+
+            {/* Big Amount Card */}
+            <div className="bg-gradient-to-br from-emerald-50 via-teal-50/50 to-emerald-50/30 p-5 rounded-2xl border border-emerald-100 text-center mb-5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">Earnings Credited</span>
+              <span className="text-4xl font-black text-emerald-600 my-1 block tracking-tight">
+                ₹{upiReceiptTask.paidAmount || upiReceiptTask.salary || 0}
+              </span>
+              <span className="text-xs font-medium text-emerald-700 bg-white/80 px-3 py-1 rounded-full border border-emerald-200/60 inline-block shadow-2xs">
+                Paid by Admin to Your Phone / UPI
+              </span>
+            </div>
+
+            {/* Receipt Items */}
+            <div className="bg-gray-50/80 rounded-xl p-4 border border-gray-100 divide-y divide-gray-200/60 text-xs space-y-2.5">
+              <div className="pt-0 flex justify-between items-center">
+                <span className="text-gray-500 font-medium">Task</span>
+                <span className="font-bold text-gray-900">{upiReceiptTask.taskName}</span>
+              </div>
+              <div className="pt-2.5 flex justify-between items-center">
+                <span className="text-gray-500 font-medium">Event</span>
+                <span className="font-medium text-gray-800">{upiReceiptTask.event?.title || '—'}</span>
+              </div>
+              <div className="pt-2.5 flex justify-between items-center">
+                <span className="text-gray-500 font-medium">Credited To Phone</span>
+                <span className="font-mono font-semibold text-gray-800">
+                  {upiReceiptTask.upiPhone || profile?.phone || user?.phone || 'Registered Mobile'}
+                </span>
+              </div>
+              {upiReceiptTask.upiId && (
+                <div className="pt-2.5 flex justify-between items-center">
+                  <span className="text-gray-500 font-medium">UPI ID (VPA)</span>
+                  <span className="font-mono text-purple-700 font-bold">{upiReceiptTask.upiId}</span>
+                </div>
+              )}
+              <div className="pt-2.5 flex justify-between items-center">
+                <span className="text-gray-500 font-medium">Transaction / UTR</span>
+                <span className="font-mono bg-white px-2 py-0.5 rounded border border-gray-200 text-gray-800 font-semibold">
+                  {upiReceiptTask.transactionId || 'Confirmed by Admin'}
+                </span>
+              </div>
+              <div className="pt-2.5 flex justify-between items-center">
+                <span className="text-gray-500 font-medium">Payment Date</span>
+                <span className="text-gray-700 font-medium">
+                  {upiReceiptTask.paymentApprovedAt 
+                    ? new Date(upiReceiptTask.paymentApprovedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : 'Recently Approved'}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setUpiReceiptTask(null)}
+                className="w-full py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-xs"
+              >
+                Close Receipt
+              </button>
             </div>
           </div>
         </div>

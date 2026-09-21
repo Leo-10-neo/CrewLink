@@ -30,6 +30,7 @@ const userSchema = new mongoose.Schema({
   fullName: { type: String },
   gender: { type: String },
   phone: { type: String },
+  upiId: { type: String, default: '' },
   city: { type: String },
   skills: { type: [String], default: [] },
   experience: { type: String },
