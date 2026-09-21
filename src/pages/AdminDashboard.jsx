@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
-import { Award, Bell, CalendarDays, Camera, Check, ClipboardCheck, Grid2X2, LogOut, Menu, Plus, Search, Sparkles, Trash2, UsersRound, X, Edit, MessageSquare, Image as ImageIcon, Download, Printer, Mic, Square, Send, ArrowUp, ArrowDown, Smartphone, QrCode, Copy, ExternalLink, CheckCircle2, ShieldCheck, PhoneCall } from 'lucide-react';
+import QRCode from 'qrcode';
+import { Award, Bell, CalendarDays, Camera, Check, ClipboardCheck, Grid2X2, LogOut, Menu, Plus, Search, Sparkles, Trash2, UsersRound, X, Edit, MessageSquare, Image as ImageIcon, Download, Printer, Mic, Square, Send, ArrowUp, ArrowDown, Smartphone, QrCode, Copy, ExternalLink, CheckCircle2, ShieldCheck, PhoneCall, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import VoiceNotePlayer from '../components/VoiceNotePlayer';
@@ -594,6 +595,9 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
   const [showImagePreview, setShowImagePreview] = useState(null);
   const [upiModalTask, setUpiModalTask] = useState(null);
   const [upiForm, setUpiForm] = useState({ phone: '', upiId: '', amount: '', utr: '' });
+  const [upiTab, setUpiTab] = useState('apps'); // 'apps' | 'qr'
+  const [upiQrDataUrl, setUpiQrDataUrl] = useState('');
+  const [showUpiEditDetails, setShowUpiEditDetails] = useState(false);
   const [receiptModalTask, setReceiptModalTask] = useState(null);
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
@@ -852,8 +856,25 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
       amount: String(amount),
       utr: autoUtr
     });
+    setUpiTab('apps');
+    setShowUpiEditDetails(false);
+    setUpiQrDataUrl('');
     setUpiModalTask(task);
   };
+
+  useEffect(() => {
+    if (upiModalTask && (upiForm.upiId || upiForm.phone)) {
+      const volunteerName = upiModalTask.volunteer?.fullName || upiModalTask.volunteer?.username || 'Volunteer';
+      const taskName = upiModalTask.taskName || 'Event Support';
+      const upiPayee = (upiForm.upiId || (upiForm.phone ? `${upiForm.phone}@upi` : '')).trim();
+      const fixedAmount = Number(upiForm.amount || 0).toFixed(2);
+      const trRef = (upiForm.utr || ('CL' + Date.now())).slice(0, 35);
+      const uri = `upi://pay?pa=${encodeURIComponent(upiPayee)}&pn=${encodeURIComponent(volunteerName)}&am=${encodeURIComponent(fixedAmount)}&mam=${encodeURIComponent(fixedAmount)}&cu=INR&tn=${encodeURIComponent('CrewLink: ' + taskName)}&tr=${encodeURIComponent(trRef)}`;
+      QRCode.toDataURL(uri, { width: 220, margin: 1, color: { dark: '#0f172a', light: '#ffffff' } })
+        .then(url => setUpiQrDataUrl(url))
+        .catch(() => setUpiQrDataUrl(''));
+    }
+  }, [upiModalTask, upiForm.upiId, upiForm.phone, upiForm.amount, upiForm.utr]);
 
   const handleCopy = (text, fieldName) => {
     if (!text) return;
@@ -1800,250 +1821,293 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
         };
 
         return (
-          <div className="modal-backdrop" style={{ zIndex: 1050 }}>
-            <div className="event-modal" style={{ maxWidth: '520px', width: '95%', maxHeight: '92vh', overflowY: 'auto', padding: '24px', borderRadius: '18px' }}>
-              
-              {/* Modal Header */}
-              <div className="flex items-start justify-between pb-3 border-b border-gray-100">
+          <div className="modal-backdrop" style={{ zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px' }}>
+            <form 
+              onSubmit={handleConfirmUpiPayment}
+              className="bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-100 text-gray-900 w-full"
+              style={{ maxWidth: '440px', maxHeight: '90vh', overflow: 'hidden' }}
+            >
+              {/* 1. Header (Fixed top) */}
+              <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg shadow-2xs">
+                  <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
                     ₹
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-gray-900 leading-tight">Pay Volunteer via UPI</h2>
-                    <p className="text-xs text-gray-500 mt-0.5">Direct phone &amp; UPI payment with real-time receipt</p>
+                    <h2 className="text-sm font-bold text-gray-900 leading-tight">Pay Volunteer via UPI</h2>
+                    <p className="text-[10px] text-gray-500">Fixed rate payout • Direct 1-tap app launch</p>
                   </div>
                 </div>
                 <button 
                   type="button" 
                   onClick={() => setUpiModalTask(null)}
-                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+                  aria-label="Close"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
 
-              {/* Volunteer & Task Summary Card */}
-              <div className="mt-4 p-3.5 bg-gradient-to-br from-purple-50/70 via-indigo-50/40 to-blue-50/30 rounded-xl border border-purple-100/80 flex items-center justify-between">
-                <div className="min-w-0 pr-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-gray-900 text-sm truncate">{volunteerName}</span>
-                    <span className="text-[11px] bg-purple-200/60 text-purple-800 font-semibold px-2 py-0.5 rounded-full">Volunteer</span>
-                  </div>
-                  <div className="text-xs text-gray-600 mt-0.5 font-medium truncate">
-                    📋 {taskName} {upiModalTask.event?.title ? `• ${upiModalTask.event.title}` : ''}
-                  </div>
-                  {upiModalTask.volunteer?.phone && (
-                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-1.5 font-mono">
-                      <span>📞 {upiModalTask.volunteer.phone}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(upiModalTask.volunteer.phone, 'phone')}
-                        className="text-[11px] text-purple-700 hover:underline font-sans cursor-pointer"
-                      >
-                        {copiedField === 'phone' ? '✓ Copied' : 'Copy'}
-                      </button>
+              {/* 2. Scrollable Body */}
+              <div className="px-4 py-3 space-y-3 overflow-y-auto flex-1 text-left">
+                
+                {/* Payout Summary Card */}
+                <div className="p-3 bg-gradient-to-r from-purple-50/70 via-slate-50 to-indigo-50/50 rounded-xl border border-purple-100 flex items-center justify-between">
+                  <div className="min-w-0 pr-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-gray-900 text-sm truncate">{volunteerName}</span>
+                      <span className="text-[10px] bg-purple-100 text-purple-700 font-semibold px-2 py-0.5 rounded-full">Volunteer</span>
                     </div>
-                  )}
-                </div>
-                <div className="text-right shrink-0 bg-white/90 px-3 py-2 rounded-lg border border-purple-100 shadow-2xs">
-                  <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Salary</span>
-                  <span className="text-xl font-black text-emerald-600">₹{upiForm.amount}</span>
-                </div>
-              </div>
-
-              {/* UPI & Phone Input Section */}
-              <form onSubmit={handleConfirmUpiPayment} className="mt-4 space-y-3.5">
-                {/* Phone Number Field */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-gray-700">Volunteer Phone Number</label>
-                    {upiForm.phone && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <a 
-                          href={`tel:${upiForm.phone}`} 
-                          className="text-blue-600 hover:underline inline-flex items-center gap-1"
-                        >
-                          <PhoneCall size={11} /> Call
-                        </a>
+                    <div className="text-[11px] text-gray-600 mt-0.5 truncate">
+                      📋 {taskName}
+                    </div>
+                    <div className="text-[11px] text-purple-700 font-mono font-medium mt-0.5 flex items-center gap-1.5">
+                      <span className="truncate">VPA: {upiPayee || 'Not configured'}</span>
+                      {upiPayee && (
                         <button
                           type="button"
-                          onClick={() => handleCopy(upiForm.phone, 'inputPhone')}
-                          className="text-purple-600 hover:underline cursor-pointer"
+                          onClick={() => handleCopy(upiPayee, 'summaryVpa')}
+                          className="text-[10px] text-purple-600 hover:underline font-sans cursor-pointer font-bold shrink-0"
                         >
-                          {copiedField === 'inputPhone' ? '✓ Copied' : 'Copy'}
+                          {copiedField === 'summaryVpa' ? '✓ Copied' : 'Copy'}
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                  <input
-                    type="tel"
-                    required
-                    value={upiForm.phone}
-                    onChange={e => setUpiForm(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="e.g. 9876543210"
-                    className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-400 outline-none font-mono"
-                  />
-                </div>
-
-                {/* UPI ID (VPA) Field with Quick Handle Chips */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-gray-700">Volunteer UPI ID (VPA)</label>
-                    {upiForm.upiId && (
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(upiForm.upiId, 'upiId')}
-                        className="text-xs text-purple-600 hover:underline cursor-pointer inline-flex items-center gap-1"
-                      >
-                        <Copy size={11} />
-                        {copiedField === 'upiId' ? '✓ Copied' : 'Copy UPI ID'}
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    value={upiForm.upiId}
-                    onChange={e => setUpiForm(prev => ({ ...prev, upiId: e.target.value }))}
-                    placeholder="e.g. 9876543210@upi or volunteer@okaxis"
-                    className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-400 outline-none font-mono font-medium"
-                  />
-
-                  {/* App suffix handle shortcuts */}
-                  <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                    <span className="text-[11px] text-gray-500">Quick handles:</span>
-                    {[
-                      { name: 'BHIM', suffix: '@upi' },
-                      { name: 'PhonePe', suffix: '@ybl' },
-                      { name: 'Google Pay', suffix: '@okaxis' },
-                      { name: 'Paytm', suffix: '@paytm' }
-                    ].map(h => (
-                      <button
-                        key={h.suffix}
-                        type="button"
-                        onClick={() => handleApplyHandle(h.suffix)}
-                        className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
-                          upiForm.upiId.endsWith(h.suffix) 
-                            ? 'bg-purple-100 border-purple-300 text-purple-800 font-semibold' 
-                            : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
-                        }`}
-                      >
-                        {h.name} ({h.suffix})
-                      </button>
-                    ))}
+                  <div className="text-right shrink-0 bg-white px-3 py-1.5 rounded-xl border border-purple-100 shadow-2xs">
+                    <span className="text-[9px] uppercase font-bold text-gray-400 block tracking-wider">Fixed Payout</span>
+                    <span className="text-base font-black text-emerald-600">₹{fixedAmount}</span>
                   </div>
                 </div>
 
-                {/* Amount Field */}
-                <div>
-                  <label className="text-xs font-semibold text-gray-700 block mb-1">Payment Amount (₹)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    value={upiForm.amount}
-                    onChange={e => setUpiForm(prev => ({ ...prev, amount: e.target.value }))}
-                    className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-400 outline-none font-semibold text-emerald-700"
-                  />
+                {/* Segmented Mode Selector: [UPI Apps] | [Scan QR Code] */}
+                <div className="flex items-center bg-gray-100/90 p-1 rounded-xl gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setUpiTab('apps')}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      upiTab === 'apps'
+                        ? 'bg-white text-purple-700 shadow-xs border border-gray-200/60'
+                        : 'text-gray-500 hover:text-gray-800'
+                    }`}
+                  >
+                    <Smartphone size={14} />
+                    <span>Pay via UPI App</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUpiTab('qr')}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      upiTab === 'qr'
+                        ? 'bg-white text-purple-700 shadow-xs border border-gray-200/60'
+                        : 'text-gray-500 hover:text-gray-800'
+                    }`}
+                  >
+                    <QrCode size={14} />
+                    <span>Scan QR Code</span>
+                  </button>
                 </div>
 
-                {/* QR Code Scan & Direct UPI Payment Box */}
-                {upiPayee && (
-                  <div className="p-4 bg-gradient-to-br from-slate-50 via-purple-50/25 to-indigo-50/20 border border-purple-100 rounded-2xl space-y-3.5 shadow-2xs">
-                    
-                    {/* QR Code & Description */}
-                    <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-                      <div className="bg-white p-2.5 rounded-xl border border-gray-200 shadow-2xs shrink-0 flex flex-col items-center">
-                        <img 
-                          src={qrUrl} 
-                          alt="Scan UPI QR" 
-                          className="w-32 h-32 object-contain"
-                          loading="lazy"
-                        />
-                        <span className="text-[10px] font-bold text-emerald-700 mt-1 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-full">
-                          Fixed ₹{fixedAmount}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0 space-y-1.5">
-                        <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs font-bold text-gray-800">
-                          <QrCode size={14} className="text-purple-600" />
-                          <span>Direct UPI Payment • Fixed Price</span>
+                {/* Tab 1: UPI Apps */}
+                {upiTab === 'apps' && (
+                  <div className="space-y-2">
+                    {/* Google Pay Option */}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenUpi('gpay')}
+                      className="w-full flex items-center justify-between p-2.5 bg-white hover:bg-slate-50 active:scale-[0.99] border border-gray-200 hover:border-gray-800 rounded-xl transition cursor-pointer shadow-2xs group text-left"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center font-black text-white text-xs shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                          G
                         </div>
-                        <p className="text-[11px] text-gray-500 leading-relaxed">
-                          Pay fixed amount <strong className="text-emerald-700 font-bold">₹{fixedAmount}</strong> to <strong className="text-purple-700 font-mono">{upiPayee}</strong>. Click below to launch Google Pay, PhonePe, or any installed UPI app directly:
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Direct App Quick Action Buttons */}
-                    <div className="space-y-2 pt-2 border-t border-purple-100/80">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {/* Direct Google Pay Button */}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenUpi('gpay')}
-                          className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 bg-[#1F1F1F] hover:bg-black active:scale-[0.98] text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer border border-gray-800"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center font-black text-[11px] text-blue-600 shadow-2xs">
-                              G
-                            </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
                             <span>Google Pay</span>
+                            <span className="text-[9px] bg-blue-50 text-blue-700 font-semibold px-1.5 py-0.2 rounded border border-blue-200">1-Tap</span>
                           </div>
-                          <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md font-mono text-[11px] font-bold">
-                            ₹{fixedAmount}
-                          </span>
-                        </button>
-
-                        {/* Direct PhonePe Button */}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenUpi('phonepe')}
-                          className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 bg-[#5f259f] hover:bg-[#4d1d82] active:scale-[0.98] text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer border border-purple-800"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center font-black text-[11px] text-[#5f259f] shadow-2xs">
-                              पे
-                            </div>
-                            <span>PhonePe</span>
-                          </div>
-                          <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md font-mono text-[11px] font-bold">
-                            ₹{fixedAmount}
-                          </span>
-                        </button>
+                          <p className="text-[10px] text-gray-500 truncate">Pre-fills exact fixed price ₹{fixedAmount}</p>
+                        </div>
                       </div>
-
-                      {/* Generic "Open in Installed UPI App" Master Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleOpenUpi('any')}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-800 active:scale-[0.98] text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
-                      >
-                        <Smartphone size={14} />
-                        <span>Open in Installed UPI App</span>
-                        <ExternalLink size={12} className="opacity-80" />
-                        <span className="ml-auto bg-white/20 text-white px-2 py-0.5 rounded-md font-mono text-[11px]">
-                          Fixed ₹{fixedAmount}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-xs font-bold text-emerald-700 font-mono bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          ₹{fixedAmount}
                         </span>
-                      </button>
-                    </div>
+                        <ChevronRight size={15} className="text-gray-400 group-hover:text-gray-800 transition-colors" />
+                      </div>
+                    </button>
 
+                    {/* PhonePe Option */}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenUpi('phonepe')}
+                      className="w-full flex items-center justify-between p-2.5 bg-white hover:bg-purple-50/40 active:scale-[0.99] border border-gray-200 hover:border-[#5f259f] rounded-xl transition cursor-pointer shadow-2xs group text-left"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-[#5f259f] flex items-center justify-center font-bold text-white text-xs shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                          पे
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                            <span>PhonePe</span>
+                            <span className="text-[9px] bg-purple-50 text-[#5f259f] font-semibold px-1.5 py-0.2 rounded border border-purple-200">1-Tap</span>
+                          </div>
+                          <p className="text-[10px] text-gray-500 truncate">Pre-fills exact fixed price ₹{fixedAmount}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-xs font-bold text-emerald-700 font-mono bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          ₹{fixedAmount}
+                        </span>
+                        <ChevronRight size={15} className="text-gray-400 group-hover:text-gray-800 transition-colors" />
+                      </div>
+                    </button>
+
+                    {/* Other UPI Apps Option */}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenUpi('any')}
+                      className="w-full flex items-center justify-between p-2.5 bg-white hover:bg-slate-50 active:scale-[0.99] border border-gray-200 hover:border-purple-500 rounded-xl transition cursor-pointer shadow-2xs group text-left"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                          <Smartphone size={16} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-gray-900">
+                            Other Installed UPI Apps
+                          </div>
+                          <p className="text-[10px] text-gray-500 truncate">Paytm, BHIM, CRED, Navi &amp; Banking apps</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-xs font-bold text-emerald-700 font-mono bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          ₹{fixedAmount}
+                        </span>
+                        <ChevronRight size={15} className="text-gray-400 group-hover:text-gray-800 transition-colors" />
+                      </div>
+                    </button>
                   </div>
                 )}
 
-                {/* UTR / Reference ID Field */}
-                <div>
+                {/* Tab 2: Scan QR Code */}
+                {upiTab === 'qr' && (
+                  <div className="p-3 bg-slate-50 border border-gray-200 rounded-xl text-center flex flex-col items-center space-y-2">
+                    <div className="p-2 bg-white rounded-lg border border-gray-200 shadow-2xs inline-block">
+                      {upiQrDataUrl ? (
+                        <img 
+                          src={upiQrDataUrl} 
+                          alt="Scan UPI QR" 
+                          className="w-36 h-36 object-contain"
+                        />
+                      ) : qrUrl ? (
+                        <img 
+                          src={qrUrl} 
+                          alt="Scan UPI QR" 
+                          className="w-36 h-36 object-contain"
+                        />
+                      ) : (
+                        <div className="w-36 h-36 flex items-center justify-center text-xs text-gray-400">
+                          No QR Available
+                        </div>
+                      )}
+                      <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-full block mt-1">
+                        Fixed Amount ₹{fixedAmount}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 max-w-xs">
+                      Scan using Google Pay, PhonePe, or Paytm camera on another phone.
+                    </p>
+                    {upiUri && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(upiUri, 'tabQrUri')}
+                        className="text-xs text-purple-600 hover:underline cursor-pointer inline-flex items-center gap-1 font-semibold"
+                      >
+                        <Copy size={12} />
+                        {copiedField === 'tabQrUri' ? '✓ Link Copied' : 'Copy UPI Payment Link'}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Volunteer VPA & Handle Details (Collapsible) */}
+                <div className="border border-gray-200 rounded-xl overflow-hidden bg-slate-50/60">
+                  <button
+                    type="button"
+                    onClick={() => setShowUpiEditDetails(prev => !prev)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-slate-100 transition cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      <PhoneCall size={12} className="text-blue-600 shrink-0" />
+                      <span className="truncate">Edit Volunteer UPI ID / Handles</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] text-gray-500 shrink-0">
+                      <span>{showUpiEditDetails ? 'Close' : 'Edit'}</span>
+                      {showUpiEditDetails ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                    </div>
+                  </button>
+
+                  {showUpiEditDetails && (
+                    <div className="p-3 bg-white border-t border-gray-200 space-y-2">
+                      <div>
+                        <label className="text-[10px] font-semibold text-gray-600 block mb-1">Phone Number</label>
+                        <input
+                          type="tel"
+                          value={upiForm.phone}
+                          onChange={e => setUpiForm(prev => ({ ...prev, phone: e.target.value }))}
+                          placeholder="e.g. 9876543210"
+                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg outline-none font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-gray-600 block mb-1">UPI ID (VPA)</label>
+                        <input
+                          type="text"
+                          value={upiForm.upiId}
+                          onChange={e => setUpiForm(prev => ({ ...prev, upiId: e.target.value }))}
+                          placeholder="e.g. 9876543210@upi"
+                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg outline-none font-mono"
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                        <span className="text-[10px] text-gray-400">Quick Handles:</span>
+                        {[
+                          { name: 'PhonePe', suffix: '@ybl' },
+                          { name: 'GPay', suffix: '@okaxis' },
+                          { name: 'BHIM', suffix: '@upi' },
+                          { name: 'Paytm', suffix: '@paytm' }
+                        ].map(h => (
+                          <button
+                            key={h.suffix}
+                            type="button"
+                            onClick={() => handleApplyHandle(h.suffix)}
+                            className={`text-[10px] px-2 py-0.5 rounded-full border transition cursor-pointer ${
+                              upiForm.upiId.endsWith(h.suffix)
+                                ? 'bg-purple-100 border-purple-300 text-purple-800 font-bold'
+                                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                            }`}
+                          >
+                            {h.name} ({h.suffix})
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Step 2: Transaction Reference / UTR */}
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-gray-200">
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-gray-700">
-                      Transaction Reference / UTR Number
+                    <label className="text-xs font-bold text-gray-800">
+                      Transaction Reference / UTR
                     </label>
                     <button
                       type="button"
                       onClick={() => setUpiForm(prev => ({ ...prev, utr: 'UPI' + Math.floor(100000000000 + Math.random() * 900000000000) }))}
-                      className="text-[11px] text-purple-600 hover:underline cursor-pointer"
+                      className="text-[11px] text-purple-600 hover:underline font-semibold cursor-pointer"
                     >
-                      Regenerate Ref
+                      Auto-Generate Ref
                     </button>
                   </div>
                   <input
@@ -2051,35 +2115,35 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                     required
                     value={upiForm.utr}
                     onChange={e => setUpiForm(prev => ({ ...prev, utr: e.target.value }))}
-                    placeholder="Enter 12-digit UTR from payment receipt"
-                    className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-400 outline-none font-mono text-gray-700"
+                    placeholder="Enter 12-digit UTR after payment"
+                    className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-100 focus:border-purple-400 outline-none font-mono bg-white text-gray-800 font-medium"
                   />
-                  <span className="text-[11px] text-gray-400 mt-1 block">
+                  <span className="text-[10px] text-gray-400 mt-1 block">
                     Recorded on the volunteer's receipt for audit and confirmation.
                   </span>
                 </div>
+              </div>
 
-                {/* Actions */}
-                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
-                  <button
-                    type="button"
-                    onClick={() => setUpiModalTask(null)}
-                    disabled={paymentSubmitting}
-                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={paymentSubmitting}
-                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  >
-                    <Check size={14} />
-                    <span>{paymentSubmitting ? 'Recording Payment...' : `Confirm Payment (₹${upiForm.amount})`}</span>
-                  </button>
-                </div>
-              </form>
-            </div>
+              {/* 3. Sticky Action Footer (Always visible!) */}
+              <div className="p-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setUpiModalTask(null)}
+                  disabled={paymentSubmitting}
+                  className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-200/70 rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={paymentSubmitting}
+                  className="flex-1 sm:flex-initial px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Check size={15} />
+                  <span>{paymentSubmitting ? 'Recording...' : `Confirm Payment (₹${fixedAmount})`}</span>
+                </button>
+              </div>
+            </form>
           </div>
         );
       })()}
