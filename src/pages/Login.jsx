@@ -40,6 +40,7 @@ const Login = () => {
   const [serverUrlInput, setServerUrlInput] = useState('');
   const [isTestingServer, setIsTestingServer] = useState(false);
   const [serverTestStatus, setServerTestStatus] = useState(null); // { success: boolean, message: string }
+  const [isAutoReconnecting, setIsAutoReconnecting] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -209,6 +210,32 @@ const Login = () => {
     setServerTestStatus(null);
   };
 
+  const handleAutoReconnect = async () => {
+    setIsAutoReconnecting(true);
+    setApiError('');
+    try {
+      const disc = await autoDiscoverTunnelUrl();
+      if (disc.success) {
+        setCurrentApiBase(disc.url);
+        setServerUrlInput(disc.url);
+        setIsNetworkErr(false);
+        setApiError('');
+        if (formData.email.trim() && formData.password) {
+          const fakeEvent = { preventDefault: () => {} };
+          handleSubmit(fakeEvent);
+        }
+      } else {
+        setIsNetworkErr(true);
+        setApiError('Auto-detect could not reach server. Tap "Configure Server URL" to check settings.');
+      }
+    } catch (_) {
+      setIsNetworkErr(true);
+      setApiError('Auto-reconnect failed. Tap "Configure Server URL" to inspect settings.');
+    } finally {
+      setIsAutoReconnecting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-3.5 sm:p-6 relative overflow-hidden">
       {/* Decorative Background Elements */}
@@ -286,16 +313,36 @@ const Login = () => {
                   {isNetworkErr && (
                     <div className="mt-3 pt-3 border-t border-red-500/30">
                       <p className="text-xs text-red-300 mb-2">
-                        Using phone data or changed Wi-Fi? Switch to an Internet Tunnel URL or reconfigure server address:
+                        Using phone data or changed Wi-Fi? Reconnect to the active tunnel or configure address:
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => setShowServerModal(true)}
-                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-red-800/80 hover:bg-red-700 text-white text-xs font-semibold rounded-md shadow transition-colors"
-                      >
-                        <Settings size={13} />
-                        <span>Configure Server URL</span>
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={handleAutoReconnect}
+                          disabled={isAutoReconnecting}
+                          className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold rounded-md shadow transition-colors"
+                        >
+                          {isAutoReconnecting ? (
+                            <>
+                              <Loader2 size={13} className="animate-spin" />
+                              <span>Connecting...</span>
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw size={13} />
+                              <span>Auto-Reconnect Now</span>
+                            </>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowServerModal(true)}
+                          className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-red-800/80 hover:bg-red-700 text-white text-xs font-semibold rounded-md shadow transition-colors"
+                        >
+                          <Settings size={13} />
+                          <span>Configure Server URL</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

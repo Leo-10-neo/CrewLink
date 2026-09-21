@@ -11,7 +11,7 @@ const formatUrl = (raw) => {
   return url;
 };
 
-export const PUBLIC_INTERNET_URL = 'https://assess-collectors-ask-whale.trycloudflare.com';
+export const PUBLIC_INTERNET_URL = 'https://forward-festival-img-bureau.trycloudflare.com';
 
 // Dynamic host detection with support for custom user-configured server URL
 export const getApiBase = () => {
