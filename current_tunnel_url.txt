@@ -1,1 +1,1 @@
-https://billing-catalogue-seriously-elementary.trycloudflare.com
+https://api.trycloudflare.com
