@@ -1,1 +1,1 @@
-https://api.trycloudflare.com
+https://terminal-rebates-forests-temperature.trycloudflare.com
