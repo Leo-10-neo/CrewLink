@@ -35,6 +35,14 @@
           "value": ""
         },
         {
+          "id": "c71a8f9a-1010-4040-9090-abcdef123456",
+          "comment": "Clear previous session if any",
+          "command": "executeScript",
+          "target": "localStorage.clear(); sessionStorage.clear();",
+          "targets": [],
+          "value": ""
+        },
+        {
           "id": "9f7dff0f-c716-462e-a5ca-2c49db4495a7",
           "comment": "Wait for Become a Volunteer button",
           "command": "waitForElementVisible",
@@ -45,12 +53,16 @@
               "id"
             ],
             [
-              "linkText=Become a Volunteer",
-              "linkText"
-            ],
-            [
               "css=#home-btn-volunteer",
               "css:finder"
+            ],
+            [
+              "css=#home-btn-volunteer > .lucide",
+              "css:finder"
+            ],
+            [
+              "linkText=Become a Volunteer",
+              "linkText"
             ],
             [
               "xpath=//a[@id=\"home-btn-volunteer\"]",
@@ -70,12 +82,16 @@
               "id"
             ],
             [
-              "linkText=Become a Volunteer",
-              "linkText"
-            ],
-            [
               "css=#home-btn-volunteer",
               "css:finder"
+            ],
+            [
+              "css=#home-btn-volunteer > .lucide",
+              "css:finder"
+            ],
+            [
+              "linkText=Become a Volunteer",
+              "linkText"
             ]
           ],
           "value": ""
@@ -97,6 +113,14 @@
             [
               "css=#reg-username",
               "css:finder"
+            ],
+            [
+              "xpath=//input[@id=\"reg-username\"]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//input",
+              "xpath:position"
             ]
           ],
           "value": "10000"
@@ -114,6 +138,18 @@
             [
               "name=username",
               "name"
+            ],
+            [
+              "css=#reg-username",
+              "css:finder"
+            ],
+            [
+              "xpath=//input[@id=\"reg-username\"]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//input",
+              "xpath:position"
             ]
           ],
           "value": ""
@@ -131,6 +167,18 @@
             [
               "name=username",
               "name"
+            ],
+            [
+              "css=#reg-username",
+              "css:finder"
+            ],
+            [
+              "xpath=//input[@id=\"reg-username\"]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//input",
+              "xpath:position"
             ]
           ],
           "value": "Bob"
@@ -148,6 +196,18 @@
             [
               "name=email",
               "name"
+            ],
+            [
+              "css=#reg-email",
+              "css:finder"
+            ],
+            [
+              "xpath=//input[@id=\"reg-email\"]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[2]/input",
+              "xpath:position"
             ]
           ],
           "value": "bob@gmail.com"
@@ -165,6 +225,18 @@
             [
               "name=password",
               "name"
+            ],
+            [
+              "css=#reg-password",
+              "css:finder"
+            ],
+            [
+              "xpath=//input[@id=\"reg-password\"]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[3]/input",
+              "xpath:position"
             ]
           ],
           "value": "bob123"
@@ -182,6 +254,18 @@
             [
               "name=confirmPassword",
               "name"
+            ],
+            [
+              "css=#reg-confirmPassword",
+              "css:finder"
+            ],
+            [
+              "xpath=//input[@id=\"reg-confirmPassword\"]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[4]/input",
+              "xpath:position"
             ]
           ],
           "value": "bob123"

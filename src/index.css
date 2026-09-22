@@ -446,3 +446,7 @@
   will-change: transform, opacity;
 }
 
+button svg, a svg, .btn-primary svg, .btn-secondary svg {
+  pointer-events: none;
+}
+

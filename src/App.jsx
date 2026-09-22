@@ -36,11 +36,7 @@ function App() {
           />
           <Route 
             path="/volunteer-register" 
-            element={
-              <PublicRoute>
-                <VolunteerRegister />
-              </PublicRoute>
-            } 
+            element={<VolunteerRegister />} 
           />
           
           <Route 
