@@ -16,7 +16,7 @@ const ProtectedRoute = ({ children, requireAdmin = false, requireVolunteer = fal
   }
 
   if (isLoggingOut) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (!isAuthenticated) {

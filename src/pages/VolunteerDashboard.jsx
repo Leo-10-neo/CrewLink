@@ -221,7 +221,7 @@ const VolunteerDashboard = () => {
     });
   };
 
-  const handleLogout = () => { logout(); navigate('/'); };
+  const handleLogout = () => { logout(); navigate('/login'); };
 
   const markNotificationAsRead = async (id) => {
     try {
@@ -537,9 +537,11 @@ const VolunteerDashboard = () => {
     };
     const field = (label, key, placeholder) => (
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5" htmlFor={`vol-input-${key}`}>{label}</label>
         <input
           type="text"
+          id={`vol-input-${key}`}
+          data-testid={`vol-input-${key}`}
           value={profileValue(key)}
           onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
           placeholder={placeholder}
@@ -660,6 +662,8 @@ const VolunteerDashboard = () => {
           </div>
 
           <button
+            id="vol-save-profile-btn"
+            data-testid="vol-save-profile-btn"
             onClick={handleSaveProfile}
             disabled={saving}
             className="px-8 py-2.5 bg-[#5b52f6] hover:bg-[#4a42d4] text-white font-medium rounded-lg transition-colors shadow-md disabled:opacity-50"
@@ -844,6 +848,8 @@ const VolunteerDashboard = () => {
                           t.paymentStatus === 'approved' ? (
                             <button
                               type="button"
+                              id={`vol-btn-receipt-${t._id}`}
+                              data-testid="vol-btn-receipt"
                               onClick={() => setUpiReceiptTask(t)}
                               className="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5 mt-1 cursor-pointer transition-colors shadow-2xs w-fit"
                               title="Click to view UPI payment receipt"
@@ -1882,6 +1888,8 @@ const VolunteerDashboard = () => {
             {navItems.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
+                id={`vol-nav-${id}`}
+                data-testid={`vol-nav-${id}`}
                 onClick={() => { setActiveTab(id); setMobileMenuOpen(false); }}
                 className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl transition-all ${
                   activeTab === id ? 'bg-[#1c2744] text-white font-semibold' : 'hover:bg-[#15203b] hover:text-white'
@@ -1898,6 +1906,8 @@ const VolunteerDashboard = () => {
         <div className="px-4 mt-auto mb-6">
           <p className="px-4 text-[11px] font-bold tracking-widest text-gray-500 mb-3 uppercase">Account</p>
           <button
+            id="vol-logout-btn"
+            data-testid="vol-logout-btn"
             onClick={handleLogout}
             className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl transition-all hover:bg-[#15203b] hover:text-white text-gray-300"
           >
@@ -2118,6 +2128,8 @@ const VolunteerDashboard = () => {
           return (
             <button
               key={id}
+              id={`vol-bottom-nav-${id}`}
+              data-testid={`vol-bottom-nav-${id}`}
               onClick={() => setActiveTab(id)}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all flex-1 max-w-[72px] ${
                 isActive ? 'text-accent font-bold scale-105' : 'text-gray-500 hover:text-gray-800'
@@ -2268,6 +2280,9 @@ const VolunteerDashboard = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 relative">
             <button
+              type="button"
+              id="vol-close-receipt-modal"
+              data-testid="vol-close-receipt-modal"
               onClick={() => setUpiReceiptTask(null)}
               className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
             >

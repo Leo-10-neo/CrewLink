@@ -305,7 +305,7 @@ const Login = () => {
         {/* Login Card */}
         <div className="bg-gray-800/80 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl p-5 sm:p-8">
           {apiError && (
-            <div className="mb-6 p-4 bg-red-900/50 border border-red-500/50 rounded-lg animate-fade-in">
+            <div id="login-error" data-testid="login-error" className="mb-6 p-4 bg-red-900/50 border border-red-500/50 rounded-lg animate-fade-in">
               <div className="flex items-start space-x-3">
                 <ShieldAlert className="text-red-400 mt-0.5 flex-shrink-0" size={18} />
                 <div className="flex-1">
@@ -350,13 +350,15 @@ const Login = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} id="login-form">
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-300 mb-1" htmlFor="login-email">
                 Email Address or Username
               </label>
               <input
                 type="text"
+                id="login-email"
+                data-testid="login-email"
                 name="email"
                 placeholder="admin@crewlink.com or username"
                 value={formData.email}
@@ -370,12 +372,14 @@ const Login = () => {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-300 mb-1" htmlFor="login-password">
                 Password
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  id="login-password"
+                  data-testid="login-password"
                   name="password"
                   placeholder="••••••••"
                   value={formData.password}
@@ -384,6 +388,8 @@ const Login = () => {
                 />
                 <button
                   type="button"
+                  id="btn-toggle-password"
+                  data-testid="btn-toggle-password"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
                 >
@@ -399,6 +405,8 @@ const Login = () => {
 
             <button
               type="submit"
+              id="login-submit"
+              data-testid="login-submit"
               disabled={isLoading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-blue-600/30"
             >

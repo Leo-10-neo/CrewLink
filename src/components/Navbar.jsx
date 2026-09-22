@@ -100,7 +100,7 @@ const Navbar = () => {
             {/* Auth Buttons */}
             {!isAuthenticated ? (
               <div className="flex items-center space-x-3 border-l border-gray-200/50 pl-6">
-                <Link to="/login" className="text-gray-600 hover:text-gray-900 font-medium text-sm">
+                <Link to="/login" id="nav-login-link" data-testid="nav-login-link" className="text-gray-600 hover:text-gray-900 font-medium text-sm">
                   Login
                 </Link>
                 <Link to="/volunteer-register" className="btn-primary text-sm py-2 px-4">

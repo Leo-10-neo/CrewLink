@@ -234,7 +234,7 @@ export default function AdminDashboard() {
     } catch (err) { setError('Unable to remove volunteer.'); }
   };
 
-  const signOut = () => { logout(); navigate('/'); };
+  const signOut = () => { logout(); navigate('/login'); };
   const markNotificationAsRead = async (id) => {
     try {
       await axios.put(`${API_URL}/notifications/${id}/read`, {}, config);
@@ -355,11 +355,11 @@ export default function AdminDashboard() {
         </button>
       </div>
       <p className="sidebar-label">ADMIN SPACE</p>
-      <nav className="admin-nav">{navItems.map(([id, label, Icon]) => <button key={id} className={`admin-nav-item ${activeView === id ? 'active' : ''}`} onClick={() => { setActiveView(id); setMobileMenuOpen(false); }}><Icon size={19} /><span>{label}</span></button>)}</nav>
-      <div className="sidebar-account"><p className="sidebar-label">ACCOUNT</p><button className="admin-nav-item" onClick={signOut}><LogOut size={19} /><span>Logout</span></button></div>
+      <nav className="admin-nav">{navItems.map(([id, label, Icon]) => <button key={id} id={`nav-${id}`} data-testid={`nav-${id}`} className={`admin-nav-item ${activeView === id ? 'active' : ''}`} onClick={() => { setActiveView(id); setMobileMenuOpen(false); }}><Icon size={19} /><span>{label}</span></button>)}</nav>
+      <div className="sidebar-account"><p className="sidebar-label">ACCOUNT</p><button id="btn-logout" data-testid="btn-logout" className="admin-nav-item" onClick={signOut}><LogOut size={19} /><span>Logout</span></button></div>
     </aside>
     <main className="admin-main">
-      <header className="admin-topbar"><button className="mobile-menu" aria-label="Open menu" onClick={() => setMobileMenuOpen(true)}><Menu size={21} /></button><label className="search-box"><Search size={21} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search CrewLink" /></label><div className="topbar-profile" style={{position: 'relative'}}>
+      <header className="admin-topbar"><button className="mobile-menu" aria-label="Open menu" onClick={() => setMobileMenuOpen(true)}><Menu size={21} /></button><label className="search-box"><Search size={21} /><input id="search-input" data-testid="search-input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search CrewLink" /></label><div className="topbar-profile" style={{position: 'relative'}}>
         <button onClick={() => setShowNotifications(!showNotifications)} style={{position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: '4px'}}>
           <Bell size={23} />
           {unreadCount > 0 && (
@@ -416,8 +416,8 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
-        <span className="avatar">{user?.username?.[0]?.toUpperCase() || 'D'}</span><span>{user?.username || 'Devika Rao'}</span><button className="logout-icon" onClick={signOut} aria-label="Logout"><LogOut size={21} /></button></div></header>
-      <section className="admin-content"><div className="page-heading"><div><h1>{copy[0]}</h1><p>{copy[1]}</p></div>{activeView === 'events' && <button className="primary-action" onClick={() => setShowEventModal(true)}><Plus size={18} /> Create event</button>}</div>{error && <div className="admin-alert">{error}<button onClick={() => setError('')} aria-label="Dismiss"><X size={17} /></button></div>}
+        <span className="avatar">{user?.username?.[0]?.toUpperCase() || 'D'}</span><span>{user?.username || 'Devika Rao'}</span><button id="topbar-logout" data-testid="topbar-logout" className="logout-icon" onClick={signOut} aria-label="Logout"><LogOut size={21} /></button></div></header>
+      <section className="admin-content"><div className="page-heading"><div><h1>{copy[0]}</h1><p>{copy[1]}</p></div>{activeView === 'events' && <button id="btn-create-event" data-testid="btn-create-event" className="primary-action" onClick={() => setShowEventModal(true)}><Plus size={18} /> Create event</button>}</div>{error && <div className="admin-alert">{error}<button onClick={() => setError('')} aria-label="Dismiss"><X size={17} /></button></div>}
         {activeView === 'overview' && <Overview events={events} users={users} pending={pending.length} onVolunteersClick={() => setActiveView('volunteers')} />}
         {activeView === 'events' && <EventsView events={visibleEvents} formatDate={formatDate} onEdit={editEvent} onDelete={deleteEvent} onStatus={updateStatus} />}
         {activeView === 'volunteers' && <VolunteersView volunteers={volunteers} events={events} onAssign={assignVolunteer} onUpdateStatus={updateVolunteerStatus} onViewProfile={setViewingProfile} onDelete={deleteVolunteer} />}
@@ -430,6 +430,8 @@ export default function AdminDashboard() {
       {navItems.map(([id, label, Icon]) => (
         <button 
           key={id} 
+          id={`bottom-nav-${id}`}
+          data-testid={`bottom-nav-${id}`}
           className={`admin-bottom-item ${activeView === id ? 'active' : ''}`} 
           onClick={() => setActiveView(id)}
         >
@@ -1271,6 +1273,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1e293b' }}>Assigned Tasks & Live Attendance</h3>
         <button 
+          id="btn-assign-task"
+          data-testid="btn-assign-task"
           className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
           onClick={() => { setEditingTask(null); setShowModal(true); }}
         >
@@ -1365,6 +1369,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                         <span style={{ color: '#10b981', fontSize: '14px', fontWeight: 'bold' }}>₹{task.salary || 0}</span>
                         {task.paymentStatus === 'approved' ? (
                           <button
+                            id={`btn-view-receipt-${task._id}`}
+                            data-testid="btn-view-receipt"
                             onClick={() => setReceiptModalTask(task)}
                             className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded text-[11px] font-semibold inline-flex items-center gap-1.5 whitespace-nowrap border border-emerald-200/80 w-fit cursor-pointer transition-colors shadow-2xs"
                             title="View UPI Receipt"
@@ -1374,6 +1380,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                           </button>
                         ) : task.status === 'completed' ? (
                           <button
+                            id={`btn-pay-upi-${task._id}`}
+                            data-testid="btn-pay-upi"
                             onClick={() => openUpiPaymentModal(task)}
                             className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-all whitespace-nowrap cursor-pointer w-fit inline-flex items-center gap-1.5 transform active:scale-95"
                             title="Pay volunteer via UPI by phone number"
@@ -1383,6 +1391,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                           </button>
                         ) : (
                           <button
+                            id={`btn-pay-upi-${task._id}`}
+                            data-testid="btn-pay-upi"
                             onClick={() => openUpiPaymentModal(task)}
                             className="bg-gray-100 hover:bg-purple-50 text-gray-700 hover:text-purple-700 px-2 py-0.5 rounded text-[11px] font-medium border border-gray-200 hover:border-purple-200 transition-colors whitespace-nowrap cursor-pointer w-fit"
                             title="Advance UPI payment"
@@ -1447,8 +1457,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
         <div className="modal-backdrop">
           <form className="event-modal" onSubmit={assignTask}>
             <div className="modal-header"><h2>{editingTask ? 'Edit task' : 'Assign task'}</h2><button type="button" onClick={closeModal}><X size={20} /></button></div>
-            <label>Task name / Role
-              <select required value={form.taskName} onChange={e => setForm({ ...form, taskName: e.target.value })}>
+            <label htmlFor="select-task-name">Task name / Role
+              <select id="select-task-name" data-testid="select-task-name" required value={form.taskName} onChange={e => setForm({ ...form, taskName: e.target.value })}>
                 <option value="">Select a role / task</option>
                 <option value="Event Coordinator team">Event Coordinator team</option>
                 <option value="Event Coordinator Assistant">Event Coordinator Assistant</option>
@@ -1474,29 +1484,33 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                 <option value="Backstage Volunteer">Backstage Volunteer</option>
               </select>
             </label>
-            <label>Volunteer
-              <select required value={form.volunteerId} onChange={e => setForm({ ...form, volunteerId: e.target.value })}>
+            <label htmlFor="select-task-volunteer">Volunteer
+              <select id="select-task-volunteer" data-testid="select-task-volunteer" required value={form.volunteerId} onChange={e => setForm({ ...form, volunteerId: e.target.value })}>
                 <option value="">Select volunteer</option>
                 {volunteers.map(v => <option key={v._id} value={v._id}>{v.fullName ? `${v.fullName} (@${v.username})` : v.username}</option>)}
               </select>
             </label>
-            <label>Event
-              <select required value={form.eventId} onChange={e => setForm({ ...form, eventId: e.target.value })}>
+            <label htmlFor="select-task-event">Event
+              <select id="select-task-event" data-testid="select-task-event" required value={form.eventId} onChange={e => setForm({ ...form, eventId: e.target.value })}>
                 <option value="">Select event</option>
                 {events.map(ev => <option key={ev._id} value={ev._id}>{ev.title}</option>)}
               </select>
             </label>
-            <label>Rules &amp; Regulations
+            <label htmlFor="input-task-rules">Rules &amp; Regulations
               <textarea 
+                id="input-task-rules"
+                data-testid="input-task-rules"
                 value={form.rules} 
                 onChange={e => setForm({ ...form, rules: e.target.value })} 
                 placeholder="Specific instructions or rules for this task..."
                 rows={3}
               />
             </label>
-            <label>Salary (₹) <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'normal' }}>(Min. ₹200)</span>
+            <label htmlFor="input-task-salary">Salary (₹) <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'normal' }}>(Min. ₹200)</span>
               <input 
                 type="number" 
+                id="input-task-salary"
+                data-testid="input-task-salary"
                 min="200" 
                 required 
                 value={form.salary} 
@@ -1504,7 +1518,10 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                 placeholder="Minimum 200" 
               />
             </label>
-            <div className="modal-actions"><button type="button" onClick={closeModal}>Cancel</button><button className="primary-action" type="submit">{editingTask ? 'Save changes' : 'Assign'}</button></div>
+            <div className="modal-actions">
+              <button type="button" id="btn-cancel-assign-task" data-testid="btn-cancel-assign-task" onClick={closeModal}>Cancel</button>
+              <button className="primary-action" id="btn-submit-assign-task" data-testid="btn-submit-assign-task" type="submit">{editingTask ? 'Save changes' : 'Assign'}</button>
+            </div>
           </form>
         </div>
       )}
@@ -1873,6 +1890,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                 </div>
                 <button 
                   type="button" 
+                  id="btn-close-upi-modal"
+                  data-testid="btn-close-upi-modal"
                   onClick={() => setUpiModalTask(null)}
                   className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition cursor-pointer"
                   aria-label="Close"
@@ -1917,6 +1936,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                 <div className="flex items-center bg-gray-100/90 p-1 rounded-xl gap-1">
                   <button
                     type="button"
+                    id="tab-upi-apps"
+                    data-testid="tab-upi-apps"
                     onClick={() => setUpiTab('apps')}
                     className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       upiTab === 'apps'
@@ -1929,6 +1950,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                   </button>
                   <button
                     type="button"
+                    id="tab-upi-qr"
+                    data-testid="tab-upi-qr"
                     onClick={() => setUpiTab('qr')}
                     className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       upiTab === 'qr'
@@ -1947,6 +1970,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                     {/* Google Pay Option */}
                     <button
                       type="button"
+                      id="btn-gpay"
+                      data-testid="btn-gpay"
                       onClick={() => handleOpenUpi('gpay')}
                       className="w-full flex items-center justify-between p-2.5 bg-white hover:bg-slate-50 active:scale-[0.99] border border-gray-200 hover:border-gray-800 rounded-xl transition cursor-pointer shadow-2xs group text-left"
                     >
@@ -1973,6 +1998,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                     {/* PhonePe Option */}
                     <button
                       type="button"
+                      id="btn-phonepe"
+                      data-testid="btn-phonepe"
                       onClick={() => handleOpenUpi('phonepe')}
                       className="w-full flex items-center justify-between p-2.5 bg-white hover:bg-purple-50/40 active:scale-[0.99] border border-gray-200 hover:border-[#5f259f] rounded-xl transition cursor-pointer shadow-2xs group text-left"
                     >
@@ -1999,6 +2026,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                     {/* Other UPI Apps Option */}
                     <button
                       type="button"
+                      id="btn-other-upi"
+                      data-testid="btn-other-upi"
                       onClick={() => handleOpenUpi('any')}
                       className="w-full flex items-center justify-between p-2.5 bg-white hover:bg-slate-50 active:scale-[0.99] border border-gray-200 hover:border-purple-500 rounded-xl transition cursor-pointer shadow-2xs group text-left"
                     >
@@ -2132,11 +2161,13 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                 {/* Step 2: Transaction Reference / UTR */}
                 <div className="bg-slate-50 p-2.5 rounded-xl border border-gray-200">
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-gray-800">
+                    <label className="text-xs font-bold text-gray-800" htmlFor="input-utr">
                       Transaction Reference / UTR
                     </label>
                     <button
                       type="button"
+                      id="btn-auto-utr"
+                      data-testid="btn-auto-utr"
                       onClick={() => setUpiForm(prev => ({ ...prev, utr: 'UPI' + Math.floor(100000000000 + Math.random() * 900000000000) }))}
                       className="text-[11px] text-purple-600 hover:underline font-semibold cursor-pointer"
                     >
@@ -2145,6 +2176,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                   </div>
                   <input
                     type="text"
+                    id="input-utr"
+                    data-testid="input-utr"
                     required
                     value={upiForm.utr}
                     onChange={e => setUpiForm(prev => ({ ...prev, utr: e.target.value }))}
@@ -2161,6 +2194,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
               <div className="p-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2.5 shrink-0">
                 <button
                   type="button"
+                  id="btn-cancel-payment"
+                  data-testid="btn-cancel-payment"
                   onClick={() => setUpiModalTask(null)}
                   disabled={paymentSubmitting}
                   className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-200/70 rounded-xl transition cursor-pointer"
@@ -2169,6 +2204,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                 </button>
                 <button
                   type="submit"
+                  id="btn-confirm-payment"
+                  data-testid="btn-confirm-payment"
                   disabled={paymentSubmitting}
                   className="flex-1 sm:flex-initial px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
@@ -2593,21 +2630,21 @@ const EventModal = ({ form, setForm, editing, onClose, onSubmit }) => {
           <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
         </div>
         {[['Event title', 'title'], ['Location', 'location']].map(([label, key]) => (
-          <label key={key}>{label}<input required value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} /></label>
+          <label key={key}>{label}<input id={`event-${key}`} data-testid={`event-${key}`} required value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} /></label>
         ))}
-        <label>Description<textarea required rows="3" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
-        <label>Rules &amp; Regulations<textarea rows="3" placeholder="Rules specific to this event..." value={form.rules || ''} onChange={(event) => setForm({ ...form, rules: event.target.value })} /></label>
+        <label>Description<textarea id="event-description" data-testid="event-description" required rows="3" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
+        <label>Rules &amp; Regulations<textarea id="event-rules" data-testid="event-rules" rows="3" placeholder="Rules specific to this event..." value={form.rules || ''} onChange={(event) => setForm({ ...form, rules: event.target.value })} /></label>
         <div className="form-grid">
-          <label>Date and time<input required type="datetime-local" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} /></label>
-          <label>Capacity<input required min="1" type="number" value={form.capacity} onChange={(event) => setForm({ ...form, capacity: event.target.value })} /></label>
+          <label>Date and time<input id="event-date" data-testid="event-date" required type="datetime-local" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} /></label>
+          <label>Capacity<input id="event-capacity" data-testid="event-capacity" required min="1" type="number" value={form.capacity} onChange={(event) => setForm({ ...form, capacity: event.target.value })} /></label>
         </div>
-        <label>Price (₹)<input required min="0" type="number" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} placeholder="e.g. 1000 or 0 for free" /></label>
+        <label>Price (₹)<input id="event-price" data-testid="event-price" required min="0" type="number" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} placeholder="e.g. 1000 or 0 for free" /></label>
         <label>
           Event Image
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-            <input type="file" accept="image/*" onChange={handleImageUpload} style={{ padding: '8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px' }} />
+            <input type="file" id="event-image-file" data-testid="event-image-file" accept="image/*" onChange={handleImageUpload} style={{ padding: '8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px' }} />
             <div style={{ textAlign: 'center', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>OR</div>
-            <input type="url" placeholder="Paste image URL here" value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} />
+            <input type="url" id="event-image-url" data-testid="event-image-url" placeholder="Paste image URL here" value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} />
           </div>
           {form.imageUrl && (
             <div style={{ marginTop: '12px', borderRadius: '8px', overflow: 'hidden', height: '120px', border: '1px solid #e2e8f0' }}>
@@ -2616,8 +2653,8 @@ const EventModal = ({ form, setForm, editing, onClose, onSubmit }) => {
           )}
         </label>
         <div className="modal-actions">
-          <button type="button" onClick={onClose}>Cancel</button>
-          <button className="primary-action" type="submit">{editing ? 'Save changes' : 'Create event'}</button>
+          <button type="button" id="btn-cancel-event" data-testid="btn-cancel-event" onClick={onClose}>Cancel</button>
+          <button className="primary-action" id="btn-submit-event" data-testid="btn-submit-event" type="submit">{editing ? 'Save changes' : 'Create event'}</button>
         </div>
       </form>
     </div>
