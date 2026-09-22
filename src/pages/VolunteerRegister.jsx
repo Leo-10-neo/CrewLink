@@ -185,20 +185,20 @@ const VolunteerRegister = () => {
                   <h3 className="text-lg font-semibold border-b pb-2">Account Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Username *</label>
-                      <input type="text" name="username" value={formData.username} onChange={handleChange} required className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="reg-username">Username *</label>
+                      <input type="text" id="reg-username" data-testid="reg-username" name="username" value={formData.username} onChange={handleChange} required className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                      <input type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="reg-email">Email *</label>
+                      <input type="email" id="reg-email" data-testid="reg-email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
-                      <input type="password" name="password" value={formData.password} onChange={handleChange} required className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="reg-password">Password *</label>
+                      <input type="password" id="reg-password" data-testid="reg-password" name="password" value={formData.password} onChange={handleChange} required className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password *</label>
-                      <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="reg-confirmPassword">Confirm Password *</label>
+                      <input type="password" id="reg-confirmPassword" data-testid="reg-confirmPassword" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                     </div>
                   </div>
                 </div>
@@ -210,16 +210,16 @@ const VolunteerRegister = () => {
                   <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                      <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="reg-fullName">Full Name</label>
+                      <input type="text" id="reg-fullName" data-testid="reg-fullName" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
-                      <input type="number" name="age" value={formData.age} onChange={handleChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="reg-age">Age</label>
+                      <input type="number" id="reg-age" data-testid="reg-age" name="age" value={formData.age} onChange={handleChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                      <select name="gender" value={formData.gender} onChange={handleChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="reg-gender">Gender</label>
+                      <select id="reg-gender" data-testid="reg-gender" name="gender" value={formData.gender} onChange={handleChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select...</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
@@ -227,16 +227,16 @@ const VolunteerRegister = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                      <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="reg-phone">Phone Number</label>
+                      <input type="tel" id="reg-phone" data-testid="reg-phone" name="phone" value={formData.phone} onChange={handleChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                      <input type="text" name="address" value={formData.address} onChange={handleChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="reg-address">Address</label>
+                      <input type="text" id="reg-address" data-testid="reg-address" name="address" value={formData.address} onChange={handleChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                      <input type="text" name="city" value={formData.city} onChange={handleChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="reg-city">City</label>
+                      <input type="text" id="reg-city" data-testid="reg-city" name="city" value={formData.city} onChange={handleChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Profile Photo (Max 2MB)</label>
@@ -345,7 +345,7 @@ const VolunteerRegister = () => {
               {/* Navigation Buttons */}
               <div className="mt-10 flex justify-between pt-6 border-t border-gray-100">
                 {step > 1 ? (
-                  <button type="button" onClick={prevStep} className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                  <button type="button" id="reg-btn-back" data-testid="reg-btn-back" onClick={prevStep} className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                     Back
                   </button>
                 ) : (
@@ -353,11 +353,11 @@ const VolunteerRegister = () => {
                 )}
                 
                 {step < 3 ? (
-                  <button type="button" onClick={nextStep} className="btn-primary px-8 py-2">
+                  <button type="button" id="reg-btn-next" data-testid="reg-btn-next" onClick={nextStep} className="btn-primary px-8 py-2">
                     Next Step
                   </button>
                 ) : (
-                  <button type="button" disabled={isLoading} onClick={handleSubmit} className="btn-primary px-8 py-2 flex items-center space-x-2 disabled:opacity-50">
+                  <button type="button" id="reg-btn-submit" data-testid="reg-btn-submit" disabled={isLoading} onClick={handleSubmit} className="btn-primary px-8 py-2 flex items-center space-x-2 disabled:opacity-50">
                     {isLoading ? <span>Submitting...</span> : <span>Complete Registration</span>}
                   </button>
                 )}

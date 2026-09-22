@@ -21,6 +21,102 @@ function cmd(command, target, value = '', comment = '', targets = []) {
 
 const tests = [
   {
+    id: 'c99e4f21-729f-4ee7-910a-e3746654e808',
+    name: 'new volunteer login',
+    commands: [
+      cmd('open', '/', '', 'Open CrewLink Home Page'),
+      cmd('setWindowSize', '1550x878', '', 'Set Browser Size'),
+      cmd('waitForElementVisible', 'id=home-btn-volunteer', '10000', 'Wait for Become a Volunteer button', [
+        ['id=home-btn-volunteer', 'id'],
+        ['linkText=Become a Volunteer', 'linkText'],
+        ['css=#home-btn-volunteer', 'css:finder'],
+        ['xpath=//a[@id="home-btn-volunteer"]', 'xpath:attributes']
+      ]),
+      cmd('click', 'id=home-btn-volunteer', '', 'Click Become a Volunteer', [
+        ['id=home-btn-volunteer', 'id'],
+        ['linkText=Become a Volunteer', 'linkText'],
+        ['css=#home-btn-volunteer', 'css:finder']
+      ]),
+      cmd('waitForElementVisible', 'id=reg-username', '10000', 'Wait for registration form', [
+        ['id=reg-username', 'id'],
+        ['name=username', 'name'],
+        ['css=#reg-username', 'css:finder']
+      ]),
+      cmd('click', 'id=reg-username', '', 'Focus Username', [
+        ['id=reg-username', 'id'],
+        ['name=username', 'name']
+      ]),
+      cmd('type', 'id=reg-username', 'Bob', 'Enter Username', [
+        ['id=reg-username', 'id'],
+        ['name=username', 'name']
+      ]),
+      cmd('type', 'id=reg-email', 'bob@gmail.com', 'Enter Email', [
+        ['id=reg-email', 'id'],
+        ['name=email', 'name']
+      ]),
+      cmd('type', 'id=reg-password', 'bob123', 'Enter Password', [
+        ['id=reg-password', 'id'],
+        ['name=password', 'name']
+      ]),
+      cmd('type', 'id=reg-confirmPassword', 'bob123', 'Confirm Password', [
+        ['id=reg-confirmPassword', 'id'],
+        ['name=confirmPassword', 'name']
+      ]),
+      cmd('click', 'id=reg-btn-next', '', 'Click Next Step', [
+        ['id=reg-btn-next', 'id'],
+        ['css=#reg-btn-next', 'css:finder']
+      ]),
+      cmd('waitForElementVisible', 'id=reg-fullName', '6000', 'Wait for Personal Details step', [
+        ['id=reg-fullName', 'id'],
+        ['name=fullName', 'name']
+      ]),
+      cmd('type', 'id=reg-fullName', 'Bob Volunteer', 'Enter Full Name', [
+        ['id=reg-fullName', 'id'],
+        ['name=fullName', 'name']
+      ]),
+      cmd('type', 'id=reg-phone', '9164335467', 'Enter Phone', [
+        ['id=reg-phone', 'id'],
+        ['name=phone', 'name']
+      ]),
+      cmd('type', 'id=reg-city', 'Bengaluru', 'Enter City', [
+        ['id=reg-city', 'id'],
+        ['name=city', 'name']
+      ]),
+      cmd('click', 'id=reg-btn-next', '', 'Click Next Step', [
+        ['id=reg-btn-next', 'id'],
+        ['css=#reg-btn-next', 'css:finder']
+      ]),
+      cmd('pause', '600', '', 'Experience step reached'),
+      cmd('open', '/login', '', 'Go to Login page'),
+      cmd('waitForElementVisible', 'id=login-email', '8000', 'Wait for Login Email input', [
+        ['id=login-email', 'id'],
+        ['name=email', 'name']
+      ]),
+      cmd('type', 'id=login-email', 'bob@gmail.com', 'Enter Bob Email', [
+        ['id=login-email', 'id'],
+        ['name=email', 'name']
+      ]),
+      cmd('type', 'id=login-password', 'bob123', 'Enter Bob Password', [
+        ['id=login-password', 'id'],
+        ['name=password', 'name']
+      ]),
+      cmd('click', 'id=login-submit', '', 'Click Sign In', [
+        ['id=login-submit', 'id'],
+        ['css=#login-submit', 'css:finder']
+      ]),
+      cmd('waitForElementVisible', 'id=vol-nav-profile', '15000', 'Wait for Volunteer Dashboard', [
+        ['id=vol-nav-profile', 'id'],
+        ['css=#vol-nav-profile', 'css:finder']
+      ]),
+      cmd('assertElementPresent', 'id=vol-nav-profile', '', 'Confirmed Volunteer Dashboard loaded'),
+      cmd('click', 'id=vol-logout-btn', '', 'Click Volunteer Logout', [
+        ['id=vol-logout-btn', 'id'],
+        ['css=#vol-logout-btn', 'css:finder']
+      ]),
+      cmd('waitForElementVisible', 'id=login-email', '10000', 'Confirmed logged out')
+    ]
+  },
+  {
     id: 'c99e4f21-729f-4ee7-910a-e3746654e801',
     name: '01_Admin_Login_And_Overview',
     commands: [
@@ -293,7 +389,7 @@ const sideProject = {
   id: '37a7f451-3cf1-456f-871d-a4115fa016b1',
   version: '2.0',
   name: 'CrewLink Selenium IDE Tests',
-  url: 'http://localhost:5173',
+  url: 'http://localhost:5000',
   tests: tests,
   suites: [
     {
@@ -306,6 +402,8 @@ const sideProject = {
     }
   ],
   urls: [
+    'http://localhost:5000',
+    'http://localhost:5000/',
     'http://localhost:5173',
     'http://localhost:5173/'
   ],

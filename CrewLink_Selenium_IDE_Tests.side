@@ -2,14 +2,454 @@
   "id": "37a7f451-3cf1-456f-871d-a4115fa016b1",
   "version": "2.0",
   "name": "CrewLink Selenium IDE Tests",
-  "url": "http://localhost:5173",
+  "url": "http://localhost:5000",
   "tests": [
+    {
+      "id": "c99e4f21-729f-4ee7-910a-e3746654e808",
+      "name": "new volunteer login",
+      "commands": [
+        {
+          "id": "19ea489f-2cd4-4afd-93a9-644ffaade3af",
+          "comment": "Open CrewLink Home Page",
+          "command": "open",
+          "target": "/",
+          "targets": [
+            [
+              "/",
+              "id"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "2b4c953a-580c-4a43-9bb9-fc140f8553a1",
+          "comment": "Set Browser Size",
+          "command": "setWindowSize",
+          "target": "1550x878",
+          "targets": [
+            [
+              "1550x878",
+              "id"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "9f7dff0f-c716-462e-a5ca-2c49db4495a7",
+          "comment": "Wait for Become a Volunteer button",
+          "command": "waitForElementVisible",
+          "target": "id=home-btn-volunteer",
+          "targets": [
+            [
+              "id=home-btn-volunteer",
+              "id"
+            ],
+            [
+              "linkText=Become a Volunteer",
+              "linkText"
+            ],
+            [
+              "css=#home-btn-volunteer",
+              "css:finder"
+            ],
+            [
+              "xpath=//a[@id=\"home-btn-volunteer\"]",
+              "xpath:attributes"
+            ]
+          ],
+          "value": "10000"
+        },
+        {
+          "id": "bf881bc5-069d-454d-8743-26e08263e760",
+          "comment": "Click Become a Volunteer",
+          "command": "click",
+          "target": "id=home-btn-volunteer",
+          "targets": [
+            [
+              "id=home-btn-volunteer",
+              "id"
+            ],
+            [
+              "linkText=Become a Volunteer",
+              "linkText"
+            ],
+            [
+              "css=#home-btn-volunteer",
+              "css:finder"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "b2a80a98-271d-4a98-8e80-9b77820ce368",
+          "comment": "Wait for registration form",
+          "command": "waitForElementVisible",
+          "target": "id=reg-username",
+          "targets": [
+            [
+              "id=reg-username",
+              "id"
+            ],
+            [
+              "name=username",
+              "name"
+            ],
+            [
+              "css=#reg-username",
+              "css:finder"
+            ]
+          ],
+          "value": "10000"
+        },
+        {
+          "id": "4c41e8bb-7861-45dd-8eeb-579afc9c04c6",
+          "comment": "Focus Username",
+          "command": "click",
+          "target": "id=reg-username",
+          "targets": [
+            [
+              "id=reg-username",
+              "id"
+            ],
+            [
+              "name=username",
+              "name"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "a1b31e86-65b5-4aea-8599-ad8f971b0557",
+          "comment": "Enter Username",
+          "command": "type",
+          "target": "id=reg-username",
+          "targets": [
+            [
+              "id=reg-username",
+              "id"
+            ],
+            [
+              "name=username",
+              "name"
+            ]
+          ],
+          "value": "Bob"
+        },
+        {
+          "id": "302a8ab0-cc61-4891-9bd5-8a91db93d857",
+          "comment": "Enter Email",
+          "command": "type",
+          "target": "id=reg-email",
+          "targets": [
+            [
+              "id=reg-email",
+              "id"
+            ],
+            [
+              "name=email",
+              "name"
+            ]
+          ],
+          "value": "bob@gmail.com"
+        },
+        {
+          "id": "ff48f0b7-7487-4a81-8569-30e4f5c8da02",
+          "comment": "Enter Password",
+          "command": "type",
+          "target": "id=reg-password",
+          "targets": [
+            [
+              "id=reg-password",
+              "id"
+            ],
+            [
+              "name=password",
+              "name"
+            ]
+          ],
+          "value": "bob123"
+        },
+        {
+          "id": "1314ede2-56df-4e05-9ab9-be3b98fc5db2",
+          "comment": "Confirm Password",
+          "command": "type",
+          "target": "id=reg-confirmPassword",
+          "targets": [
+            [
+              "id=reg-confirmPassword",
+              "id"
+            ],
+            [
+              "name=confirmPassword",
+              "name"
+            ]
+          ],
+          "value": "bob123"
+        },
+        {
+          "id": "f846a6dc-8b07-44de-ab2e-7c415465982c",
+          "comment": "Click Next Step",
+          "command": "click",
+          "target": "id=reg-btn-next",
+          "targets": [
+            [
+              "id=reg-btn-next",
+              "id"
+            ],
+            [
+              "css=#reg-btn-next",
+              "css:finder"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "3d4c74f7-dc3d-4531-afab-8fcb365e44c4",
+          "comment": "Wait for Personal Details step",
+          "command": "waitForElementVisible",
+          "target": "id=reg-fullName",
+          "targets": [
+            [
+              "id=reg-fullName",
+              "id"
+            ],
+            [
+              "name=fullName",
+              "name"
+            ]
+          ],
+          "value": "6000"
+        },
+        {
+          "id": "892a3d15-e5e0-4646-b837-795ac396e14e",
+          "comment": "Enter Full Name",
+          "command": "type",
+          "target": "id=reg-fullName",
+          "targets": [
+            [
+              "id=reg-fullName",
+              "id"
+            ],
+            [
+              "name=fullName",
+              "name"
+            ]
+          ],
+          "value": "Bob Volunteer"
+        },
+        {
+          "id": "cae7d0c8-2d60-480d-aeaf-f2c90e4fe0cf",
+          "comment": "Enter Phone",
+          "command": "type",
+          "target": "id=reg-phone",
+          "targets": [
+            [
+              "id=reg-phone",
+              "id"
+            ],
+            [
+              "name=phone",
+              "name"
+            ]
+          ],
+          "value": "9164335467"
+        },
+        {
+          "id": "2ac3ff04-f942-49a0-b7bc-82beb27ba41b",
+          "comment": "Enter City",
+          "command": "type",
+          "target": "id=reg-city",
+          "targets": [
+            [
+              "id=reg-city",
+              "id"
+            ],
+            [
+              "name=city",
+              "name"
+            ]
+          ],
+          "value": "Bengaluru"
+        },
+        {
+          "id": "caa1e8d5-8694-442c-a7fc-11145ff6c894",
+          "comment": "Click Next Step",
+          "command": "click",
+          "target": "id=reg-btn-next",
+          "targets": [
+            [
+              "id=reg-btn-next",
+              "id"
+            ],
+            [
+              "css=#reg-btn-next",
+              "css:finder"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "72cc5172-1eb4-45da-9f5a-78cfb7006038",
+          "comment": "Experience step reached",
+          "command": "pause",
+          "target": "600",
+          "targets": [
+            [
+              "600",
+              "id"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "c7648341-7acc-420b-95eb-de0bedeca6ae",
+          "comment": "Go to Login page",
+          "command": "open",
+          "target": "/login",
+          "targets": [
+            [
+              "/login",
+              "id"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "49a35775-74d7-4aba-b32f-70a0d9cf1d1c",
+          "comment": "Wait for Login Email input",
+          "command": "waitForElementVisible",
+          "target": "id=login-email",
+          "targets": [
+            [
+              "id=login-email",
+              "id"
+            ],
+            [
+              "name=email",
+              "name"
+            ]
+          ],
+          "value": "8000"
+        },
+        {
+          "id": "344ade02-d7c3-4c7d-9417-e49ab1795d64",
+          "comment": "Enter Bob Email",
+          "command": "type",
+          "target": "id=login-email",
+          "targets": [
+            [
+              "id=login-email",
+              "id"
+            ],
+            [
+              "name=email",
+              "name"
+            ]
+          ],
+          "value": "bob@gmail.com"
+        },
+        {
+          "id": "1dffc018-ed47-4ad1-87fd-094a97b047ca",
+          "comment": "Enter Bob Password",
+          "command": "type",
+          "target": "id=login-password",
+          "targets": [
+            [
+              "id=login-password",
+              "id"
+            ],
+            [
+              "name=password",
+              "name"
+            ]
+          ],
+          "value": "bob123"
+        },
+        {
+          "id": "89c8f650-b976-4f79-aac0-15c1946c466a",
+          "comment": "Click Sign In",
+          "command": "click",
+          "target": "id=login-submit",
+          "targets": [
+            [
+              "id=login-submit",
+              "id"
+            ],
+            [
+              "css=#login-submit",
+              "css:finder"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "70ead328-7f0a-43ec-9778-4cd1007ce1a4",
+          "comment": "Wait for Volunteer Dashboard",
+          "command": "waitForElementVisible",
+          "target": "id=vol-nav-profile",
+          "targets": [
+            [
+              "id=vol-nav-profile",
+              "id"
+            ],
+            [
+              "css=#vol-nav-profile",
+              "css:finder"
+            ]
+          ],
+          "value": "15000"
+        },
+        {
+          "id": "76333b72-c367-46d7-bc14-74d1476229cf",
+          "comment": "Confirmed Volunteer Dashboard loaded",
+          "command": "assertElementPresent",
+          "target": "id=vol-nav-profile",
+          "targets": [
+            [
+              "id=vol-nav-profile",
+              "id"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "50140a1c-76f2-4920-aeca-6470b0c6025c",
+          "comment": "Click Volunteer Logout",
+          "command": "click",
+          "target": "id=vol-logout-btn",
+          "targets": [
+            [
+              "id=vol-logout-btn",
+              "id"
+            ],
+            [
+              "css=#vol-logout-btn",
+              "css:finder"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "e90e22ca-8e37-4033-a163-69022088cf00",
+          "comment": "Confirmed logged out",
+          "command": "waitForElementVisible",
+          "target": "id=login-email",
+          "targets": [
+            [
+              "id=login-email",
+              "id"
+            ]
+          ],
+          "value": "10000"
+        }
+      ]
+    },
     {
       "id": "c99e4f21-729f-4ee7-910a-e3746654e801",
       "name": "01_Admin_Login_And_Overview",
       "commands": [
         {
-          "id": "b254b145-6bb9-49b5-8248-1f4c65a6a91b",
+          "id": "0afacd95-80b9-42cb-b67c-d6db7f02f0ae",
           "comment": "Open Login Page",
           "command": "open",
           "target": "/login",
@@ -22,7 +462,7 @@
           "value": ""
         },
         {
-          "id": "19544cc1-48f8-4da3-9267-4957b3c3d668",
+          "id": "e6716e8d-6ac0-412e-8ab9-f8acb761cae6",
           "comment": "Set Desktop Screen Size",
           "command": "setWindowSize",
           "target": "1366x768",
@@ -35,7 +475,7 @@
           "value": ""
         },
         {
-          "id": "c5ba7fdd-41a5-4cde-af3f-4194dff93300",
+          "id": "b1946e87-98dc-4ec1-8b04-aad62639c427",
           "comment": "Wait for Email input",
           "command": "waitForElementVisible",
           "target": "id=login-email",
@@ -56,7 +496,7 @@
           "value": "10000"
         },
         {
-          "id": "b9ed39a7-7ba4-40ce-95bc-91647b7132e6",
+          "id": "8d56ef4b-26d0-4ea3-a683-2d70f34151ce",
           "comment": "Enter Admin Email",
           "command": "type",
           "target": "id=login-email",
@@ -77,7 +517,7 @@
           "value": "admin@crewlink.com"
         },
         {
-          "id": "8af6efd3-1003-4862-840c-79be5438b25e",
+          "id": "494663c4-ff9a-4cf3-81b4-25b967995d35",
           "comment": "Enter Admin Password",
           "command": "type",
           "target": "id=login-password",
@@ -98,7 +538,7 @@
           "value": "admin123"
         },
         {
-          "id": "ecf97de1-abe5-4985-8c44-cc8defff1b21",
+          "id": "6baa7544-5b43-40fe-926b-8db77abfd8c1",
           "comment": "Click Sign In Button",
           "command": "click",
           "target": "id=login-submit",
@@ -119,7 +559,7 @@
           "value": ""
         },
         {
-          "id": "8d2e4d5a-ad4e-4377-8981-beaa0de0354d",
+          "id": "5e2200df-bf45-4d6c-9334-bdb6bda7be6f",
           "comment": "Wait for Admin Dashboard navigation",
           "command": "waitForElementVisible",
           "target": "id=nav-overview",
@@ -136,7 +576,7 @@
           "value": "15000"
         },
         {
-          "id": "b2a89b78-a484-4e86-b2d9-83e9427b2311",
+          "id": "6e42c77a-104c-4120-986b-810db180c4cf",
           "comment": "Verify Overview Tab present",
           "command": "assertElementPresent",
           "target": "id=nav-overview",
@@ -149,7 +589,7 @@
           "value": ""
         },
         {
-          "id": "523f3c63-e109-4932-b471-9d9469a0ca05",
+          "id": "444a3e79-a496-4717-94a7-db89439c54c3",
           "comment": "Verify Events Tab present",
           "command": "assertElementPresent",
           "target": "id=nav-events",
@@ -162,7 +602,7 @@
           "value": ""
         },
         {
-          "id": "262c3884-0ae0-4b25-8dd0-a763934a6e54",
+          "id": "9dc8e490-3e12-4a83-b618-584c84980bfd",
           "comment": "Verify Volunteers Tab present",
           "command": "assertElementPresent",
           "target": "id=nav-volunteers",
@@ -175,7 +615,7 @@
           "value": ""
         },
         {
-          "id": "3103f2da-903d-444b-b4cf-bd0f2dba664e",
+          "id": "33167c3e-07fa-413b-99cc-3247c9002678",
           "comment": "Verify Tasks Tab present",
           "command": "assertElementPresent",
           "target": "id=nav-tasks",
@@ -188,7 +628,7 @@
           "value": ""
         },
         {
-          "id": "be0d859f-0bf1-4fa5-b855-bfb726d058d9",
+          "id": "3536a051-4d66-4e54-9aab-44d8537ba1d4",
           "comment": "Verify Certificates Tab present",
           "command": "assertElementPresent",
           "target": "id=nav-certificates",
@@ -201,7 +641,7 @@
           "value": ""
         },
         {
-          "id": "51bb86de-f6ad-436f-ab87-4e01e7dc9985",
+          "id": "9c94b61b-3b37-4714-be9b-3dd3bb695dcb",
           "comment": "Verify Logout button present",
           "command": "assertElementPresent",
           "target": "id=btn-logout",
@@ -220,7 +660,7 @@
       "name": "02_Admin_Navigation_Views",
       "commands": [
         {
-          "id": "72293f44-b019-4e57-bb76-21ff3522961b",
+          "id": "87788bf0-82ca-43d9-be85-08e6c1ed1b5a",
           "comment": "Wait for Events tab",
           "command": "waitForElementVisible",
           "target": "id=nav-events",
@@ -233,7 +673,7 @@
           "value": "5000"
         },
         {
-          "id": "aad974fb-f883-42b8-83a1-f2519f7dbff4",
+          "id": "ea6c213e-e5eb-47d1-be17-867d3ca79432",
           "comment": "Navigate to Events View",
           "command": "click",
           "target": "id=nav-events",
@@ -250,7 +690,7 @@
           "value": ""
         },
         {
-          "id": "569841d5-52d4-4a62-95fc-51e9a04f9aa8",
+          "id": "c1a73400-1fbb-4c01-bcdb-e8f7c21ab2a6",
           "comment": "Verify Events view loaded",
           "command": "waitForElementVisible",
           "target": "id=btn-create-event",
@@ -267,7 +707,7 @@
           "value": "5000"
         },
         {
-          "id": "70edde0b-f862-4e1d-8f35-772c42f323ec",
+          "id": "b9811ad6-09a1-4021-9891-07125d9aedb0",
           "comment": "Create Event button is visible",
           "command": "assertElementPresent",
           "target": "id=btn-create-event",
@@ -280,7 +720,7 @@
           "value": ""
         },
         {
-          "id": "49d4303d-707a-49e0-a422-867b2675df11",
+          "id": "8626eec4-cba4-4135-a157-4dc399f5f467",
           "comment": "Navigate to Volunteers View",
           "command": "click",
           "target": "id=nav-volunteers",
@@ -297,7 +737,7 @@
           "value": ""
         },
         {
-          "id": "a521dcac-69f1-4772-ad37-e3d55594850e",
+          "id": "9c42f5ff-8933-4991-9b23-b78d45e985c8",
           "comment": "Allow volunteers view to render",
           "command": "pause",
           "target": "800",
@@ -310,7 +750,7 @@
           "value": ""
         },
         {
-          "id": "117231f2-5339-4bc1-8318-29a41584ff91",
+          "id": "6fed0001-cbc9-4045-ab20-87f73662a96f",
           "comment": "Navigate to Tasks & Attendance View",
           "command": "click",
           "target": "id=nav-tasks",
@@ -327,7 +767,7 @@
           "value": ""
         },
         {
-          "id": "1541ae56-6296-4d52-8e48-74f5a961551c",
+          "id": "c9a3bfee-d177-4d76-8966-4f22a0266ebd",
           "comment": "Verify Assign Task button is visible",
           "command": "waitForElementVisible",
           "target": "id=btn-assign-task",
@@ -344,7 +784,7 @@
           "value": "5000"
         },
         {
-          "id": "262daa64-b94d-45a8-bb42-07e4758b736a",
+          "id": "8ea60513-10c2-4c8a-8300-ba7f55e14865",
           "comment": "Navigate to Certificates View",
           "command": "click",
           "target": "id=nav-certificates",
@@ -361,7 +801,7 @@
           "value": ""
         },
         {
-          "id": "f07faf44-e7c2-4b81-b648-32a2cfa60681",
+          "id": "8768f2c8-e5a7-45c2-b56b-b4df3ba6d983",
           "comment": "Allow certificates view to render",
           "command": "pause",
           "target": "800",
@@ -374,7 +814,7 @@
           "value": ""
         },
         {
-          "id": "5d9e42f9-9aaf-489c-a616-61b99772504d",
+          "id": "343ea108-4559-448b-b823-64b259ec8ad5",
           "comment": "Return to Overview",
           "command": "click",
           "target": "id=nav-overview",
@@ -391,7 +831,7 @@
           "value": ""
         },
         {
-          "id": "4e8bcac0-2628-4bd9-b1e3-63aec414e569",
+          "id": "6fea78c0-3b22-4115-af26-a65d2a5e108b",
           "comment": "Overview rendered cleanly",
           "command": "pause",
           "target": "800",
@@ -410,7 +850,7 @@
       "name": "03_Admin_Create_Event_Modal",
       "commands": [
         {
-          "id": "25cda4db-2bab-45d3-9f56-910fb7a690ee",
+          "id": "bc07b7fa-be70-48a4-a243-eaaa7f580fb1",
           "comment": "Switch to Events View",
           "command": "click",
           "target": "id=nav-events",
@@ -427,7 +867,7 @@
           "value": ""
         },
         {
-          "id": "d97aaa35-ce94-4ad6-b1ec-534a27ff28fe",
+          "id": "5c511472-5b3a-47e9-9909-a9c576fdb74f",
           "comment": "Wait for Create Event button",
           "command": "waitForElementVisible",
           "target": "id=btn-create-event",
@@ -440,7 +880,7 @@
           "value": "5000"
         },
         {
-          "id": "b53794f1-5779-4e06-aca0-02412f27f209",
+          "id": "103b71ef-5f0a-47ee-92f6-7f33489287c8",
           "comment": "Open Create Event Modal",
           "command": "click",
           "target": "id=btn-create-event",
@@ -457,7 +897,7 @@
           "value": ""
         },
         {
-          "id": "c261b221-a55d-4b55-a520-eb245e8094b0",
+          "id": "bdfd95a3-eca5-464e-95dc-33858ab84984",
           "comment": "Wait for Event Title input",
           "command": "waitForElementVisible",
           "target": "id=event-title",
@@ -474,7 +914,7 @@
           "value": "5000"
         },
         {
-          "id": "024da1f7-ba34-46e0-a7bc-a9f71422c80b",
+          "id": "29164e9f-06cb-4219-8fea-e2dc6a91d6f7",
           "comment": "Enter Title",
           "command": "type",
           "target": "id=event-title",
@@ -487,7 +927,7 @@
           "value": "Tech Spark Fest 2026"
         },
         {
-          "id": "dd080b5a-81f8-41ca-97c3-6b25cf1261e7",
+          "id": "7a8f0257-8c95-4dfa-890a-ced1377ebcba",
           "comment": "Enter Location",
           "command": "type",
           "target": "id=event-location",
@@ -500,7 +940,7 @@
           "value": "Bengaluru Convention Hall"
         },
         {
-          "id": "f4b64220-9179-469b-8cba-81ef5e9f00b8",
+          "id": "45e9af95-6636-4c33-827c-19be32fd84fc",
           "comment": "Enter Description",
           "command": "type",
           "target": "id=event-description",
@@ -513,7 +953,7 @@
           "value": "Annual youth hackathon and cultural technology exhibition."
         },
         {
-          "id": "abc4486c-1449-4a47-abb7-97b27c086ffd",
+          "id": "d1b23c2c-1a1b-427c-9d1a-58b52b26fba1",
           "comment": "Enter Rules",
           "command": "type",
           "target": "id=event-rules",
@@ -526,7 +966,7 @@
           "value": "Follow event conduct guidelines."
         },
         {
-          "id": "892d2101-853a-48c8-b16a-e9a121b9acc7",
+          "id": "913a37d2-7738-4b06-ab24-337e11e58435",
           "comment": "Enter Date",
           "command": "type",
           "target": "id=event-date",
@@ -539,7 +979,7 @@
           "value": "2026-11-20T10:00"
         },
         {
-          "id": "2f6c04e0-0700-482a-8b1e-6fd85bda918a",
+          "id": "a180a6b0-d3d0-4ffc-9c5f-337ad395e524",
           "comment": "Enter Capacity",
           "command": "type",
           "target": "id=event-capacity",
@@ -552,7 +992,7 @@
           "value": "75"
         },
         {
-          "id": "cecfc054-0b07-4e1e-b4eb-47169724d7c7",
+          "id": "952d40d8-a5fc-4217-8f9c-988ce7d034e8",
           "comment": "Enter Price",
           "command": "type",
           "target": "id=event-price",
@@ -565,7 +1005,7 @@
           "value": "0"
         },
         {
-          "id": "f60a6a23-2d10-48dd-84d3-66868c666280",
+          "id": "20552266-8d47-4ba7-806f-e27d6a4a2118",
           "comment": "Verify Submit button present",
           "command": "assertElementPresent",
           "target": "id=btn-submit-event",
@@ -578,7 +1018,7 @@
           "value": ""
         },
         {
-          "id": "39cbe407-f5da-427a-8552-bfd9eceac651",
+          "id": "04592629-8b46-4fd3-b160-62ea6550c728",
           "comment": "Verify Cancel button present",
           "command": "assertElementPresent",
           "target": "id=btn-cancel-event",
@@ -591,7 +1031,7 @@
           "value": ""
         },
         {
-          "id": "8d99f386-dd5a-44db-aac8-50617a33993e",
+          "id": "f8a7c97f-bf74-4c99-83e3-a6dc2a5d5522",
           "comment": "Close modal via Cancel",
           "command": "click",
           "target": "id=btn-cancel-event",
@@ -608,7 +1048,7 @@
           "value": ""
         },
         {
-          "id": "c7e185ea-6488-4eaf-b2b9-8ab05cc95993",
+          "id": "c238daf8-41d4-4594-a09c-474f02b7e6e7",
           "comment": "Modal closed cleanly",
           "command": "pause",
           "target": "500",
@@ -627,7 +1067,7 @@
       "name": "04_Admin_Tasks_And_UPI_Payment_Modal",
       "commands": [
         {
-          "id": "687e06d0-6a08-494d-99e8-1bb2af62ed67",
+          "id": "b024af19-7a27-4542-a6b6-891a047f2b3e",
           "comment": "Switch to Tasks & Attendance View",
           "command": "click",
           "target": "id=nav-tasks",
@@ -644,7 +1084,7 @@
           "value": ""
         },
         {
-          "id": "76a9fcd7-ce56-4491-b9cf-174c4a51d91f",
+          "id": "0fa64655-ab59-41a1-8869-fc68cfb93ecc",
           "comment": "Wait for Pay via UPI button",
           "command": "waitForElementVisible",
           "target": "css=[data-testid=\"btn-pay-upi\"]",
@@ -661,7 +1101,7 @@
           "value": "8000"
         },
         {
-          "id": "5c2e4440-a837-4505-9c88-cf728bfe2649",
+          "id": "be79c2b4-1103-4667-9b9f-4dd7ac01ca12",
           "comment": "Open UPI Payment Modal",
           "command": "click",
           "target": "css=[data-testid=\"btn-pay-upi\"]",
@@ -678,7 +1118,7 @@
           "value": ""
         },
         {
-          "id": "ba935def-9d9b-458b-b6fe-d8b64b7b130d",
+          "id": "f1d9887e-07a4-4db0-b9a4-0ce354684b6c",
           "comment": "Wait for UPI modal",
           "command": "waitForElementVisible",
           "target": "id=tab-upi-apps",
@@ -695,7 +1135,7 @@
           "value": "5000"
         },
         {
-          "id": "9f0152e5-50f7-4b0a-8b63-a0b74de826cf",
+          "id": "3c086542-c6e6-46df-bf49-32f6c76af9d0",
           "comment": "UPI Apps tab present",
           "command": "assertElementPresent",
           "target": "id=tab-upi-apps",
@@ -708,7 +1148,7 @@
           "value": ""
         },
         {
-          "id": "f618ea7f-f563-44ed-8a30-27e261f9768e",
+          "id": "39a4db4d-2732-480f-8c7b-282f6e9f1aa0",
           "comment": "UPI QR Code tab present",
           "command": "assertElementPresent",
           "target": "id=tab-upi-qr",
@@ -721,7 +1161,7 @@
           "value": ""
         },
         {
-          "id": "0ac96ee3-c4c9-415d-b4fb-fabba39c0f3b",
+          "id": "00648809-3282-4953-b4a7-02098de1cf88",
           "comment": "Google Pay 1-tap option present",
           "command": "assertElementPresent",
           "target": "id=btn-gpay",
@@ -734,7 +1174,7 @@
           "value": ""
         },
         {
-          "id": "2b9cdba7-a15f-4c14-8108-de08935dd86c",
+          "id": "5a1498aa-5ebf-4c55-96b9-bd0877a7ebd2",
           "comment": "PhonePe 1-tap option present",
           "command": "assertElementPresent",
           "target": "id=btn-phonepe",
@@ -747,7 +1187,7 @@
           "value": ""
         },
         {
-          "id": "bc4ed46f-9ce8-479f-a53d-329db3ef1c2f",
+          "id": "a7c2bfe9-0825-4fed-837a-b5a60d9b2ad8",
           "comment": "Other UPI Apps option present",
           "command": "assertElementPresent",
           "target": "id=btn-other-upi",
@@ -760,7 +1200,7 @@
           "value": ""
         },
         {
-          "id": "9c2db030-9edc-45d3-8562-326b7262cdb7",
+          "id": "8669fc3f-c85e-44c4-bc7b-8a9806c731e0",
           "comment": "Switch to QR Tab",
           "command": "click",
           "target": "id=tab-upi-qr",
@@ -777,7 +1217,7 @@
           "value": ""
         },
         {
-          "id": "3d4fb3e8-b1b9-4945-8030-f0f9d911d3ad",
+          "id": "19c5f8c7-50b3-4933-b6b3-2cea41ac8eed",
           "comment": "View QR code",
           "command": "pause",
           "target": "500",
@@ -790,7 +1230,7 @@
           "value": ""
         },
         {
-          "id": "a2419034-c441-4799-b788-37d35b72e138",
+          "id": "f1392285-b0d2-49f1-b939-8abd14e2dd4c",
           "comment": "Switch back to Apps Tab",
           "command": "click",
           "target": "id=tab-upi-apps",
@@ -807,7 +1247,7 @@
           "value": ""
         },
         {
-          "id": "218da7c0-c412-410d-90d0-ee6ca6b02880",
+          "id": "2d91d348-524f-4225-a1b4-23af6952ecd6",
           "comment": "Wait for Auto UTR button",
           "command": "waitForElementVisible",
           "target": "id=btn-auto-utr",
@@ -824,7 +1264,7 @@
           "value": "3000"
         },
         {
-          "id": "d644a585-1283-4360-bcc1-6b7cee9d8388",
+          "id": "3ccfab02-4d40-41a8-972f-4670dd9dacfc",
           "comment": "Click Auto-Generate Ref",
           "command": "click",
           "target": "id=btn-auto-utr",
@@ -841,7 +1281,7 @@
           "value": ""
         },
         {
-          "id": "4a1d94ce-a0e5-4abe-869b-7fb00d67535f",
+          "id": "3a1f1bae-a361-477d-9f7d-5cad5951ce21",
           "comment": "Verify UTR input populated",
           "command": "assertElementPresent",
           "target": "id=input-utr",
@@ -854,7 +1294,7 @@
           "value": ""
         },
         {
-          "id": "64bb6e92-c2d2-4bc4-9210-5c102cc28ebe",
+          "id": "0de5f5c8-5ea2-44bc-9e1b-3e6b439ea987",
           "comment": "Verify Confirm Payment button present",
           "command": "assertElementPresent",
           "target": "id=btn-confirm-payment",
@@ -867,7 +1307,7 @@
           "value": ""
         },
         {
-          "id": "3870ce16-33c5-4b1a-8bf1-3565e416b584",
+          "id": "27dfcebd-5e86-4f95-97d8-7f0c98afd602",
           "comment": "Verify Cancel Payment button present",
           "command": "assertElementPresent",
           "target": "id=btn-cancel-payment",
@@ -880,7 +1320,7 @@
           "value": ""
         },
         {
-          "id": "dcb2a44f-4c36-454a-bfc2-cbac254a35e6",
+          "id": "3fc4d407-6123-453a-a3fa-66715019a285",
           "comment": "Close UPI Payment Modal",
           "command": "click",
           "target": "id=btn-cancel-payment",
@@ -897,7 +1337,7 @@
           "value": ""
         },
         {
-          "id": "a69fc1ac-018c-4a22-9528-860e2a2bf172",
+          "id": "729ccd10-4e27-48ce-86df-847ce0e3ba57",
           "comment": "Modal closed cleanly",
           "command": "pause",
           "target": "600",
@@ -916,7 +1356,7 @@
       "name": "05_Admin_Logout",
       "commands": [
         {
-          "id": "da3714bf-a379-4aa8-b23d-0efb13edd4c8",
+          "id": "8dcaaca2-64ac-4fd1-9fe1-804e348b1843",
           "comment": "Wait for Admin Logout button",
           "command": "waitForElementVisible",
           "target": "id=btn-logout",
@@ -933,7 +1373,7 @@
           "value": "5000"
         },
         {
-          "id": "1f0dba00-c58c-45a8-a525-af7bf36fc1c2",
+          "id": "75a89dd9-f9d1-4d4b-97d4-1dd6bfa45816",
           "comment": "Click Logout",
           "command": "click",
           "target": "id=btn-logout",
@@ -950,7 +1390,7 @@
           "value": ""
         },
         {
-          "id": "7c967ffd-cc8a-406a-8c46-a29b8460cfe4",
+          "id": "e3853f3b-e91f-4c03-a21b-7e4217a9064c",
           "comment": "Verify returned to Login Screen",
           "command": "waitForElementVisible",
           "target": "id=login-email",
@@ -967,7 +1407,7 @@
           "value": "10000"
         },
         {
-          "id": "376e8026-0ea9-4717-916b-cd16c3fd67ad",
+          "id": "13859de9-aecd-4b4f-a18a-527d1f60c6a6",
           "comment": "Login Email input is visible",
           "command": "assertElementPresent",
           "target": "id=login-email",
@@ -980,7 +1420,7 @@
           "value": ""
         },
         {
-          "id": "28d71607-5c5c-4f1c-ad03-cf6dcb636d18",
+          "id": "e08c45de-1de8-4a3f-915c-c1d8177a3546",
           "comment": "Login Submit button is visible",
           "command": "assertElementPresent",
           "target": "id=login-submit",
@@ -999,7 +1439,7 @@
       "name": "06_Volunteer_Login_And_Profile_UPI",
       "commands": [
         {
-          "id": "8a0ff4cb-d3b4-4789-8b7f-bfc7bdddc9cb",
+          "id": "fa4d6176-88fd-425b-afff-6156da121a8e",
           "comment": "Wait for Login Email input",
           "command": "waitForElementVisible",
           "target": "id=login-email",
@@ -1016,7 +1456,7 @@
           "value": "5000"
         },
         {
-          "id": "d26d730a-2a63-4a07-a802-bed855af2450",
+          "id": "7d18a06a-362b-47b0-abac-f35f7ac7402e",
           "comment": "Enter Volunteer Email",
           "command": "type",
           "target": "id=login-email",
@@ -1033,7 +1473,7 @@
           "value": "ani@gmail.com"
         },
         {
-          "id": "60fccb40-c3a5-4e77-95b5-64fc478c8edd",
+          "id": "ef8d31e5-ace2-4be0-8a43-84949ffe3358",
           "comment": "Enter Volunteer Password",
           "command": "type",
           "target": "id=login-password",
@@ -1050,7 +1490,7 @@
           "value": "ani123"
         },
         {
-          "id": "b3e2a82e-2f27-47c2-a423-e475097b33b6",
+          "id": "6ffc4729-53d5-452c-8af1-d910b7b996f3",
           "comment": "Click Sign In Button",
           "command": "click",
           "target": "id=login-submit",
@@ -1067,7 +1507,7 @@
           "value": ""
         },
         {
-          "id": "127a760c-4ef0-4e90-a86d-026698ab0413",
+          "id": "85e1dc13-62e6-4a7d-8b84-f1986eb02442",
           "comment": "Wait for Volunteer Profile Nav",
           "command": "waitForElementVisible",
           "target": "id=vol-nav-profile",
@@ -1084,7 +1524,7 @@
           "value": "15000"
         },
         {
-          "id": "f2ad9199-683e-4195-b658-61fca9f083c7",
+          "id": "281f84e6-0272-4a39-bec5-d9dfe553c7aa",
           "comment": "Events tab present",
           "command": "assertElementPresent",
           "target": "id=vol-nav-events",
@@ -1097,7 +1537,7 @@
           "value": ""
         },
         {
-          "id": "f1e0aea9-1bcf-416b-8d9c-728f02ad5312",
+          "id": "0c708fc6-5fb1-44ee-a9d9-cd1d043f27f1",
           "comment": "Tasks tab present",
           "command": "assertElementPresent",
           "target": "id=vol-nav-tasks",
@@ -1110,7 +1550,7 @@
           "value": ""
         },
         {
-          "id": "873e4e10-270f-4fc9-b5bd-aae04674f6e4",
+          "id": "2ab71606-34e8-4c5d-b6d4-6829550e56d1",
           "comment": "Profile tab present",
           "command": "assertElementPresent",
           "target": "id=vol-nav-profile",
@@ -1123,7 +1563,7 @@
           "value": ""
         },
         {
-          "id": "b829153a-fbd9-4c5e-be80-dc7eab16d35f",
+          "id": "9444f187-045d-4b8f-ba0a-d584c6369062",
           "comment": "Open Volunteer Profile",
           "command": "click",
           "target": "id=vol-nav-profile",
@@ -1140,7 +1580,7 @@
           "value": ""
         },
         {
-          "id": "df93826b-c027-4975-acd8-72c1dfd7c363",
+          "id": "c12ad1cb-2baf-45c9-a4b7-5a325a7e3fb6",
           "comment": "Wait for UPI ID input",
           "command": "waitForElementVisible",
           "target": "id=vol-input-upiId",
@@ -1157,7 +1597,7 @@
           "value": "6000"
         },
         {
-          "id": "97f9ddf7-8079-4f91-8538-98c77ae5b6bd",
+          "id": "9d1fa31b-2886-4651-bb58-98b1072aad00",
           "comment": "Enter Volunteer UPI ID",
           "command": "type",
           "target": "id=vol-input-upiId",
@@ -1174,7 +1614,7 @@
           "value": "9876543210@upi"
         },
         {
-          "id": "2485cafe-d6ae-47a6-939e-430c2e5b38d7",
+          "id": "c363902e-8594-4908-91d6-cf5e440fc6dc",
           "comment": "Click Save Profile",
           "command": "click",
           "target": "id=vol-save-profile-btn",
@@ -1191,7 +1631,7 @@
           "value": ""
         },
         {
-          "id": "c6e2b6aa-0241-4d7f-acbc-5b8e6bd9bc4c",
+          "id": "6a687e15-e7c6-493c-9aee-f981ae46fc2c",
           "comment": "Profile updated successfully",
           "command": "pause",
           "target": "1000",
@@ -1210,7 +1650,7 @@
       "name": "07_Volunteer_Navigation_And_Logout",
       "commands": [
         {
-          "id": "62655017-e83f-4fa1-bf2c-b9ab7a6ff18b",
+          "id": "e82bca3f-fcd9-48ff-ad9d-74874a145321",
           "comment": "Navigate to Volunteer Events",
           "command": "click",
           "target": "id=vol-nav-events",
@@ -1227,7 +1667,7 @@
           "value": ""
         },
         {
-          "id": "a9ae6761-8982-4f1a-be46-07f76940cda8",
+          "id": "c10852d0-3d8e-46d1-acb1-4e8358544eba",
           "comment": "View events",
           "command": "pause",
           "target": "500",
@@ -1240,7 +1680,7 @@
           "value": ""
         },
         {
-          "id": "9756fa67-887d-42a9-87bf-b47c6c59ddfd",
+          "id": "9a530596-457b-46f8-9c16-17c9f7354de4",
           "comment": "Navigate to Volunteer Tasks",
           "command": "click",
           "target": "id=vol-nav-tasks",
@@ -1257,7 +1697,7 @@
           "value": ""
         },
         {
-          "id": "b509f9e3-b05e-42e7-8224-bd4801699b10",
+          "id": "1ea32e04-f529-4957-8e48-85b488271fcd",
           "comment": "View tasks",
           "command": "pause",
           "target": "500",
@@ -1270,7 +1710,7 @@
           "value": ""
         },
         {
-          "id": "90439785-c321-42a3-a9a2-6bf91302b3b7",
+          "id": "30f00206-08ad-42e5-9cce-7723c5d907ce",
           "comment": "Navigate to Volunteer Attendance",
           "command": "click",
           "target": "id=vol-nav-attendance",
@@ -1287,7 +1727,7 @@
           "value": ""
         },
         {
-          "id": "6c3ada59-2dbb-4542-8ee8-c7335992fcc8",
+          "id": "b2a1af2c-d4ad-4f1e-832b-cff5b92b93cc",
           "comment": "View attendance",
           "command": "pause",
           "target": "500",
@@ -1300,7 +1740,7 @@
           "value": ""
         },
         {
-          "id": "d9607aae-3a60-4fc3-9102-44afcc21f4fa",
+          "id": "7e3795de-94ee-4339-b40a-99c24f4edcdf",
           "comment": "Navigate to Volunteer Certificates",
           "command": "click",
           "target": "id=vol-nav-certificates",
@@ -1317,7 +1757,7 @@
           "value": ""
         },
         {
-          "id": "704f7fbb-afa5-45bb-b883-4b9f1ba217ae",
+          "id": "02cc6bfe-5e66-423c-8aa1-27c149f83687",
           "comment": "View certificates",
           "command": "pause",
           "target": "500",
@@ -1330,7 +1770,7 @@
           "value": ""
         },
         {
-          "id": "14658d9a-910e-468d-b824-998bcdad1aa6",
+          "id": "1ba1c625-549b-4d38-95e9-08e7f6e0af33",
           "comment": "Wait for Volunteer Logout button",
           "command": "waitForElementVisible",
           "target": "id=vol-logout-btn",
@@ -1347,7 +1787,7 @@
           "value": "5000"
         },
         {
-          "id": "42aebbf4-1421-49d4-9b6c-5a50a1d8178e",
+          "id": "67507926-5afb-46f8-b2fc-6b2d8b4faf49",
           "comment": "Click Volunteer Logout",
           "command": "click",
           "target": "id=vol-logout-btn",
@@ -1364,7 +1804,7 @@
           "value": ""
         },
         {
-          "id": "43cce4a8-b81d-4d9d-9fd3-0114ae824254",
+          "id": "0c2a51ff-162d-4b1e-ae23-19b0e38a553d",
           "comment": "Returned to Login Screen",
           "command": "waitForElementVisible",
           "target": "id=login-email",
@@ -1381,7 +1821,7 @@
           "value": "10000"
         },
         {
-          "id": "b5f39b27-e90d-4a8a-afd0-7454c443ceff",
+          "id": "a9d7ccf9-7345-47c5-9b4e-d8849fad02cb",
           "comment": "Login input confirmed",
           "command": "assertElementPresent",
           "target": "id=login-email",
@@ -1404,6 +1844,7 @@
       "parallel": false,
       "timeout": 300,
       "tests": [
+        "c99e4f21-729f-4ee7-910a-e3746654e808",
         "c99e4f21-729f-4ee7-910a-e3746654e801",
         "c99e4f21-729f-4ee7-910a-e3746654e802",
         "c99e4f21-729f-4ee7-910a-e3746654e803",
@@ -1415,6 +1856,8 @@
     }
   ],
   "urls": [
+    "http://localhost:5000",
+    "http://localhost:5000/",
     "http://localhost:5173",
     "http://localhost:5173/"
   ],

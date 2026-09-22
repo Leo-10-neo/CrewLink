@@ -137,6 +137,8 @@ const Home = () => {
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 <Link
                   to="/volunteer-register"
+                  id="home-btn-volunteer"
+                  data-testid="home-btn-volunteer"
                   className="w-full sm:w-auto btn-primary text-lg px-8 py-4 flex items-center justify-center space-x-2"
                 >
                   <span>Become a Volunteer</span>
@@ -144,6 +146,8 @@ const Home = () => {
                 </Link>
                 <Link
                   to="/login"
+                  id="home-btn-login"
+                  data-testid="home-btn-login"
                   className="w-full sm:w-auto btn-secondary text-lg px-8 py-4"
                 >
                   Login
@@ -393,6 +397,8 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/volunteer-register"
+              id="home-cta-volunteer"
+              data-testid="home-cta-volunteer"
               className="w-full sm:w-auto btn-primary text-lg px-8 py-4 flex items-center justify-center space-x-2"
             >
               <span>Volunteer Sign Up</span>
@@ -400,6 +406,8 @@ const Home = () => {
             </Link>
             <Link
               to="/login"
+              id="home-cta-login"
+              data-testid="home-cta-login"
               className="w-full sm:w-auto btn-secondary text-lg px-8 py-4"
             >
               Login

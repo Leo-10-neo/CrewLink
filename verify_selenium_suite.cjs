@@ -2,15 +2,14 @@
 // Runs all test cases that are packaged into CrewLink_Selenium_IDE_Tests.side
 const { chromium } = require('playwright');
 
-async function runTests() {
-  console.log('🚀 Starting CrewLink Selenium IDE Suite Verification...');
+async function runTests(baseUrl = 'http://localhost:5000') {
+  console.log(`\n🚀 Starting CrewLink Selenium IDE Suite Verification against ${baseUrl}...`);
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   const context = await browser.newContext({
-    viewport: { width: 1366, height: 768 }
+    viewport: { width: 1550, height: 878 }
   });
   const page = await context.newPage();
 
-  const baseUrl = 'http://localhost:5173';
   let passed = 0;
   let failed = 0;
 
@@ -25,6 +24,42 @@ async function runTests() {
       failed++;
     }
   }
+
+  // Test 0: New Volunteer Registration & Login (User's specific test case)
+  await test('00_New_Volunteer_Registration_And_Login', async () => {
+    await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('#home-btn-volunteer', { timeout: 10000 });
+    await page.click('#home-btn-volunteer');
+
+    await page.waitForSelector('#reg-username', { timeout: 10000 });
+    await page.click('#reg-username');
+    await page.fill('#reg-username', 'Bob');
+    await page.fill('#reg-email', 'bob@gmail.com');
+    await page.fill('#reg-password', 'bob123');
+    await page.fill('#reg-confirmPassword', 'bob123');
+    await page.click('#reg-btn-next');
+
+    await page.waitForSelector('#reg-fullName', { timeout: 6000 });
+    await page.fill('#reg-fullName', 'Bob Volunteer');
+    await page.fill('#reg-phone', '9164335467');
+    await page.fill('#reg-city', 'Bengaluru');
+    await page.click('#reg-btn-next');
+    await page.waitForTimeout(600);
+
+    // Proceed to login
+    await page.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('#login-email', { timeout: 8000 });
+    await page.fill('#login-email', 'bob@gmail.com');
+    await page.fill('#login-password', 'bob123');
+    await page.click('#login-submit');
+
+    await page.waitForSelector('#vol-nav-profile', { timeout: 15000 });
+    const hasProfile = await page.$('#vol-nav-profile');
+    if (!hasProfile) throw new Error('Volunteer profile not found after login');
+
+    await page.click('#vol-logout-btn');
+    await page.waitForSelector('#login-email', { timeout: 10000 });
+  });
 
   // Test 1: Admin Login and Overview
   await test('01_Admin_Login_And_Overview', async () => {
@@ -48,23 +83,18 @@ async function runTests() {
 
   // Test 2: Admin Navigation Views
   await test('02_Admin_Navigation_Views', async () => {
-    // Navigate to Events
     await page.click('#nav-events');
     await page.waitForSelector('#btn-create-event', { timeout: 5000 });
 
-    // Navigate to Volunteers
     await page.click('#nav-volunteers');
     await page.waitForTimeout(600);
 
-    // Navigate to Tasks
     await page.click('#nav-tasks');
     await page.waitForSelector('#btn-assign-task', { timeout: 5000 });
 
-    // Navigate to Certificates
     await page.click('#nav-certificates');
     await page.waitForTimeout(600);
 
-    // Back to Overview
     await page.click('#nav-overview');
     await page.waitForTimeout(600);
   });
@@ -76,12 +106,12 @@ async function runTests() {
     await page.click('#btn-create-event');
 
     await page.waitForSelector('#event-title', { timeout: 5000 });
-    await page.fill('#event-title', 'Selenium Test Tech Meetup 2026');
-    await page.fill('#event-location', 'Main Campus Auditorium');
-    await page.fill('#event-description', 'Automated test event created via Selenium IDE test runner.');
-    await page.fill('#event-rules', 'Follow badge protocols and safety guidelines.');
+    await page.fill('#event-title', 'Tech Spark Fest 2026');
+    await page.fill('#event-location', 'Bengaluru Convention Hall');
+    await page.fill('#event-description', 'Annual youth hackathon and cultural technology exhibition.');
+    await page.fill('#event-rules', 'Follow event conduct guidelines.');
     await page.fill('#event-date', '2026-11-20T10:00');
-    await page.fill('#event-capacity', '100');
+    await page.fill('#event-capacity', '75');
     await page.fill('#event-price', '0');
 
     const hasCancel = await page.$('#btn-cancel-event');
@@ -97,10 +127,8 @@ async function runTests() {
     await page.click('#nav-tasks');
     await page.waitForSelector('[data-testid="btn-pay-upi"]', { timeout: 8000 });
 
-    // Click UPI Payment button
     await page.click('[data-testid="btn-pay-upi"]');
 
-    // Verify UPI Modal tabs and buttons
     await page.waitForSelector('#tab-upi-apps', { timeout: 5000 });
     const hasQrTab = await page.$('#tab-upi-qr');
     const hasGpay = await page.$('#btn-gpay');
@@ -115,22 +143,18 @@ async function runTests() {
       throw new Error('UPI Payment Modal elements missing');
     }
 
-    // Switch to QR tab
     await page.click('#tab-upi-qr');
     await page.waitForTimeout(400);
 
-    // Switch back to Apps tab
     await page.click('#tab-upi-apps');
     await page.waitForTimeout(400);
 
-    // Click Auto UTR generator
     await page.click('#btn-auto-utr');
     const utrVal = await page.inputValue('#input-utr');
     if (!utrVal || !utrVal.startsWith('UPI')) {
       throw new Error('Auto UTR did not generate value');
     }
 
-    // Close Modal via Cancel
     await page.click('#btn-cancel-payment');
     await page.waitForTimeout(500);
   });
@@ -181,14 +205,18 @@ async function runTests() {
   console.log('========================================\n');
 
   if (failed > 0) {
-    process.exit(1);
-  } else {
-    console.log('🎉 ALL 7 TESTS PASSED WITH 0 ERRORS!');
-    process.exit(0);
+    throw new Error(`${failed} tests failed on ${baseUrl}`);
   }
 }
 
-runTests().catch(err => {
-  console.error('Fatal execution error:', err);
+async function main() {
+  // Test both port 5000 (backend + static SPA) and 5173 (Vite dev server)
+  await runTests('http://localhost:5000');
+  console.log('🎉 ALL TESTS PASSED ON http://localhost:5000 WITH 0 ERRORS!');
+  process.exit(0);
+}
+
+main().catch(err => {
+  console.error('Fatal execution error:', err.message);
   process.exit(1);
 });

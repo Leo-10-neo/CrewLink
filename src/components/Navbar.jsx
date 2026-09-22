@@ -103,7 +103,7 @@ const Navbar = () => {
                 <Link to="/login" id="nav-login-link" data-testid="nav-login-link" className="text-gray-600 hover:text-gray-900 font-medium text-sm">
                   Login
                 </Link>
-                <Link to="/volunteer-register" className="btn-primary text-sm py-2 px-4">
+                <Link to="/volunteer-register" id="nav-volunteer-link" data-testid="nav-volunteer-link" className="btn-primary text-sm py-2 px-4">
                   Volunteer Sign Up
                 </Link>
               </div>
