@@ -141,6 +141,33 @@ const VolunteerDashboard = () => {
       setLoading(false);
     };
     load();
+
+    const handleReconnected = () => {
+      console.log('✅ API reconnected. Refreshing volunteer data...');
+      fetchOverview();
+      fetchProfile();
+      fetchEventsWithStatus(false);
+    };
+
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        setTimeout(() => {
+          fetchOverview();
+          fetchProfile();
+          fetchEventsWithStatus(false);
+        }, 500);
+      }
+    };
+
+    window.addEventListener('crewlink:api_reconnected', handleReconnected);
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleVisibility);
+
+    return () => {
+      window.removeEventListener('crewlink:api_reconnected', handleReconnected);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleVisibility);
+    };
   }, []);
 
   // Live Notifications & Real-Time Sync (every 2.5 seconds)

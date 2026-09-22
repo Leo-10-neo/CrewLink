@@ -102,7 +102,7 @@ export default function AdminDashboard() {
 
   const config = { headers: { Authorization: `Bearer ${token}` } };
 
-  const fetchData = async () => {
+  const fetchData = async (retry = true) => {
     try {
       const [eventResponse, userResponse, certResponse, notifResponse] = await Promise.all([
         axios.get(`${API_URL}/events/all`, config).catch(err => { console.error('Events error:', err.message); throw err; }), 
@@ -110,18 +110,51 @@ export default function AdminDashboard() {
         axios.get(`${API_URL}/admin/certificates`, config).catch(() => ({ data: { certificates: [], pendingVolunteers: [] } })),
         axios.get(`${API_URL}/notifications/admin`, config).catch(() => ({ data: [] }))
       ]);
-      setEvents(eventResponse.data); 
-      setUsers(userResponse.data);
-      setCertificates(certResponse.data.certificates || []);
-      setPendingVolunteers(certResponse.data.pendingVolunteers || []);
+      setEvents(eventResponse.data || []); 
+      setUsers(userResponse.data || []);
+      setCertificates(certResponse.data?.certificates || []);
+      setPendingVolunteers(certResponse.data?.pendingVolunteers || []);
       setNotifications(notifResponse.data || []);
+      setError(''); // Auto-clear error banner on success
     } catch (error) { 
       console.error('Error fetching data:', error.message);
-      setError('Some workspace data could not be loaded. Check the API connection.'); 
+      if (retry) {
+        console.log('Temporary connection pause. Retrying workspace fetch in 1.2s...');
+        setTimeout(() => fetchData(false), 1200);
+      } else {
+        setError('Some workspace data could not be loaded. Check the API connection.'); 
+      }
     }
     finally { setLoading(false); }
   };
   
+  // Auto-refresh data on API reconnection and when app is resumed after sleep/backgrounding
+  useEffect(() => {
+    const handleReconnected = () => {
+      console.log('✅ CrewLink API reconnected! Refreshing workspace...');
+      setError('');
+      fetchData(true);
+    };
+
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        setTimeout(() => {
+          fetchData(true);
+        }, 500);
+      }
+    };
+
+    window.addEventListener('crewlink:api_reconnected', handleReconnected);
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleVisibility);
+
+    return () => {
+      window.removeEventListener('crewlink:api_reconnected', handleReconnected);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleVisibility);
+    };
+  }, []);
+
   useEffect(() => { 
     fetchData(); 
     

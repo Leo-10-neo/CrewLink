@@ -11,7 +11,7 @@ const formatUrl = (raw) => {
   return url;
 };
 
-export const PUBLIC_INTERNET_URL = 'https://billing-catalogue-seriously-elementary.trycloudflare.com';
+export const PUBLIC_INTERNET_URL = 'https://shapes-phil-text-proposed.trycloudflare.com';
 export const RAW_REGISTRY_URL = 'https://raw.githubusercontent.com/Leo-10-neo/CrewLink/main/current_tunnel_url.txt';
 export const CLOUD_REGISTRY_URL = 'https://api.github.com/repos/Leo-10-neo/CrewLink/contents/current_tunnel_url.txt';
 export const LAN_WIFI_URL = 'http://192.168.0.121:5000';
@@ -73,6 +73,8 @@ export const getApiBase = () => {
   return PUBLIC_INTERNET_URL;
 };
 
+export const getApiUrl = () => `${getApiBase()}/api`;
+
 export const setApiBase = (url) => {
   if (!url) return getApiBase();
   const formatted = formatUrl(url);
@@ -80,6 +82,12 @@ export const setApiBase = (url) => {
 
   if (typeof window !== 'undefined') {
     localStorage.setItem('crewlink_api_base', formatted);
+    
+    // Dispatch event so active components can immediately refresh if they showed an error
+    try {
+      window.dispatchEvent(new CustomEvent('crewlink:api_reconnected', { detail: { url: formatted } }));
+    } catch (_) {}
+
     // Also notify native Android background service if available
     try {
       if (Capacitor?.isNativePlatform?.()) {
@@ -107,10 +115,10 @@ export const resetApiBase = () => {
   return getApiBase();
 };
 
-export const testServerConnection = async (testUrl, timeoutMs = 4000) => {
+export const testServerConnection = async (testUrl, timeoutMs = 3500) => {
   const target = formatUrl(testUrl || getApiBase());
   try {
-    const res = await axios.get(`${target}/api/test`, { timeout: timeoutMs });
+    const res = await axios.get(`${target}/api/test`, { timeout: timeoutMs, _skipIntercept: true });
     return { success: true, url: target, data: res.data };
   } catch (err) {
     const errMsg = err.code === 'ECONNABORTED' 
@@ -132,40 +140,61 @@ export const autoDiscoverTunnelUrl = async (force = false) => {
     // 1. Gather all potential candidates
     const candidates = [];
 
-    // Local Wi-Fi candidate (super fast on home network)
+    // Local Wi-Fi candidate (instant if phone is on home Wi-Fi)
     candidates.push(LAN_WIFI_URL);
+
+    // Current stored base if exists
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('crewlink_api_base');
+      if (stored) candidates.push(formatUrl(stored));
+    }
 
     // Built-in public URL
     if (PUBLIC_INTERNET_URL) {
       candidates.push(PUBLIC_INTERNET_URL);
     }
 
-    // Query GitHub Raw Registry
+    // Query GitHub Raw Registry with cache-busting
     try {
-      const rawRes = await axios.get(`${RAW_REGISTRY_URL}?_cb=${Date.now()}`, { timeout: 3500 });
-      if (rawRes.data && typeof rawRes.data === 'string' && rawRes.data.includes('trycloudflare.com')) {
-        candidates.unshift(formatUrl(rawRes.data.trim()));
-      }
-    } catch (_) {}
-
-    // Fallback: GitHub REST API
-    try {
-      const apiRes = await axios.get(CLOUD_REGISTRY_URL, {
-        headers: { 
-          Accept: 'application/vnd.github.v3.raw',
-          'User-Agent': 'CrewLink-Mobile'
-        },
-        timeout: 3500,
+      const rawRes = await axios.get(`${RAW_REGISTRY_URL}?_cb=${Date.now()}`, { 
+        timeout: 4000, 
+        _skipIntercept: true 
       });
-      if (apiRes.data && typeof apiRes.data === 'string' && apiRes.data.includes('trycloudflare.com')) {
-        const ghUrl = formatUrl(apiRes.data.trim());
-        if (!candidates.includes(ghUrl)) {
-          candidates.push(ghUrl);
+      if (rawRes.data && typeof rawRes.data === 'string' && rawRes.data.includes('trycloudflare.com')) {
+        const candidateUrl = formatUrl(rawRes.data.trim());
+        if (!candidateUrl.includes('api.trycloudflare.com')) {
+          candidates.unshift(candidateUrl);
         }
       }
     } catch (_) {}
 
-    // Deduplicate
+    // Fallback: GitHub REST API (without setting forbidden User-Agent header)
+    try {
+      const apiRes = await axios.get(CLOUD_REGISTRY_URL, {
+        headers: { Accept: 'application/vnd.github.v3+json' },
+        timeout: 4000,
+        _skipIntercept: true
+      });
+      
+      let decodedUrl = '';
+      if (typeof apiRes.data === 'string' && apiRes.data.includes('trycloudflare.com')) {
+        decodedUrl = apiRes.data.trim();
+      } else if (apiRes.data && apiRes.data.content && apiRes.data.encoding === 'base64') {
+        // Decode base64 content
+        try {
+          decodedUrl = atob(apiRes.data.content.replace(/\s/g, '')).trim();
+        } catch (_) {}
+      }
+
+      if (decodedUrl && decodedUrl.includes('trycloudflare.com') && !decodedUrl.includes('api.trycloudflare.com')) {
+        const ghUrl = formatUrl(decodedUrl);
+        if (!candidates.includes(ghUrl)) {
+          candidates.unshift(ghUrl);
+        }
+      }
+    } catch (_) {}
+
+    // Deduplicate candidates
     const uniqueCandidates = [...new Set(candidates.filter(Boolean))];
 
     // Race candidates in parallel to find the fastest responsive server
@@ -201,6 +230,7 @@ export const autoDiscoverTunnelUrl = async (force = false) => {
 export const API_BASE = getApiBase();
 export const API_URL = import.meta.env.VITE_API_URL || `${API_BASE}/api`;
 
+// Dedicated configured axios instance
 const api = axios.create({
   baseURL: `${getApiBase()}/api`,
   headers: {
@@ -209,12 +239,44 @@ const api = axios.create({
   timeout: 15000,
 });
 
-// Dynamically use the active base URL and add authorization token
+// ─────────────────────────────────────────────────────────────────────────────
+// GLOBAL AXIOS REQUEST INTERCEPTOR:
+// Transparently redirects any request with /api/ to the currently active live base!
+// This fixes all stale API_URL references even if imported as constants!
+// ─────────────────────────────────────────────────────────────────────────────
+axios.interceptors.request.use(
+  (config) => {
+    if (config._skipIntercept) return config;
+
+    const currentBase = getApiBase();
+    if (config.url) {
+      if (config.url.includes('/api/')) {
+        const pathAfterApi = config.url.substring(config.url.indexOf('/api/'));
+        config.url = `${currentBase}${pathAfterApi}`;
+      } else if (config.url.startsWith('/api')) {
+        config.url = `${currentBase}${config.url}`;
+      }
+    }
+
+    // Automatically inject JWT authorization token if available
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (token && !config.headers?.Authorization) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Configure local api instance request interceptor as well
 api.interceptors.request.use(
   (config) => {
     config.baseURL = `${getApiBase()}/api`;
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (token) {
+    if (token && !config.headers?.Authorization) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -222,44 +284,76 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Automatic silent recovery: on any network disconnect, auto-discover live server and retry
-let isRetrying = false;
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    const isNetworkError = !error.response || error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED';
+// ─────────────────────────────────────────────────────────────────────────────
+// GLOBAL AXIOS RESPONSE INTERCEPTOR:
+// Auto-detects dead tunnels / sleep resumes / network disconnects,
+// triggers silent auto-discovery, and seamlessly retries the request!
+// ─────────────────────────────────────────────────────────────────────────────
+let recoveryPromise = null;
 
-    if (isNetworkError && originalRequest && !originalRequest._retryNetwork && !isRetrying) {
-      originalRequest._retryNetwork = true;
-      isRetrying = true;
-
-      try {
-        console.warn('Network issue detected. Auto-reconnecting to live CrewLink API...');
-        const discovered = await autoDiscoverTunnelUrl(true);
-        if (discovered.success) {
-          originalRequest.baseURL = `${discovered.url}/api`;
-          return api(originalRequest);
-        }
-      } catch (_) {
-        // Fall through to reject
-      } finally {
-        isRetrying = false;
-      }
-    }
+const createResponseErrorInterceptor = (clientInstance) => async (error) => {
+  const originalRequest = error.config;
+  if (!originalRequest || originalRequest._skipIntercept) {
     return Promise.reject(error);
   }
-);
 
-// Proactive background keep-alive monitor (keeps connection live while app is open)
+  const isNetworkOrTunnelError = 
+    !error.response || 
+    error.code === 'ERR_NETWORK' || 
+    error.code === 'ECONNABORTED' ||
+    [502, 503, 504, 521, 522, 523, 524, 404].includes(error.response?.status);
+
+  const isCrewLinkEndpoint = 
+    originalRequest.url?.includes('/api/') || 
+    originalRequest.baseURL?.includes('/api');
+
+  if (isNetworkOrTunnelError && isCrewLinkEndpoint && !originalRequest._retriedTunnelRecovery) {
+    originalRequest._retriedTunnelRecovery = true;
+    console.warn(`⚠️ Network/Tunnel disconnect on ${originalRequest.url}. Starting silent auto-recovery...`);
+
+    if (!recoveryPromise) {
+      recoveryPromise = autoDiscoverTunnelUrl(true);
+    }
+
+    try {
+      const result = await recoveryPromise;
+      if (result && result.success) {
+        const freshBase = getApiBase();
+        if (originalRequest.url?.includes('/api/')) {
+          const pathAfterApi = originalRequest.url.substring(originalRequest.url.indexOf('/api/'));
+          originalRequest.url = `${freshBase}${pathAfterApi}`;
+        }
+        if (originalRequest.baseURL) {
+          originalRequest.baseURL = `${freshBase}/api`;
+        }
+        console.log(`✅ Auto-recovery successful! Retrying request to: ${originalRequest.url}`);
+        return clientInstance(originalRequest);
+      }
+    } catch (recovErr) {
+      console.warn('Auto-recovery retry failed:', recovErr);
+    } finally {
+      recoveryPromise = null;
+    }
+  }
+
+  return Promise.reject(error);
+};
+
+axios.interceptors.response.use((res) => res, createResponseErrorInterceptor(axios));
+api.interceptors.response.use((res) => res, createResponseErrorInterceptor(api));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APP LIFECYCLE & RESUME LISTENERS:
+// Ensures that when the user wakes the app after 2 hours, connection is refreshed!
+// ─────────────────────────────────────────────────────────────────────────────
 if (typeof window !== 'undefined') {
-  // 1. Check on initial page/app mount
+  // 1. Initial proactive discovery
   setTimeout(() => {
     autoDiscoverTunnelUrl(false).catch(() => {});
-  }, 500);
+  }, 300);
 
-  // 2. Check whenever user returns to the app (phone unlock, app switcher)
-  document.addEventListener('visibilitychange', () => {
+  // 2. On app resume / phone unlock / tab focus
+  const handleResume = () => {
     if (!document.hidden) {
       testServerConnection(getApiBase(), 2500).then((res) => {
         if (!res.success) {
@@ -267,9 +361,12 @@ if (typeof window !== 'undefined') {
         }
       }).catch(() => {});
     }
-  });
+  };
 
-  // 3. Periodic silent heartbeat every 30 seconds
+  document.addEventListener('visibilitychange', handleResume);
+  window.addEventListener('focus', handleResume);
+
+  // 3. Periodic background check every 30 seconds
   setInterval(() => {
     if (!document.hidden) {
       testServerConnection(getApiBase(), 3000).then((res) => {

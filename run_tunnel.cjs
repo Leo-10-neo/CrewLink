@@ -64,7 +64,7 @@ function startTunnel() {
 
     if (!tunnelUrlFound) {
       const match = text.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
-      if (match) {
+      if (match && !match[0].includes('api.trycloudflare.com')) {
         tunnelUrlFound = true;
         isRestarting = false;
         consecutiveFailures = 0;
@@ -120,7 +120,7 @@ function startTunnel() {
   });
 }
 
-// Active Health Monitor: Every 15 seconds, ping tunnel to ensure it never freezes after sleep
+// Active Health Monitor: Every 40 seconds, check tunnel
 setInterval(async () => {
   if (!currentTunnelUrl || isRestarting) return;
 
@@ -129,14 +129,15 @@ setInterval(async () => {
     consecutiveFailures = 0;
   } else {
     consecutiveFailures++;
-    console.warn(`⚠️ Tunnel health check failed (${consecutiveFailures}/2)...`);
-    if (consecutiveFailures >= 2) {
-      console.warn('🔄 Tunnel appears unresponsive (PC may have slept). Restarting tunnel now...');
+    console.warn(`⚠️ Tunnel health check failed (${consecutiveFailures}/4)...`);
+    // Require 4 consecutive failures (>2.5 minutes) before concluding tunnel is dead
+    if (consecutiveFailures >= 4) {
+      console.warn('🔄 Tunnel unresponsive for >2.5 minutes. Restarting tunnel now...');
       consecutiveFailures = 0;
       startTunnel();
     }
   }
-}, 15000);
+}, 40000);
 
 // Start on launch
 startTunnel();
