@@ -11,13 +11,30 @@ router.get('/', adminAuth, async (req, res) => {
   try {
     const users = await User.find().select('-password').lean();
     
-    // Fetch bookings for these users
+    // Fetch bookings and profiles for these users
     const Booking = require('../models/Booking');
+    const VolunteerProfile = require('../models/VolunteerProfile');
     const bookings = await Booking.find().populate('event', 'title date location');
+    const profiles = await VolunteerProfile.find().lean();
+    const profileMap = {};
+    profiles.forEach(p => {
+      if (p.user) profileMap[p.user.toString()] = p;
+    });
     
-    // Attach bookings/events to users
+    // Attach bookings/events and volunteer profile details to users
     const usersWithEvents = users.map(user => {
-      user.registeredEvents = bookings.filter(b => b.user.toString() === user._id.toString()).map(b => b.event);
+      user.registeredEvents = bookings.filter(b => b.user && b.user.toString() === user._id.toString()).map(b => b.event);
+      const prof = profileMap[user._id.toString()];
+      if (prof) {
+        user.fullName = user.fullName || prof.fullName || user.username;
+        user.city = user.city || prof.city;
+        user.phone = user.phone || prof.phone;
+        user.upiId = user.upiId || prof.upiId;
+        user.photo = user.photo || prof.photo;
+        if (!user.skills || user.skills.length === 0) {
+          user.skills = typeof prof.skills === 'string' ? prof.skills.split(',').map(s => s.trim()).filter(Boolean) : (prof.skills || []);
+        }
+      }
       return user;
     });
 
@@ -102,11 +119,27 @@ router.put('/:id/status', adminAuth, async (req, res) => {
 // Delete user (admin only)
 router.delete('/:id', adminAuth, async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const userId = req.params.id;
+    const user = await User.findByIdAndDelete(userId);
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    // Cascade cleanups
+    const VolunteerProfile = require('../models/VolunteerProfile');
+    const VolunteerTask = require('../models/VolunteerTask');
+    const Attendance = require('../models/Attendance');
+    const Certificate = require('../models/Certificate');
+    const Event = require('../models/Event');
+    const Booking = require('../models/Booking');
+    const Notification = require('../models/Notification');
+
+    await Promise.all([
+      VolunteerProfile.deleteMany({ user: userId }),
+      VolunteerTask.deleteMany({ volunteer: userId }),
+      Attendance.deleteMany({ volunteer: userId }),
+      Certificate.deleteMany({ volunteer: userId }),
+      Event.updateMany({ assignedVolunteers: userId }, { $pull: { assignedVolunteers: userId } }),
+      Booking.deleteMany({ user: userId }),
+      Notification.deleteMany({ userId: userId })
+    ]);
 
     res.json({ message: 'User deleted successfully' });
   } catch (error) {

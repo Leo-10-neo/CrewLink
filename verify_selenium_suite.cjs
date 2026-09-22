@@ -210,9 +210,16 @@ async function runTests(baseUrl = 'http://localhost:5000') {
 }
 
 async function main() {
-  // Test both port 5000 (backend + static SPA) and 5173 (Vite dev server)
-  await runTests('http://localhost:5000');
-  console.log('🎉 ALL TESTS PASSED ON http://localhost:5000 WITH 0 ERRORS!');
+  const targetUrl = process.argv[2];
+  if (targetUrl) {
+    await runTests(targetUrl);
+    console.log(`🎉 ALL TESTS PASSED ON ${targetUrl} WITH 0 ERRORS!`);
+  } else {
+    await runTests('http://localhost:5000');
+    console.log('🎉 ALL TESTS PASSED ON http://localhost:5000 WITH 0 ERRORS!');
+    await runTests('http://localhost:5173');
+    console.log('🎉 ALL TESTS PASSED ON http://localhost:5173 WITH 0 ERRORS!');
+  }
   process.exit(0);
 }
 

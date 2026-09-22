@@ -225,13 +225,23 @@ export default function AdminDashboard() {
   const updateVolunteerStatus = async (volunteerId, status) => {
     try {
       await axios.put(`${API_URL}/users/${volunteerId}/status`, { status }, config);
-    } catch (err) { setError('Unable to update volunteer status.'); }
+      setUsers((prev) => prev.map((item) => item._id === volunteerId ? { ...item, profileStatus: status } : item));
+      setError('');
+      await fetchData(false);
+    } catch (err) { 
+      setError(err.response?.data?.message || 'Unable to update volunteer status.'); 
+    }
   };
 
   const deleteVolunteer = async (volunteerId) => {
     try {
       await axios.delete(`${API_URL}/users/${volunteerId}`, config);
-    } catch (err) { setError('Unable to remove volunteer.'); }
+      setUsers((prev) => prev.filter((item) => item._id !== volunteerId));
+      setError('');
+      await fetchData(false);
+    } catch (err) { 
+      setError(err.response?.data?.message || 'Unable to remove volunteer.'); 
+    }
   };
 
   const signOut = () => { logout(); navigate('/login'); };
@@ -591,6 +601,8 @@ const VolunteersView = ({ volunteers, events, onAssign, onUpdateStatus, onViewPr
             </div>
             
             <select 
+              id={`status-volunteer-${volunteer._id}`}
+              data-testid={`status-volunteer-${volunteer._id}`}
               value={volunteer.profileStatus || 'Verified'} 
               onChange={(e) => onUpdateStatus && onUpdateStatus(volunteer._id, e.target.value)}
               className="px-2 py-1 border border-gray-200 rounded text-sm bg-white"
@@ -601,8 +613,24 @@ const VolunteersView = ({ volunteers, events, onAssign, onUpdateStatus, onViewPr
             </select>
             
             <div className="row-actions">
-              <button onClick={() => onViewProfile && onViewProfile(volunteer)}>Profile</button>
-              <button className="danger" onClick={() => { if (window.confirm(`Remove volunteer "${volunteer.fullName || volunteer.username}"? This cannot be undone.`)) onDelete && onDelete(volunteer._id); }}>Remove</button>
+              <button 
+                id={`profile-volunteer-${volunteer._id}`}
+                data-testid={`profile-volunteer-${volunteer._id}`}
+                onClick={() => onViewProfile && onViewProfile(volunteer)}
+              >
+                Profile
+              </button>
+              <button 
+                id={`remove-volunteer-${volunteer._id}`}
+                data-testid={`remove-volunteer-${volunteer._id}`}
+                className="danger" 
+                onClick={() => { 
+                  if (window.confirm(`Remove volunteer "${volunteer.fullName || volunteer.username}"? This cannot be undone.`)) 
+                    onDelete && onDelete(volunteer._id); 
+                }}
+              >
+                Remove
+              </button>
             </div>
           </div>
         ))
