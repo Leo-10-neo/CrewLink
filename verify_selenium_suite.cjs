@@ -27,14 +27,17 @@ async function runTests(baseUrl = 'http://localhost:5000') {
 
   // Test 0: New Volunteer Registration & Login (User's specific test case)
   await test('00_New_Volunteer_Registration_And_Login', async () => {
+    const timestamp = Date.now().toString().slice(-4);
+    const uniqueUser = `Bob${timestamp}`;
+    const uniqueEmail = `bob_${Date.now()}@gmail.com`;
     await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
     await page.waitForSelector('#home-btn-volunteer', { timeout: 10000 });
     await page.click('#home-btn-volunteer');
 
     await page.waitForSelector('#reg-username', { timeout: 10000 });
     await page.click('#reg-username');
-    await page.fill('#reg-username', 'Bob');
-    await page.fill('#reg-email', 'bob@gmail.com');
+    await page.fill('#reg-username', uniqueUser);
+    await page.fill('#reg-email', uniqueEmail);
     await page.fill('#reg-password', 'bob123');
     await page.fill('#reg-confirmPassword', 'bob123');
     await page.click('#reg-btn-next');
@@ -44,12 +47,16 @@ async function runTests(baseUrl = 'http://localhost:5000') {
     await page.fill('#reg-phone', '9164335467');
     await page.fill('#reg-city', 'Bengaluru');
     await page.click('#reg-btn-next');
-    await page.waitForTimeout(600);
+    await page.waitForTimeout(400);
 
-    // Proceed to login
-    await page.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
+    // Step 3: Experience & Skills -> Submit
+    await page.waitForSelector('#reg-btn-submit', { timeout: 6000 });
+    await page.click('#reg-btn-submit');
+    await page.waitForSelector('text=Proceed to Login', { timeout: 10000 });
+    await page.click('text=Proceed to Login');
+
     await page.waitForSelector('#login-email', { timeout: 8000 });
-    await page.fill('#login-email', 'bob@gmail.com');
+    await page.fill('#login-email', uniqueEmail);
     await page.fill('#login-password', 'bob123');
     await page.click('#login-submit');
 

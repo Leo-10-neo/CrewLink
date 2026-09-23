@@ -241,7 +241,7 @@ const VolunteerRegister = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Profile Photo (Max 2MB)</label>
                       <div className="flex items-center gap-3">
-                        <input type="file" accept="image/*" onChange={handleFileChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                        <input type="file" id="reg-photo" data-testid="reg-photo" accept="image/*" onChange={handleFileChange} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                         {formData.photo && formData.photo.startsWith('data:image') && (
                           <div className="flex-shrink-0">
                             <img src={formData.photo} alt="Preview" className="w-10 h-10 object-cover rounded-full border border-gray-200" />
