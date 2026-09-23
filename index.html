@@ -12,6 +12,62 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap" rel="stylesheet">
   <link href="https://api.fontshare.com/v2/css?f[]=bespoke-stencil@400,500,600,700&display=swap" rel="stylesheet">
+  <script>
+    /* Polyfill for Selenium IDE in Firefox (fixes Issue #1949: n.createEvent(...).initKeyEvent is not a function) */
+    (function () {
+      function applyInitKeyEvent(evt, type, canBubble, cancelable, view, ctrlKey, altKey, shiftKey, metaKey, keyCode, charCode) {
+        try {
+          Object.defineProperty(evt, 'type', { value: type || 'keydown', configurable: true });
+          Object.defineProperty(evt, 'bubbles', { value: Boolean(canBubble), configurable: true });
+          Object.defineProperty(evt, 'cancelable', { value: Boolean(cancelable), configurable: true });
+          Object.defineProperty(evt, 'view', { value: view || window, configurable: true });
+          Object.defineProperty(evt, 'ctrlKey', { value: Boolean(ctrlKey), configurable: true });
+          Object.defineProperty(evt, 'altKey', { value: Boolean(altKey), configurable: true });
+          Object.defineProperty(evt, 'shiftKey', { value: Boolean(shiftKey), configurable: true });
+          Object.defineProperty(evt, 'metaKey', { value: Boolean(metaKey), configurable: true });
+          Object.defineProperty(evt, 'keyCode', { value: keyCode || 0, configurable: true });
+          Object.defineProperty(evt, 'charCode', { value: charCode || 0, configurable: true });
+          Object.defineProperty(evt, 'which', { value: keyCode || charCode || 0, configurable: true });
+          Object.defineProperty(evt, 'key', { value: String.fromCharCode(charCode || keyCode || 0), configurable: true });
+        } catch (_) {}
+        return evt;
+      }
+
+      if (typeof KeyboardEvent !== 'undefined' && !KeyboardEvent.prototype.initKeyEvent) {
+        KeyboardEvent.prototype.initKeyEvent = function (type, canBubble, cancelable, view, ctrlKey, altKey, shiftKey, metaKey, keyCode, charCode) {
+          applyInitKeyEvent(this, type, canBubble, cancelable, view, ctrlKey, altKey, shiftKey, metaKey, keyCode, charCode);
+        };
+      }
+
+      if (typeof Event !== 'undefined' && !Event.prototype.initKeyEvent) {
+        Event.prototype.initKeyEvent = function (type, canBubble, cancelable, view, ctrlKey, altKey, shiftKey, metaKey, keyCode, charCode) {
+          applyInitKeyEvent(this, type, canBubble, cancelable, view, ctrlKey, altKey, shiftKey, metaKey, keyCode, charCode);
+        };
+      }
+
+      if (typeof document !== 'undefined') {
+        var origCreateEvent = document.createEvent;
+        document.createEvent = function (eventType) {
+          var evt;
+          try {
+            evt = origCreateEvent.call(document, eventType);
+          } catch (e) {
+            try {
+              evt = new CustomEvent(eventType || 'keydown', { bubbles: true, cancelable: true });
+            } catch (_) {
+              evt = {};
+            }
+          }
+          if (evt && typeof evt.initKeyEvent !== 'function') {
+            evt.initKeyEvent = function (type, canBubble, cancelable, view, ctrlKey, altKey, shiftKey, metaKey, keyCode, charCode) {
+              applyInitKeyEvent(this, type, canBubble, cancelable, view, ctrlKey, altKey, shiftKey, metaKey, keyCode, charCode);
+            };
+          }
+          return evt;
+        };
+      }
+    })();
+  </script>
 </head>
 
 <body>
