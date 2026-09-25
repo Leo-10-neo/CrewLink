@@ -94,7 +94,30 @@
             });
           }
         }
-      } catch (_) {}
+      /* Robust input filler for automated testing (Selenium IDE, TestCase Studio, Puppeteer) */
+      window.__type = function(target, value) {
+        try {
+          var el;
+          if (!target) return;
+          if (target.startsWith("id=")) el = document.getElementById(target.substring(3));
+          else if (target.startsWith("css=")) el = document.querySelector(target.substring(4));
+          else if (target.startsWith("name=")) el = document.querySelector('[name="' + target.substring(5) + '"]');
+          else if (target.startsWith("//") || target.startsWith("xpath=")) {
+            var xp = target.replace(/^xpath=/, "");
+            el = document.evaluate(xp, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+          } else {
+            el = document.querySelector(target) || document.getElementById(target);
+          }
+          if (el) {
+            var proto = (el instanceof HTMLTextAreaElement) ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+            var s = Object.getOwnPropertyDescriptor(proto, "value")?.set;
+            if (s) { s.call(el, value || ''); } else { el.value = value || ''; }
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+            el.dispatchEvent(new Event("change", { bubbles: true }));
+            el.dispatchEvent(new Event("blur", { bubbles: true }));
+          }
+        } catch (_) {}
+      };
     })();
   </script>
 </head>

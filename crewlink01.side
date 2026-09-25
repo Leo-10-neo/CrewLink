@@ -1,7 +1,7 @@
 {
   "id": "37a7f451-3cf1-456f-871d-a4115fa016b1",
   "version": "2.0",
-  "name": "CrewLink Selenium IDE Tests",
+  "name": "crewlink01",
   "url": "http://localhost:5000",
   "tests": [
     {
