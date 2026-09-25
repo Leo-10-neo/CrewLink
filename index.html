@@ -94,6 +94,8 @@
             });
           }
         }
+      } catch (_) {}
+
       /* Robust input filler for automated testing (Selenium IDE, TestCase Studio, Puppeteer) */
       window.__type = function(target, value) {
         try {
