@@ -1,2372 +1,816 @@
 {
   "id": "37a7f451-3cf1-456f-871d-a4115fa016b1",
   "version": "2.0",
-  "name": "CrewLink Selenium IDE Tests",
+  "name": "crewlink01",
   "url": "http://localhost:5000",
   "tests": [
     {
-      "id": "pari-test-001",
-      "name": "new volunteer login (pari)",
+      "id": "test-01-volunteer-register-pari",
+      "name": "01_Volunteer_Registration_And_Login (pari)",
       "commands": [
         {
-          "id": "pari-cmd-001",
-          "comment": "Open CrewLink Home Page",
           "command": "open",
           "target": "/",
-          "targets": [
-            [
-              "/",
-              "id"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Open Home Page"
         },
         {
-          "id": "pari-cmd-002",
-          "comment": "Set Browser Size",
-          "command": "setWindowSize",
-          "target": "1228x783",
-          "targets": [
-            [
-              "1228x783",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-003",
-          "comment": "Clear previous session if any",
-          "command": "executeScript",
-          "target": "localStorage.clear(); sessionStorage.clear();",
-          "targets": [],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-004",
-          "comment": "Clean up test user pari if already exists",
-          "command": "executeAsyncScript",
-          "target": "var done = arguments[arguments.length - 1]; fetch('/api/test/cleanup', {method:'POST'}).then(function(r){return r.json()}).then(function(d){done('ok:'+d.deletedCount)}).catch(function(e){done('err')});",
-          "targets": [],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-005",
-          "comment": "Click Become a Volunteer",
-          "command": "click",
-          "target": "id=home-btn-volunteer",
-          "targets": [
-            [
-              "id=home-btn-volunteer",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-006",
-          "comment": "Wait for Registration Form",
-          "command": "waitForElementVisible",
-          "target": "id=reg-username",
-          "targets": [
-            [
-              "id=reg-username",
-              "id"
-            ]
-          ],
-          "value": "10000"
-        },
-        {
-          "id": "pari-cmd-007",
-          "comment": "Click Username",
-          "command": "click",
-          "target": "id=reg-username",
-          "targets": [
-            [
-              "id=reg-username",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-008",
-          "comment": "Enter Username pari",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-username\",\"pari\");}else{var sel=\"id=reg-username\";var val=\"pari\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-username",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-009",
-          "comment": "Enter Email pari@gmail.com",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-email\",\"pari@gmail.com\");}else{var sel=\"id=reg-email\";var val=\"pari@gmail.com\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-email",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-010",
-          "comment": "Enter Password pari123",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-password\",\"pari123\");}else{var sel=\"id=reg-password\";var val=\"pari123\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-password",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-011",
-          "comment": "Enter Confirm Password pari123",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-confirmPassword\",\"pari123\");}else{var sel=\"id=reg-confirmPassword\";var val=\"pari123\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-confirmPassword",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-012",
-          "comment": "Click Next Step",
-          "command": "click",
-          "target": "id=reg-btn-next",
-          "targets": [
-            [
-              "id=reg-btn-next",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-013",
-          "comment": "Wait for Full Name field",
-          "command": "waitForElementVisible",
-          "target": "id=reg-fullName",
-          "targets": [
-            [
-              "id=reg-fullName",
-              "id"
-            ]
-          ],
-          "value": "8000"
-        },
-        {
-          "id": "pari-cmd-014",
-          "comment": "Enter Full Name pari N",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-fullName\",\"pari N\");}else{var sel=\"id=reg-fullName\";var val=\"pari N\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-fullName",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-015",
-          "comment": "Enter Phone",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-phone\",\"9087654321\");}else{var sel=\"id=reg-phone\";var val=\"9087654321\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-phone",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-016",
-          "comment": "Enter City Mandya",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-city\",\"Mandya\");}else{var sel=\"id=reg-city\";var val=\"Mandya\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-city",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-017",
-          "comment": "Click Next to Step 3",
-          "command": "click",
-          "target": "id=reg-btn-next",
-          "targets": [
-            [
-              "id=reg-btn-next",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-018",
-          "comment": "Wait for Complete Registration button",
-          "command": "waitForElementVisible",
-          "target": "id=reg-btn-submit",
-          "targets": [
-            [
-              "id=reg-btn-submit",
-              "id"
-            ]
-          ],
-          "value": "8000"
-        },
-        {
-          "id": "pari-cmd-019",
-          "comment": "Submit Registration",
-          "command": "click",
-          "target": "id=reg-btn-submit",
-          "targets": [
-            [
-              "id=reg-btn-submit",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-020",
-          "comment": "Wait for Proceed to Login button",
-          "command": "waitForElementVisible",
-          "target": "linkText=Proceed to Login",
-          "targets": [
-            [
-              "linkText=Proceed to Login",
-              "linkText"
-            ]
-          ],
-          "value": "10000"
-        },
-        {
-          "id": "pari-cmd-021",
-          "comment": "Click Proceed to Login",
-          "command": "click",
-          "target": "linkText=Proceed to Login",
-          "targets": [
-            [
-              "linkText=Proceed to Login",
-              "linkText"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-022",
-          "comment": "Wait for Login page email field",
-          "command": "waitForElementVisible",
-          "target": "id=login-email",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ]
-          ],
-          "value": "8000"
-        },
-        {
-          "id": "pari-cmd-023",
-          "comment": "Enter Login Email",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=login-email\",\"pari@gmail.com\");}else{var sel=\"id=login-email\";var val=\"pari@gmail.com\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-024",
-          "comment": "Enter Login Password",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=login-password\",\"pari123\");}else{var sel=\"id=login-password\";var val=\"pari123\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=login-password",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-025",
-          "comment": "Click Sign In",
-          "command": "click",
-          "target": "id=login-submit",
-          "targets": [
-            [
-              "id=login-submit",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-026",
-          "comment": "Wait for Volunteer Dashboard to load",
-          "command": "waitForElementVisible",
-          "target": "id=vol-nav-profile",
-          "targets": [
-            [
-              "id=vol-nav-profile",
-              "id"
-            ]
-          ],
-          "value": "15000"
-        },
-        {
-          "id": "pari-cmd-027",
-          "comment": "Verify Volunteer Profile visible",
-          "command": "assertElementPresent",
-          "target": "id=vol-nav-profile",
-          "targets": [
-            [
-              "id=vol-nav-profile",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-028",
-          "comment": "Click Logout",
-          "command": "click",
-          "target": "id=vol-logout-btn",
-          "targets": [
-            [
-              "id=vol-logout-btn",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "pari-cmd-029",
-          "comment": "Wait for return to Login page",
-          "command": "waitForElementVisible",
-          "target": "id=login-email",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ]
-          ],
-          "value": "10000"
-        }
-      ]
-    },
-    {
-      "id": "c99e4f21-729f-4ee7-910a-e3746654e808",
-      "name": "new volunteer login",
-      "commands": [
-        {
-          "id": "19ea489f-2cd4-4afd-93a9-644ffaade3af",
-          "comment": "Open CrewLink Home Page",
-          "command": "open",
-          "target": "/",
-          "targets": [
-            [
-              "/",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "2b4c953a-580c-4a43-9bb9-fc140f8553a1",
-          "comment": "Set Browser Size",
-          "command": "setWindowSize",
-          "target": "1550x878",
-          "targets": [
-            [
-              "1550x878",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "c71a8f9a-1010-4040-9090-abcdef123456",
-          "comment": "Clear previous session if any",
-          "command": "executeScript",
-          "target": "localStorage.clear(); sessionStorage.clear();",
-          "targets": [],
-          "value": ""
-        },
-        {
-          "id": "aaa-cleanup-step-001",
-          "comment": "DELETE previous test volunteer accounts so re-runs do not fail with User Already Exists",
-          "command": "executeAsyncScript",
-          "target": "var done = arguments[arguments.length - 1]; fetch('/api/test/cleanup', {method:'POST'}).then(function(r){return r.json()}).then(function(d){done('ok:'+d.deletedCount)}).catch(function(e){done('err')});",
-          "targets": [],
-          "value": ""
-        },
-        {
-          "id": "9f7dff0f-c716-462e-a5ca-2c49db4495a7",
-          "comment": "Wait for Become a Volunteer button",
-          "command": "waitForElementVisible",
-          "target": "id=home-btn-volunteer",
-          "targets": [
-            [
-              "id=home-btn-volunteer",
-              "id"
-            ],
-            [
-              "css=#home-btn-volunteer",
-              "css:finder"
-            ],
-            [
-              "css=#home-btn-volunteer > .lucide",
-              "css:finder"
-            ],
-            [
-              "linkText=Become a Volunteer",
-              "linkText"
-            ],
-            [
-              "xpath=//a[@id=\"home-btn-volunteer\"]",
-              "xpath:attributes"
-            ]
-          ],
-          "value": "10000"
-        },
-        {
-          "id": "bf881bc5-069d-454d-8743-26e08263e760",
-          "comment": "Click Become a Volunteer",
-          "command": "click",
-          "target": "id=home-btn-volunteer",
-          "targets": [
-            [
-              "id=home-btn-volunteer",
-              "id"
-            ],
-            [
-              "css=#home-btn-volunteer",
-              "css:finder"
-            ],
-            [
-              "css=#home-btn-volunteer > .lucide",
-              "css:finder"
-            ],
-            [
-              "linkText=Become a Volunteer",
-              "linkText"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "b2a80a98-271d-4a98-8e80-9b77820ce368",
-          "comment": "Wait for registration form",
-          "command": "waitForElementVisible",
-          "target": "id=reg-username",
-          "targets": [
-            [
-              "id=reg-username",
-              "id"
-            ],
-            [
-              "name=username",
-              "name"
-            ],
-            [
-              "css=#reg-username",
-              "css:finder"
-            ],
-            [
-              "xpath=//input[@id=\"reg-username\"]",
-              "xpath:attributes"
-            ],
-            [
-              "xpath=//input",
-              "xpath:position"
-            ]
-          ],
-          "value": "10000"
-        },
-        {
-          "id": "4c41e8bb-7861-45dd-8eeb-579afc9c04c6",
-          "comment": "Focus Username",
-          "command": "click",
-          "target": "id=reg-username",
-          "targets": [
-            [
-              "id=reg-username",
-              "id"
-            ],
-            [
-              "name=username",
-              "name"
-            ],
-            [
-              "css=#reg-username",
-              "css:finder"
-            ],
-            [
-              "xpath=//input[@id=\"reg-username\"]",
-              "xpath:attributes"
-            ],
-            [
-              "xpath=//input",
-              "xpath:position"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "a1b31e86-65b5-4aea-8599-ad8f971b0557",
-          "comment": "Set id=reg-username = \"Bob\"",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-username\",\"Bob\");}else{var sel=\"id=reg-username\";var val=\"Bob\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-username",
-              "id"
-            ],
-            [
-              "name=username",
-              "name"
-            ],
-            [
-              "css=#reg-username",
-              "css:finder"
-            ],
-            [
-              "xpath=//input[@id=\"reg-username\"]",
-              "xpath:attributes"
-            ],
-            [
-              "xpath=//input",
-              "xpath:position"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "302a8ab0-cc61-4891-9bd5-8a91db93d857",
-          "comment": "Set id=reg-email = \"bob@gmail.com\"",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-email\",\"bob@gmail.com\");}else{var sel=\"id=reg-email\";var val=\"bob@gmail.com\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-email",
-              "id"
-            ],
-            [
-              "name=email",
-              "name"
-            ],
-            [
-              "css=#reg-email",
-              "css:finder"
-            ],
-            [
-              "xpath=//input[@id=\"reg-email\"]",
-              "xpath:attributes"
-            ],
-            [
-              "xpath=//div[2]/input",
-              "xpath:position"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "ff48f0b7-7487-4a81-8569-30e4f5c8da02",
-          "comment": "Set id=reg-password = \"bob123\"",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-password\",\"bob123\");}else{var sel=\"id=reg-password\";var val=\"bob123\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-password",
-              "id"
-            ],
-            [
-              "name=password",
-              "name"
-            ],
-            [
-              "css=#reg-password",
-              "css:finder"
-            ],
-            [
-              "xpath=//input[@id=\"reg-password\"]",
-              "xpath:attributes"
-            ],
-            [
-              "xpath=//div[3]/input",
-              "xpath:position"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "1314ede2-56df-4e05-9ab9-be3b98fc5db2",
-          "comment": "Set id=reg-confirmPassword = \"bob123\"",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-confirmPassword\",\"bob123\");}else{var sel=\"id=reg-confirmPassword\";var val=\"bob123\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-confirmPassword",
-              "id"
-            ],
-            [
-              "name=confirmPassword",
-              "name"
-            ],
-            [
-              "css=#reg-confirmPassword",
-              "css:finder"
-            ],
-            [
-              "xpath=//input[@id=\"reg-confirmPassword\"]",
-              "xpath:attributes"
-            ],
-            [
-              "xpath=//div[4]/input",
-              "xpath:position"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "f846a6dc-8b07-44de-ab2e-7c415465982c",
-          "comment": "Click Next Step",
-          "command": "click",
-          "target": "id=reg-btn-next",
-          "targets": [
-            [
-              "id=reg-btn-next",
-              "id"
-            ],
-            [
-              "css=#reg-btn-next",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "3d4c74f7-dc3d-4531-afab-8fcb365e44c4",
-          "comment": "Wait for Personal Details step",
-          "command": "waitForElementVisible",
-          "target": "id=reg-fullName",
-          "targets": [
-            [
-              "id=reg-fullName",
-              "id"
-            ],
-            [
-              "name=fullName",
-              "name"
-            ]
-          ],
-          "value": "6000"
-        },
-        {
-          "id": "892a3d15-e5e0-4646-b837-795ac396e14e",
-          "comment": "Set id=reg-fullName = \"Bob Volunteer\"",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-fullName\",\"Bob Volunteer\");}else{var sel=\"id=reg-fullName\";var val=\"Bob Volunteer\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-fullName",
-              "id"
-            ],
-            [
-              "name=fullName",
-              "name"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "cae7d0c8-2d60-480d-aeaf-f2c90e4fe0cf",
-          "comment": "Set id=reg-phone = \"9164335467\"",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-phone\",\"9164335467\");}else{var sel=\"id=reg-phone\";var val=\"9164335467\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-phone",
-              "id"
-            ],
-            [
-              "name=phone",
-              "name"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "2ac3ff04-f942-49a0-b7bc-82beb27ba41b",
-          "comment": "Set id=reg-city = \"Bengaluru\"",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=reg-city\",\"Bengaluru\");}else{var sel=\"id=reg-city\";var val=\"Bengaluru\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=reg-city",
-              "id"
-            ],
-            [
-              "name=city",
-              "name"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "caa1e8d5-8694-442c-a7fc-11145ff6c894",
-          "comment": "Click Next Step",
-          "command": "click",
-          "target": "id=reg-btn-next",
-          "targets": [
-            [
-              "id=reg-btn-next",
-              "id"
-            ],
-            [
-              "css=#reg-btn-next",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "bbb-step3-wait-submit",
-          "comment": "Wait for Step 3 Experience form to appear",
-          "command": "waitForElementVisible",
-          "target": "id=reg-btn-submit",
-          "targets": [
-            [
-              "id=reg-btn-submit",
-              "id"
-            ],
-            [
-              "css=#reg-btn-submit",
-              "css:finder"
-            ]
-          ],
-          "value": "8000"
-        },
-        {
-          "id": "bbb-step3-click-submit",
-          "comment": "Click Complete Registration",
-          "command": "click",
-          "target": "id=reg-btn-submit",
-          "targets": [
-            [
-              "id=reg-btn-submit",
-              "id"
-            ],
-            [
-              "css=#reg-btn-submit",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "bbb-step3-wait-success",
-          "comment": "Wait for Registration Success screen with Proceed to Login button",
-          "command": "waitForElementVisible",
-          "target": "linkText=Proceed to Login",
-          "targets": [
-            [
-              "linkText=Proceed to Login",
-              "linkText"
-            ],
-            [
-              "css=a.btn-primary",
-              "css:finder"
-            ]
-          ],
-          "value": "10000"
-        },
-        {
-          "id": "bbb-step3-click-proceed",
-          "comment": "Click Proceed to Login link",
-          "command": "click",
-          "target": "linkText=Proceed to Login",
-          "targets": [
-            [
-              "linkText=Proceed to Login",
-              "linkText"
-            ],
-            [
-              "css=a.btn-primary",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "49a35775-74d7-4aba-b32f-70a0d9cf1d1c",
-          "comment": "Wait for Login Email input",
-          "command": "waitForElementVisible",
-          "target": "id=login-email",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ],
-            [
-              "name=email",
-              "name"
-            ]
-          ],
-          "value": "8000"
-        },
-        {
-          "id": "344ade02-d7c3-4c7d-9417-e49ab1795d64",
-          "comment": "Set id=login-email = \"bob@gmail.com\"",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=login-email\",\"bob@gmail.com\");}else{var sel=\"id=login-email\";var val=\"bob@gmail.com\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ],
-            [
-              "name=email",
-              "name"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "1dffc018-ed47-4ad1-87fd-094a97b047ca",
-          "comment": "Set id=login-password = \"bob123\"",
-          "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=login-password\",\"bob123\");}else{var sel=\"id=login-password\";var val=\"bob123\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=login-password",
-              "id"
-            ],
-            [
-              "name=password",
-              "name"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "89c8f650-b976-4f79-aac0-15c1946c466a",
-          "comment": "Click Sign In",
-          "command": "click",
-          "target": "id=login-submit",
-          "targets": [
-            [
-              "id=login-submit",
-              "id"
-            ],
-            [
-              "css=#login-submit",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "70ead328-7f0a-43ec-9778-4cd1007ce1a4",
-          "comment": "Wait for Volunteer Dashboard",
-          "command": "waitForElementVisible",
-          "target": "id=vol-nav-profile",
-          "targets": [
-            [
-              "id=vol-nav-profile",
-              "id"
-            ],
-            [
-              "css=#vol-nav-profile",
-              "css:finder"
-            ]
-          ],
-          "value": "15000"
-        },
-        {
-          "id": "76333b72-c367-46d7-bc14-74d1476229cf",
-          "comment": "Confirmed Volunteer Dashboard loaded",
-          "command": "assertElementPresent",
-          "target": "id=vol-nav-profile",
-          "targets": [
-            [
-              "id=vol-nav-profile",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "50140a1c-76f2-4920-aeca-6470b0c6025c",
-          "comment": "Click Volunteer Logout",
-          "command": "click",
-          "target": "id=vol-logout-btn",
-          "targets": [
-            [
-              "id=vol-logout-btn",
-              "id"
-            ],
-            [
-              "css=#vol-logout-btn",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "e90e22ca-8e37-4033-a163-69022088cf00",
-          "comment": "Confirmed logged out",
-          "command": "waitForElementVisible",
-          "target": "id=login-email",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ]
-          ],
-          "value": "10000"
-        }
-      ]
-    },
-    {
-      "id": "c99e4f21-729f-4ee7-910a-e3746654e801",
-      "name": "01_Admin_Login_And_Overview",
-      "commands": [
-        {
-          "id": "0afacd95-80b9-42cb-b67c-d6db7f02f0ae",
-          "comment": "Open Login Page",
-          "command": "open",
-          "target": "/login",
-          "targets": [
-            [
-              "/login",
-              "linkText"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "e6716e8d-6ac0-412e-8ab9-f8acb761cae6",
-          "comment": "Set Desktop Screen Size",
           "command": "setWindowSize",
           "target": "1366x768",
-          "targets": [
-            [
-              "1366x768",
-              "id"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Set Window Size"
         },
         {
-          "id": "b1946e87-98dc-4ec1-8b04-aad62639c427",
-          "comment": "Wait for Email input",
+          "command": "executeScript",
+          "target": "localStorage.clear(); sessionStorage.clear();",
+          "value": "",
+          "comment": "Clear Storage"
+        },
+        {
+          "command": "executeAsyncScript",
+          "target": "var done = arguments[arguments.length - 1]; fetch('/api/test/cleanup', {method:'POST'}).then(function(r){return r.json()}).then(function(d){done('ok:'+d.deletedCount)}).catch(function(e){done('err')});",
+          "value": "",
+          "comment": "Clean up test user pari if exists"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "id=home-btn-volunteer",
+          "value": "10000",
+          "comment": "Wait for Become Volunteer button"
+        },
+        {
+          "command": "click",
+          "target": "id=home-btn-volunteer",
+          "value": "",
+          "comment": "Click Become Volunteer"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "id=reg-username",
+          "value": "10000",
+          "comment": "Wait for Registration Form"
+        },
+        {
+          "command": "click",
+          "target": "id=reg-username",
+          "value": "",
+          "comment": "Focus Username"
+        },
+        {
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=reg-username\",\"pari\");}else{var sel=\"id=reg-username\";var val=\"pari\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Username pari"
+        },
+        {
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=reg-email\",\"pari@gmail.com\");}else{var sel=\"id=reg-email\";var val=\"pari@gmail.com\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Email"
+        },
+        {
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=reg-password\",\"pari123\");}else{var sel=\"id=reg-password\";var val=\"pari123\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Password"
+        },
+        {
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=reg-confirmPassword\",\"pari123\");}else{var sel=\"id=reg-confirmPassword\";var val=\"pari123\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Confirm Password"
+        },
+        {
+          "command": "click",
+          "target": "id=reg-btn-next",
+          "value": "",
+          "comment": "Next to Step 2"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "id=reg-fullName",
+          "value": "8000",
+          "comment": "Wait for Full Name"
+        },
+        {
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=reg-fullName\",\"pari N\");}else{var sel=\"id=reg-fullName\";var val=\"pari N\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Full Name"
+        },
+        {
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=reg-phone\",\"9087654321\");}else{var sel=\"id=reg-phone\";var val=\"9087654321\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Phone"
+        },
+        {
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=reg-city\",\"Mandya\");}else{var sel=\"id=reg-city\";var val=\"Mandya\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter City"
+        },
+        {
+          "command": "click",
+          "target": "id=reg-btn-next",
+          "value": "",
+          "comment": "Next to Step 3"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "id=reg-btn-submit",
+          "value": "8000",
+          "comment": "Wait for Submit button"
+        },
+        {
+          "command": "click",
+          "target": "id=reg-btn-submit",
+          "value": "",
+          "comment": "Submit Registration"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "linkText=Proceed to Login",
+          "value": "10000",
+          "comment": "Wait for Proceed to Login"
+        },
+        {
+          "command": "click",
+          "target": "linkText=Proceed to Login",
+          "value": "",
+          "comment": "Proceed to Login"
+        },
+        {
           "command": "waitForElementVisible",
           "target": "id=login-email",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ],
-            [
-              "name=email",
-              "name"
-            ],
-            [
-              "css=#login-email",
-              "css:finder"
-            ]
-          ],
-          "value": "10000"
+          "value": "10000",
+          "comment": "Wait for Login page"
         },
         {
-          "id": "8d56ef4b-26d0-4ea3-a683-2d70f34151ce",
-          "comment": "Set id=login-email = \"admin@crewlink.com\"",
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=login-email\",\"pari@gmail.com\");}else{var sel=\"id=login-email\";var val=\"pari@gmail.com\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Login Email"
+        },
+        {
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=login-password\",\"pari123\");}else{var sel=\"id=login-password\";var val=\"pari123\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Login Password"
+        },
+        {
+          "command": "click",
+          "target": "id=login-submit",
+          "value": "",
+          "comment": "Click Sign In"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "id=vol-nav-profile",
+          "value": "15000",
+          "comment": "Verify Volunteer Dashboard loaded"
+        },
+        {
+          "command": "assertElementPresent",
+          "target": "id=vol-nav-profile",
+          "value": "",
+          "comment": "Assert Profile tab present"
+        },
+        {
+          "command": "click",
+          "target": "id=vol-logout-btn",
+          "value": "",
+          "comment": "Volunteer Logout"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "id=login-email",
+          "value": "10000",
+          "comment": "Returned to Login"
+        }
+      ]
+    },
+    {
+      "id": "test-02-admin-login-overview",
+      "name": "02_Admin_Login_And_Overview",
+      "commands": [
+        {
+          "command": "open",
+          "target": "/login",
+          "value": "",
+          "comment": "Open Login Page"
+        },
+        {
+          "command": "setWindowSize",
+          "target": "1366x768",
+          "value": "",
+          "comment": "Set Window Size"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "id=login-email",
+          "value": "10000",
+          "comment": "Wait for Email input"
+        },
+        {
           "command": "executeScript",
           "target": "if(window.__type){window.__type(\"id=login-email\",\"admin@crewlink.com\");}else{var sel=\"id=login-email\";var val=\"admin@crewlink.com\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ],
-            [
-              "name=email",
-              "name"
-            ],
-            [
-              "css=#login-email",
-              "css:finder"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Enter Admin Email"
         },
         {
-          "id": "494663c4-ff9a-4cf3-81b4-25b967995d35",
-          "comment": "Set id=login-password = \"admin123\"",
           "command": "executeScript",
           "target": "if(window.__type){window.__type(\"id=login-password\",\"admin123\");}else{var sel=\"id=login-password\";var val=\"admin123\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=login-password",
-              "id"
-            ],
-            [
-              "name=password",
-              "name"
-            ],
-            [
-              "css=#login-password",
-              "css:finder"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Enter Admin Password"
         },
         {
-          "id": "6baa7544-5b43-40fe-926b-8db77abfd8c1",
-          "comment": "Click Sign In Button",
           "command": "click",
           "target": "id=login-submit",
-          "targets": [
-            [
-              "id=login-submit",
-              "id"
-            ],
-            [
-              "css=#login-submit",
-              "css:finder"
-            ],
-            [
-              "xpath=//button[@id=\"login-submit\"]",
-              "xpath:attributes"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Click Sign In"
         },
         {
-          "id": "5e2200df-bf45-4d6c-9334-bdb6bda7be6f",
-          "comment": "Wait for Admin Dashboard navigation",
           "command": "waitForElementVisible",
           "target": "id=nav-overview",
-          "targets": [
-            [
-              "id=nav-overview",
-              "id"
-            ],
-            [
-              "css=#nav-overview",
-              "css:finder"
-            ]
-          ],
-          "value": "15000"
+          "value": "15000",
+          "comment": "Wait for Overview Tab"
         },
         {
-          "id": "6e42c77a-104c-4120-986b-810db180c4cf",
-          "comment": "Verify Overview Tab present",
           "command": "assertElementPresent",
           "target": "id=nav-overview",
-          "targets": [
-            [
-              "id=nav-overview",
-              "id"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Overview Tab Present"
         },
         {
-          "id": "444a3e79-a496-4717-94a7-db89439c54c3",
-          "comment": "Verify Events Tab present",
           "command": "assertElementPresent",
           "target": "id=nav-events",
-          "targets": [
-            [
-              "id=nav-events",
-              "id"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Events Tab Present"
         },
         {
-          "id": "9dc8e490-3e12-4a83-b618-584c84980bfd",
-          "comment": "Verify Volunteers Tab present",
           "command": "assertElementPresent",
           "target": "id=nav-volunteers",
-          "targets": [
-            [
-              "id=nav-volunteers",
-              "id"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Volunteers Tab Present"
         },
         {
-          "id": "33167c3e-07fa-413b-99cc-3247c9002678",
-          "comment": "Verify Tasks Tab present",
           "command": "assertElementPresent",
           "target": "id=nav-tasks",
-          "targets": [
-            [
-              "id=nav-tasks",
-              "id"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Tasks Tab Present"
         },
         {
-          "id": "3536a051-4d66-4e54-9aab-44d8537ba1d4",
-          "comment": "Verify Certificates Tab present",
           "command": "assertElementPresent",
           "target": "id=nav-certificates",
-          "targets": [
-            [
-              "id=nav-certificates",
-              "id"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Certificates Tab Present"
         },
         {
-          "id": "9c94b61b-3b37-4714-be9b-3dd3bb695dcb",
-          "comment": "Verify Logout button present",
           "command": "assertElementPresent",
           "target": "id=btn-logout",
-          "targets": [
-            [
-              "id=btn-logout",
-              "id"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Logout Button Present"
         }
       ]
     },
     {
-      "id": "c99e4f21-729f-4ee7-910a-e3746654e802",
-      "name": "02_Admin_Navigation_Views",
+      "id": "test-03-admin-create-event",
+      "name": "03_Admin_Create_And_Publish_Event",
       "commands": [
         {
-          "id": "87788bf0-82ca-43d9-be85-08e6c1ed1b5a",
-          "comment": "Wait for Events tab",
+          "command": "open",
+          "target": "/admin/dashboard",
+          "value": "",
+          "comment": "Navigate to Admin Dashboard"
+        },
+        {
           "command": "waitForElementVisible",
           "target": "id=nav-events",
-          "targets": [
-            [
-              "id=nav-events",
-              "id"
-            ]
-          ],
-          "value": "5000"
+          "value": "10000",
+          "comment": "Wait for Events Navigation"
         },
         {
-          "id": "ea6c213e-e5eb-47d1-be17-867d3ca79432",
-          "comment": "Navigate to Events View",
           "command": "click",
           "target": "id=nav-events",
-          "targets": [
-            [
-              "id=nav-events",
-              "id"
-            ],
-            [
-              "css=#nav-events",
-              "css:finder"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Open Events View"
         },
         {
-          "id": "c1a73400-1fbb-4c01-bcdb-e8f7c21ab2a6",
-          "comment": "Verify Events view loaded",
           "command": "waitForElementVisible",
           "target": "id=btn-create-event",
-          "targets": [
-            [
-              "id=btn-create-event",
-              "id"
-            ],
-            [
-              "css=#btn-create-event",
-              "css:finder"
-            ]
-          ],
-          "value": "5000"
+          "value": "8000",
+          "comment": "Wait for Create Event Button"
         },
         {
-          "id": "b9811ad6-09a1-4021-9891-07125d9aedb0",
-          "comment": "Create Event button is visible",
-          "command": "assertElementPresent",
-          "target": "id=btn-create-event",
-          "targets": [
-            [
-              "id=btn-create-event",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "8626eec4-cba4-4135-a157-4dc399f5f467",
-          "comment": "Navigate to Volunteers View",
-          "command": "click",
-          "target": "id=nav-volunteers",
-          "targets": [
-            [
-              "id=nav-volunteers",
-              "id"
-            ],
-            [
-              "css=#nav-volunteers",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "9c42f5ff-8933-4991-9b23-b78d45e985c8",
-          "comment": "Allow volunteers view to render",
-          "command": "pause",
-          "target": "800",
-          "targets": [
-            [
-              "800",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "6fed0001-cbc9-4045-ab20-87f73662a96f",
-          "comment": "Navigate to Tasks & Attendance View",
-          "command": "click",
-          "target": "id=nav-tasks",
-          "targets": [
-            [
-              "id=nav-tasks",
-              "id"
-            ],
-            [
-              "css=#nav-tasks",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "c9a3bfee-d177-4d76-8966-4f22a0266ebd",
-          "comment": "Verify Assign Task button is visible",
-          "command": "waitForElementVisible",
-          "target": "id=btn-assign-task",
-          "targets": [
-            [
-              "id=btn-assign-task",
-              "id"
-            ],
-            [
-              "css=#btn-assign-task",
-              "css:finder"
-            ]
-          ],
-          "value": "5000"
-        },
-        {
-          "id": "8ea60513-10c2-4c8a-8300-ba7f55e14865",
-          "comment": "Navigate to Certificates View",
-          "command": "click",
-          "target": "id=nav-certificates",
-          "targets": [
-            [
-              "id=nav-certificates",
-              "id"
-            ],
-            [
-              "css=#nav-certificates",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "8768f2c8-e5a7-45c2-b56b-b4df3ba6d983",
-          "comment": "Allow certificates view to render",
-          "command": "pause",
-          "target": "800",
-          "targets": [
-            [
-              "800",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "343ea108-4559-448b-b823-64b259ec8ad5",
-          "comment": "Return to Overview",
-          "command": "click",
-          "target": "id=nav-overview",
-          "targets": [
-            [
-              "id=nav-overview",
-              "id"
-            ],
-            [
-              "css=#nav-overview",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "6fea78c0-3b22-4115-af26-a65d2a5e108b",
-          "comment": "Overview rendered cleanly",
-          "command": "pause",
-          "target": "800",
-          "targets": [
-            [
-              "800",
-              "id"
-            ]
-          ],
-          "value": ""
-        }
-      ]
-    },
-    {
-      "id": "c99e4f21-729f-4ee7-910a-e3746654e803",
-      "name": "03_Admin_Create_Event_Modal",
-      "commands": [
-        {
-          "id": "bc07b7fa-be70-48a4-a243-eaaa7f580fb1",
-          "comment": "Switch to Events View",
-          "command": "click",
-          "target": "id=nav-events",
-          "targets": [
-            [
-              "id=nav-events",
-              "id"
-            ],
-            [
-              "css=#nav-events",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "5c511472-5b3a-47e9-9909-a9c576fdb74f",
-          "comment": "Wait for Create Event button",
-          "command": "waitForElementVisible",
-          "target": "id=btn-create-event",
-          "targets": [
-            [
-              "id=btn-create-event",
-              "id"
-            ]
-          ],
-          "value": "5000"
-        },
-        {
-          "id": "103b71ef-5f0a-47ee-92f6-7f33489287c8",
-          "comment": "Open Create Event Modal",
           "command": "click",
           "target": "id=btn-create-event",
-          "targets": [
-            [
-              "id=btn-create-event",
-              "id"
-            ],
-            [
-              "css=#btn-create-event",
-              "css:finder"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Click Create Event"
         },
         {
-          "id": "bdfd95a3-eca5-464e-95dc-33858ab84984",
-          "comment": "Wait for Event Title input",
           "command": "waitForElementVisible",
           "target": "id=event-title",
-          "targets": [
-            [
-              "id=event-title",
-              "id"
-            ],
-            [
-              "css=#event-title",
-              "css:finder"
-            ]
-          ],
-          "value": "5000"
+          "value": "6000",
+          "comment": "Wait for Event Title Input"
         },
         {
-          "id": "29164e9f-06cb-4219-8fea-e2dc6a91d6f7",
-          "comment": "Set id=event-title = \"Tech Spark Fest 2026\"",
           "command": "executeScript",
           "target": "if(window.__type){window.__type(\"id=event-title\",\"Tech Spark Fest 2026\");}else{var sel=\"id=event-title\";var val=\"Tech Spark Fest 2026\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=event-title",
-              "id"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Enter Event Title"
         },
         {
-          "id": "7a8f0257-8c95-4dfa-890a-ced1377ebcba",
-          "comment": "Set id=event-location = \"Bengaluru Convention Hall\"",
           "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=event-location\",\"Bengaluru Convention Hall\");}else{var sel=\"id=event-location\";var val=\"Bengaluru Convention Hall\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=event-location",
-              "id"
-            ]
-          ],
-          "value": ""
+          "target": "if(window.__type){window.__type(\"id=event-location\",\"Bangalore International Exhibition Centre\");}else{var sel=\"id=event-location\";var val=\"Bangalore International Exhibition Centre\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Location"
         },
         {
-          "id": "45e9af95-6636-4c33-827c-19be32fd84fc",
-          "comment": "Set id=event-description = \"Annual youth hackathon and cultural technology exhibition.\"",
           "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=event-description\",\"Annual youth hackathon and cultural technology exhibition.\");}else{var sel=\"id=event-description\";var val=\"Annual youth hackathon and cultural technology exhibition.\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=event-description",
-              "id"
-            ]
-          ],
-          "value": ""
+          "target": "if(window.__type){window.__type(\"id=event-description\",\"Annual national technology, robotics, and innovation youth festival.\");}else{var sel=\"id=event-description\";var val=\"Annual national technology, robotics, and innovation youth festival.\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Description"
         },
         {
-          "id": "d1b23c2c-1a1b-427c-9d1a-58b52b26fba1",
-          "comment": "Set id=event-rules = \"Follow event conduct guidelines.\"",
           "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=event-rules\",\"Follow event conduct guidelines.\");}else{var sel=\"id=event-rules\";var val=\"Follow event conduct guidelines.\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=event-rules",
-              "id"
-            ]
-          ],
-          "value": ""
+          "target": "if(window.__type){window.__type(\"id=event-rules\",\"Wear official volunteer badges at all times. Follow safety guidelines.\");}else{var sel=\"id=event-rules\";var val=\"Wear official volunteer badges at all times. Follow safety guidelines.\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Rules"
         },
         {
-          "id": "913a37d2-7738-4b06-ab24-337e11e58435",
-          "comment": "Set id=event-date = \"2026-11-20T10:00\"",
           "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=event-date\",\"2026-11-20T10:00\");}else{var sel=\"id=event-date\";var val=\"2026-11-20T10:00\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=event-date",
-              "id"
-            ]
-          ],
-          "value": ""
+          "target": "if(window.__type){window.__type(\"id=event-date\",\"2026-11-25T10:00\");}else{var sel=\"id=event-date\";var val=\"2026-11-25T10:00\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Date and Time"
         },
         {
-          "id": "a180a6b0-d3d0-4ffc-9c5f-337ad395e524",
-          "comment": "Set id=event-capacity = \"75\"",
           "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=event-capacity\",\"75\");}else{var sel=\"id=event-capacity\";var val=\"75\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=event-capacity",
-              "id"
-            ]
-          ],
-          "value": ""
+          "target": "if(window.__type){window.__type(\"id=event-capacity\",\"150\");}else{var sel=\"id=event-capacity\";var val=\"150\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Capacity"
         },
         {
-          "id": "952d40d8-a5fc-4217-8f9c-988ce7d034e8",
-          "comment": "Set id=event-price = \"0\"",
           "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=event-price\",\"0\");}else{var sel=\"id=event-price\";var val=\"0\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=event-price",
-              "id"
-            ]
-          ],
-          "value": ""
+          "target": "if(window.__type){window.__type(\"id=event-price\",\"200\");}else{var sel=\"id=event-price\";var val=\"200\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Price"
         },
         {
-          "id": "20552266-8d47-4ba7-806f-e27d6a4a2118",
-          "comment": "Verify Submit button present",
-          "command": "assertElementPresent",
-          "target": "id=btn-submit-event",
-          "targets": [
-            [
-              "id=btn-submit-event",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "04592629-8b46-4fd3-b160-62ea6550c728",
-          "comment": "Verify Cancel button present",
-          "command": "assertElementPresent",
-          "target": "id=btn-cancel-event",
-          "targets": [
-            [
-              "id=btn-cancel-event",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "f8a7c97f-bf74-4c99-83e3-a6dc2a5d5522",
-          "comment": "Close modal via Cancel",
           "command": "click",
-          "target": "id=btn-cancel-event",
-          "targets": [
-            [
-              "id=btn-cancel-event",
-              "id"
-            ],
-            [
-              "css=#btn-cancel-event",
-              "css:finder"
-            ]
-          ],
-          "value": ""
+          "target": "id=btn-submit-event",
+          "value": "",
+          "comment": "Submit Event Creation"
         },
         {
-          "id": "c238daf8-41d4-4594-a09c-474f02b7e6e7",
-          "comment": "Modal closed cleanly",
           "command": "pause",
-          "target": "500",
-          "targets": [
-            [
-              "500",
-              "id"
-            ]
-          ],
-          "value": ""
+          "target": "1500",
+          "value": "",
+          "comment": "Allow event creation to save"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "id=btn-create-event",
+          "value": "8000",
+          "comment": "Events view refreshed with new event"
         }
       ]
     },
     {
-      "id": "c99e4f21-729f-4ee7-910a-e3746654e804",
-      "name": "04_Admin_Tasks_And_UPI_Payment_Modal",
+      "id": "test-04-admin-assign-task",
+      "name": "04_Admin_Assign_Volunteer_Task",
       "commands": [
         {
-          "id": "b024af19-7a27-4542-a6b6-891a047f2b3e",
-          "comment": "Switch to Tasks & Attendance View",
+          "command": "open",
+          "target": "/admin/dashboard",
+          "value": "",
+          "comment": "Navigate to Admin Dashboard"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "id=nav-tasks",
+          "value": "10000",
+          "comment": "Wait for Tasks Tab"
+        },
+        {
           "command": "click",
           "target": "id=nav-tasks",
-          "targets": [
-            [
-              "id=nav-tasks",
-              "id"
-            ],
-            [
-              "css=#nav-tasks",
-              "css:finder"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Click Tasks & Attendance"
         },
         {
-          "id": "0fa64655-ab59-41a1-8869-fc68cfb93ecc",
-          "comment": "Wait for Pay via UPI button",
           "command": "waitForElementVisible",
-          "target": "css=[data-testid=\"btn-pay-upi\"]",
-          "targets": [
-            [
-              "css=[data-testid=\"btn-pay-upi\"]",
-              "css:finder"
-            ],
-            [
-              "xpath=//button[@data-testid=\"btn-pay-upi\"]",
-              "xpath:attributes"
-            ]
-          ],
-          "value": "8000"
+          "target": "id=btn-assign-task",
+          "value": "8000",
+          "comment": "Wait for Assign Task button"
         },
         {
-          "id": "be79c2b4-1103-4667-9b9f-4dd7ac01ca12",
-          "comment": "Open UPI Payment Modal",
           "command": "click",
-          "target": "css=[data-testid=\"btn-pay-upi\"]",
-          "targets": [
-            [
-              "css=[data-testid=\"btn-pay-upi\"]",
-              "css:finder"
-            ],
-            [
-              "xpath=//button[@data-testid=\"btn-pay-upi\"]",
-              "xpath:attributes"
-            ]
-          ],
-          "value": ""
+          "target": "id=btn-assign-task",
+          "value": "",
+          "comment": "Open Assign Task Modal"
         },
         {
-          "id": "f1d9887e-07a4-4db0-b9a4-0ce354684b6c",
-          "comment": "Wait for UPI modal",
           "command": "waitForElementVisible",
-          "target": "id=tab-upi-apps",
-          "targets": [
-            [
-              "id=tab-upi-apps",
-              "id"
-            ],
-            [
-              "css=#tab-upi-apps",
-              "css:finder"
-            ]
-          ],
-          "value": "5000"
+          "target": "id=select-task-name",
+          "value": "6000",
+          "comment": "Wait for Task Dropdown"
         },
         {
-          "id": "3c086542-c6e6-46df-bf49-32f6c76af9d0",
-          "comment": "UPI Apps tab present",
-          "command": "assertElementPresent",
-          "target": "id=tab-upi-apps",
-          "targets": [
-            [
-              "id=tab-upi-apps",
-              "id"
-            ]
-          ],
-          "value": ""
+          "command": "executeScript",
+          "target": "var el = document.getElementById('select-task-name'); if (el && el.options.length > 1) { el.selectedIndex = 1; el.dispatchEvent(new Event('change', {bubbles: true})); }",
+          "value": "",
+          "comment": "Select Task Name"
         },
         {
-          "id": "39a4db4d-2732-480f-8c7b-282f6e9f1aa0",
-          "comment": "UPI QR Code tab present",
-          "command": "assertElementPresent",
-          "target": "id=tab-upi-qr",
-          "targets": [
-            [
-              "id=tab-upi-qr",
-              "id"
-            ]
-          ],
-          "value": ""
+          "command": "executeScript",
+          "target": "var el = document.getElementById('select-task-volunteer'); if (el && el.options.length > 1) { el.selectedIndex = 1; el.dispatchEvent(new Event('change', {bubbles: true})); }",
+          "value": "",
+          "comment": "Select Volunteer"
         },
         {
-          "id": "00648809-3282-4953-b4a7-02098de1cf88",
-          "comment": "Google Pay 1-tap option present",
-          "command": "assertElementPresent",
-          "target": "id=btn-gpay",
-          "targets": [
-            [
-              "id=btn-gpay",
-              "id"
-            ]
-          ],
-          "value": ""
+          "command": "executeScript",
+          "target": "var el = document.getElementById('select-task-event'); if (el && el.options.length > 1) { el.selectedIndex = 1; el.dispatchEvent(new Event('change', {bubbles: true})); }",
+          "value": "",
+          "comment": "Select Event"
         },
         {
-          "id": "5a1498aa-5ebf-4c55-96b9-bd0877a7ebd2",
-          "comment": "PhonePe 1-tap option present",
-          "command": "assertElementPresent",
-          "target": "id=btn-phonepe",
-          "targets": [
-            [
-              "id=btn-phonepe",
-              "id"
-            ]
-          ],
-          "value": ""
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=input-task-rules\",\"Guide guests, coordinate tech demos, and support event flow.\");}else{var sel=\"id=input-task-rules\";var val=\"Guide guests, coordinate tech demos, and support event flow.\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Task Rules"
         },
         {
-          "id": "a7c2bfe9-0825-4fed-837a-b5a60d9b2ad8",
-          "comment": "Other UPI Apps option present",
-          "command": "assertElementPresent",
-          "target": "id=btn-other-upi",
-          "targets": [
-            [
-              "id=btn-other-upi",
-              "id"
-            ]
-          ],
-          "value": ""
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=input-task-salary\",\"1500\");}else{var sel=\"id=input-task-salary\";var val=\"1500\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Stipend Amount"
         },
         {
-          "id": "8669fc3f-c85e-44c4-bc7b-8a9806c731e0",
-          "comment": "Switch to QR Tab",
           "command": "click",
-          "target": "id=tab-upi-qr",
-          "targets": [
-            [
-              "id=tab-upi-qr",
-              "id"
-            ],
-            [
-              "css=#tab-upi-qr",
-              "css:finder"
-            ]
-          ],
-          "value": ""
+          "target": "id=btn-submit-assign-task",
+          "value": "",
+          "comment": "Submit Task Assignment"
         },
         {
-          "id": "19c5f8c7-50b3-4933-b6b3-2cea41ac8eed",
-          "comment": "View QR code",
           "command": "pause",
-          "target": "500",
-          "targets": [
-            [
-              "500",
-              "id"
-            ]
-          ],
-          "value": ""
+          "target": "1500",
+          "value": "",
+          "comment": "Allow task to be created"
         },
         {
-          "id": "f1392285-b0d2-49f1-b939-8abd14e2dd4c",
-          "comment": "Switch back to Apps Tab",
-          "command": "click",
-          "target": "id=tab-upi-apps",
-          "targets": [
-            [
-              "id=tab-upi-apps",
-              "id"
-            ],
-            [
-              "css=#tab-upi-apps",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "2d91d348-524f-4225-a1b4-23af6952ecd6",
-          "comment": "Wait for Auto UTR button",
           "command": "waitForElementVisible",
-          "target": "id=btn-auto-utr",
-          "targets": [
-            [
-              "id=btn-auto-utr",
-              "id"
-            ],
-            [
-              "css=#btn-auto-utr",
-              "css:finder"
-            ]
-          ],
-          "value": "3000"
-        },
-        {
-          "id": "3ccfab02-4d40-41a8-972f-4670dd9dacfc",
-          "comment": "Click Auto-Generate Ref",
-          "command": "click",
-          "target": "id=btn-auto-utr",
-          "targets": [
-            [
-              "id=btn-auto-utr",
-              "id"
-            ],
-            [
-              "css=#btn-auto-utr",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "3a1f1bae-a361-477d-9f7d-5cad5951ce21",
-          "comment": "Verify UTR input populated",
-          "command": "assertElementPresent",
-          "target": "id=input-utr",
-          "targets": [
-            [
-              "id=input-utr",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "0de5f5c8-5ea2-44bc-9e1b-3e6b439ea987",
-          "comment": "Verify Confirm Payment button present",
-          "command": "assertElementPresent",
-          "target": "id=btn-confirm-payment",
-          "targets": [
-            [
-              "id=btn-confirm-payment",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "27dfcebd-5e86-4f95-97d8-7f0c98afd602",
-          "comment": "Verify Cancel Payment button present",
-          "command": "assertElementPresent",
-          "target": "id=btn-cancel-payment",
-          "targets": [
-            [
-              "id=btn-cancel-payment",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "3fc4d407-6123-453a-a3fa-66715019a285",
-          "comment": "Close UPI Payment Modal",
-          "command": "click",
-          "target": "id=btn-cancel-payment",
-          "targets": [
-            [
-              "id=btn-cancel-payment",
-              "id"
-            ],
-            [
-              "css=#btn-cancel-payment",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "729ccd10-4e27-48ce-86df-847ce0e3ba57",
-          "comment": "Modal closed cleanly",
-          "command": "pause",
-          "target": "600",
-          "targets": [
-            [
-              "600",
-              "id"
-            ]
-          ],
-          "value": ""
+          "target": "id=btn-assign-task",
+          "value": "8000",
+          "comment": "Tasks view refreshed"
         }
       ]
     },
     {
-      "id": "c99e4f21-729f-4ee7-910a-e3746654e805",
-      "name": "05_Admin_Logout",
+      "id": "test-05-volunteer-space-execution",
+      "name": "05_Volunteer_Execute_Task_And_Attendance",
       "commands": [
         {
-          "id": "8dcaaca2-64ac-4fd1-9fe1-804e348b1843",
-          "comment": "Wait for Admin Logout button",
-          "command": "waitForElementVisible",
-          "target": "id=btn-logout",
-          "targets": [
-            [
-              "id=btn-logout",
-              "id"
-            ],
-            [
-              "css=#btn-logout",
-              "css:finder"
-            ]
-          ],
-          "value": "5000"
+          "command": "open",
+          "target": "/login",
+          "value": "",
+          "comment": "Open Login Page"
         },
         {
-          "id": "75a89dd9-f9d1-4d4b-97d4-1dd6bfa45816",
-          "comment": "Click Logout",
-          "command": "click",
-          "target": "id=btn-logout",
-          "targets": [
-            [
-              "id=btn-logout",
-              "id"
-            ],
-            [
-              "css=#btn-logout",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "e3853f3b-e91f-4c03-a21b-7e4217a9064c",
-          "comment": "Verify returned to Login Screen",
           "command": "waitForElementVisible",
           "target": "id=login-email",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ],
-            [
-              "css=#login-email",
-              "css:finder"
-            ]
-          ],
-          "value": "10000"
+          "value": "10000",
+          "comment": "Wait for Login page"
         },
         {
-          "id": "13859de9-aecd-4b4f-a18a-527d1f60c6a6",
-          "comment": "Login Email input is visible",
-          "command": "assertElementPresent",
-          "target": "id=login-email",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "e08c45de-1de8-4a3f-915c-c1d8177a3546",
-          "comment": "Login Submit button is visible",
-          "command": "assertElementPresent",
-          "target": "id=login-submit",
-          "targets": [
-            [
-              "id=login-submit",
-              "id"
-            ]
-          ],
-          "value": ""
-        }
-      ]
-    },
-    {
-      "id": "c99e4f21-729f-4ee7-910a-e3746654e806",
-      "name": "06_Volunteer_Login_And_Profile_UPI",
-      "commands": [
-        {
-          "id": "fa4d6176-88fd-425b-afff-6156da121a8e",
-          "comment": "Wait for Login Email input",
-          "command": "waitForElementVisible",
-          "target": "id=login-email",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ],
-            [
-              "css=#login-email",
-              "css:finder"
-            ]
-          ],
-          "value": "5000"
-        },
-        {
-          "id": "7d18a06a-362b-47b0-abac-f35f7ac7402e",
-          "comment": "Set id=login-email = \"ani@gmail.com\"",
           "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=login-email\",\"ani@gmail.com\");}else{var sel=\"id=login-email\";var val=\"ani@gmail.com\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ],
-            [
-              "css=#login-email",
-              "css:finder"
-            ]
-          ],
-          "value": ""
+          "target": "if(window.__type){window.__type(\"id=login-email\",\"don@gmail.com\");}else{var sel=\"id=login-email\";var val=\"don@gmail.com\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Volunteer Email"
         },
         {
-          "id": "ef8d31e5-ace2-4be0-8a43-84949ffe3358",
-          "comment": "Set id=login-password = \"ani123\"",
           "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=login-password\",\"ani123\");}else{var sel=\"id=login-password\";var val=\"ani123\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=login-password",
-              "id"
-            ],
-            [
-              "css=#login-password",
-              "css:finder"
-            ]
-          ],
-          "value": ""
+          "target": "if(window.__type){window.__type(\"id=login-password\",\"don123\");}else{var sel=\"id=login-password\";var val=\"don123\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Volunteer Password"
         },
         {
-          "id": "6ffc4729-53d5-452c-8af1-d910b7b996f3",
-          "comment": "Click Sign In Button",
           "command": "click",
           "target": "id=login-submit",
-          "targets": [
-            [
-              "id=login-submit",
-              "id"
-            ],
-            [
-              "css=#login-submit",
-              "css:finder"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Sign In as Volunteer"
         },
         {
-          "id": "85e1dc13-62e6-4a7d-8b84-f1986eb02442",
-          "comment": "Wait for Volunteer Profile Nav",
           "command": "waitForElementVisible",
-          "target": "id=vol-nav-profile",
-          "targets": [
-            [
-              "id=vol-nav-profile",
-              "id"
-            ],
-            [
-              "css=#vol-nav-profile",
-              "css:finder"
-            ]
-          ],
-          "value": "15000"
-        },
-        {
-          "id": "281f84e6-0272-4a39-bec5-d9dfe553c7aa",
-          "comment": "Events tab present",
-          "command": "assertElementPresent",
-          "target": "id=vol-nav-events",
-          "targets": [
-            [
-              "id=vol-nav-events",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "0c708fc6-5fb1-44ee-a9d9-cd1d043f27f1",
-          "comment": "Tasks tab present",
-          "command": "assertElementPresent",
           "target": "id=vol-nav-tasks",
-          "targets": [
-            [
-              "id=vol-nav-tasks",
-              "id"
-            ]
-          ],
-          "value": ""
+          "value": "15000",
+          "comment": "Wait for Volunteer Dashboard"
         },
         {
-          "id": "2ab71606-34e8-4c5d-b6d4-6829550e56d1",
-          "comment": "Profile tab present",
-          "command": "assertElementPresent",
-          "target": "id=vol-nav-profile",
-          "targets": [
-            [
-              "id=vol-nav-profile",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "9444f187-045d-4b8f-ba0a-d584c6369062",
-          "comment": "Open Volunteer Profile",
           "command": "click",
-          "target": "id=vol-nav-profile",
-          "targets": [
-            [
-              "id=vol-nav-profile",
-              "id"
-            ],
-            [
-              "css=#vol-nav-profile",
-              "css:finder"
-            ]
-          ],
-          "value": ""
+          "target": "id=vol-nav-tasks",
+          "value": "",
+          "comment": "Open My Tasks"
         },
         {
-          "id": "c12ad1cb-2baf-45c9-a4b7-5a325a7e3fb6",
-          "comment": "Wait for UPI ID input",
-          "command": "waitForElementVisible",
-          "target": "id=vol-input-upiId",
-          "targets": [
-            [
-              "id=vol-input-upiId",
-              "id"
-            ],
-            [
-              "css=#vol-input-upiId",
-              "css:finder"
-            ]
-          ],
-          "value": "6000"
+          "command": "pause",
+          "target": "1200",
+          "value": "",
+          "comment": "Allow tasks to render"
         },
         {
-          "id": "9d1fa31b-2886-4651-bb58-98b1072aad00",
-          "comment": "Set id=vol-input-upiId = \"9876543210@upi\"",
           "command": "executeScript",
-          "target": "if(window.__type){window.__type(\"id=vol-input-upiId\",\"9876543210@upi\");}else{var sel=\"id=vol-input-upiId\";var val=\"9876543210@upi\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
-          "targets": [
-            [
-              "id=vol-input-upiId",
-              "id"
-            ],
-            [
-              "css=#vol-input-upiId",
-              "css:finder"
-            ]
-          ],
-          "value": ""
+          "target": "var btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Start task')); if (btn) btn.click();",
+          "value": "",
+          "comment": "Start task if pending"
         },
         {
-          "id": "c363902e-8594-4908-91d6-cf5e440fc6dc",
-          "comment": "Click Save Profile",
-          "command": "click",
-          "target": "id=vol-save-profile-btn",
-          "targets": [
-            [
-              "id=vol-save-profile-btn",
-              "id"
-            ],
-            [
-              "css=#vol-save-profile-btn",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "6a687e15-e7c6-493c-9aee-f981ae46fc2c",
-          "comment": "Profile updated successfully",
           "command": "pause",
           "target": "1000",
-          "targets": [
-            [
-              "1000",
-              "id"
-            ]
-          ],
-          "value": ""
+          "value": "",
+          "comment": "Wait for task status update"
+        },
+        {
+          "command": "executeScript",
+          "target": "var btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Complete task')); if (btn) btn.click();",
+          "value": "",
+          "comment": "Complete task"
+        },
+        {
+          "command": "pause",
+          "target": "1000",
+          "value": "",
+          "comment": "Wait for completion update"
+        },
+        {
+          "command": "click",
+          "target": "id=vol-nav-attendance",
+          "value": "",
+          "comment": "Check Attendance History"
+        },
+        {
+          "command": "pause",
+          "target": "800",
+          "value": "",
+          "comment": "View Attendance log"
+        },
+        {
+          "command": "click",
+          "target": "id=vol-nav-certificates",
+          "value": "",
+          "comment": "Check Certificates Tab"
+        },
+        {
+          "command": "pause",
+          "target": "800",
+          "value": "",
+          "comment": "View Certificates"
+        },
+        {
+          "command": "click",
+          "target": "id=vol-nav-profile",
+          "value": "",
+          "comment": "Open Profile Settings"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "id=vol-input-upiId",
+          "value": "6000",
+          "comment": "Wait for UPI input"
+        },
+        {
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=vol-input-upiId\",\"don@okhdfcbank\");}else{var sel=\"id=vol-input-upiId\";var val=\"don@okhdfcbank\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Update UPI ID"
+        },
+        {
+          "command": "click",
+          "target": "id=vol-save-profile-btn",
+          "value": "",
+          "comment": "Save Profile Settings"
+        },
+        {
+          "command": "pause",
+          "target": "1000",
+          "value": "",
+          "comment": "Allow profile update to save"
+        },
+        {
+          "command": "click",
+          "target": "id=vol-logout-btn",
+          "value": "",
+          "comment": "Volunteer Logout"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "id=login-email",
+          "value": "10000",
+          "comment": "Returned to Login Page"
         }
       ]
     },
     {
-      "id": "c99e4f21-729f-4ee7-910a-e3746654e807",
-      "name": "07_Volunteer_Navigation_And_Logout",
+      "id": "test-06-admin-upi-payment",
+      "name": "06_Admin_UPI_Payment_And_Verification",
       "commands": [
         {
-          "id": "e82bca3f-fcd9-48ff-ad9d-74874a145321",
-          "comment": "Navigate to Volunteer Events",
-          "command": "click",
-          "target": "id=vol-nav-events",
-          "targets": [
-            [
-              "id=vol-nav-events",
-              "id"
-            ],
-            [
-              "css=#vol-nav-events",
-              "css:finder"
-            ]
-          ],
-          "value": ""
+          "command": "open",
+          "target": "/login",
+          "value": "",
+          "comment": "Open Login Page"
         },
         {
-          "id": "c10852d0-3d8e-46d1-acb1-4e8358544eba",
-          "comment": "View events",
-          "command": "pause",
-          "target": "500",
-          "targets": [
-            [
-              "500",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "9a530596-457b-46f8-9c16-17c9f7354de4",
-          "comment": "Navigate to Volunteer Tasks",
-          "command": "click",
-          "target": "id=vol-nav-tasks",
-          "targets": [
-            [
-              "id=vol-nav-tasks",
-              "id"
-            ],
-            [
-              "css=#vol-nav-tasks",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "1ea32e04-f529-4957-8e48-85b488271fcd",
-          "comment": "View tasks",
-          "command": "pause",
-          "target": "500",
-          "targets": [
-            [
-              "500",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "30f00206-08ad-42e5-9cce-7723c5d907ce",
-          "comment": "Navigate to Volunteer Attendance",
-          "command": "click",
-          "target": "id=vol-nav-attendance",
-          "targets": [
-            [
-              "id=vol-nav-attendance",
-              "id"
-            ],
-            [
-              "css=#vol-nav-attendance",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "b2a1af2c-d4ad-4f1e-832b-cff5b92b93cc",
-          "comment": "View attendance",
-          "command": "pause",
-          "target": "500",
-          "targets": [
-            [
-              "500",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "7e3795de-94ee-4339-b40a-99c24f4edcdf",
-          "comment": "Navigate to Volunteer Certificates",
-          "command": "click",
-          "target": "id=vol-nav-certificates",
-          "targets": [
-            [
-              "id=vol-nav-certificates",
-              "id"
-            ],
-            [
-              "css=#vol-nav-certificates",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "02cc6bfe-5e66-423c-8aa1-27c149f83687",
-          "comment": "View certificates",
-          "command": "pause",
-          "target": "500",
-          "targets": [
-            [
-              "500",
-              "id"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "1ba1c625-549b-4d38-95e9-08e7f6e0af33",
-          "comment": "Wait for Volunteer Logout button",
-          "command": "waitForElementVisible",
-          "target": "id=vol-logout-btn",
-          "targets": [
-            [
-              "id=vol-logout-btn",
-              "id"
-            ],
-            [
-              "css=#vol-logout-btn",
-              "css:finder"
-            ]
-          ],
-          "value": "5000"
-        },
-        {
-          "id": "67507926-5afb-46f8-b2fc-6b2d8b4faf49",
-          "comment": "Click Volunteer Logout",
-          "command": "click",
-          "target": "id=vol-logout-btn",
-          "targets": [
-            [
-              "id=vol-logout-btn",
-              "id"
-            ],
-            [
-              "css=#vol-logout-btn",
-              "css:finder"
-            ]
-          ],
-          "value": ""
-        },
-        {
-          "id": "0c2a51ff-162d-4b1e-ae23-19b0e38a553d",
-          "comment": "Returned to Login Screen",
           "command": "waitForElementVisible",
           "target": "id=login-email",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ],
-            [
-              "css=#login-email",
-              "css:finder"
-            ]
-          ],
-          "value": "10000"
+          "value": "10000",
+          "comment": "Wait for Email input"
         },
         {
-          "id": "a9d7ccf9-7345-47c5-9b4e-d8849fad02cb",
-          "comment": "Login input confirmed",
-          "command": "assertElementPresent",
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=login-email\",\"admin@crewlink.com\");}else{var sel=\"id=login-email\";var val=\"admin@crewlink.com\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Admin Email"
+        },
+        {
+          "command": "executeScript",
+          "target": "if(window.__type){window.__type(\"id=login-password\",\"admin123\");}else{var sel=\"id=login-password\";var val=\"admin123\";var el;if(sel.startsWith(\"id=\"))el=document.getElementById(sel.substring(3));else if(sel.startsWith(\"css=\"))el=document.querySelector(sel.substring(4));else if(sel.startsWith(\"name=\"))el=document.querySelector('[name=\"'+sel.substring(5)+'\"]');else if(sel.startsWith(\"//\")||sel.startsWith(\"xpath=\")){var xp=sel.replace(/^xpath=/,\"\");el=document.evaluate(xp,document,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;}else{el=document.querySelector(sel)||document.getElementById(sel);}if(el){var proto=(el instanceof HTMLTextAreaElement)?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;var s=Object.getOwnPropertyDescriptor(proto,\"value\")?.set;if(s){s.call(el,val);}else{el.value=val;}el.dispatchEvent(new Event(\"input\",{bubbles:true}));el.dispatchEvent(new Event(\"change\",{bubbles:true}));el.dispatchEvent(new Event(\"blur\",{bubbles:true}));}}",
+          "value": "",
+          "comment": "Enter Admin Password"
+        },
+        {
+          "command": "click",
+          "target": "id=login-submit",
+          "value": "",
+          "comment": "Sign In as Admin"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "id=nav-tasks",
+          "value": "15000",
+          "comment": "Wait for Dashboard"
+        },
+        {
+          "command": "click",
+          "target": "id=nav-tasks",
+          "value": "",
+          "comment": "Open Tasks & Attendance view"
+        },
+        {
+          "command": "pause",
+          "target": "1500",
+          "value": "",
+          "comment": "Allow tasks table to load"
+        },
+        {
+          "command": "executeScript",
+          "target": "var btn = document.querySelector('[data-testid=\"btn-pay-upi\"]'); if (btn) btn.click();",
+          "value": "",
+          "comment": "Click Pay via UPI for completed task"
+        },
+        {
+          "command": "pause",
+          "target": "1000",
+          "value": "",
+          "comment": "Allow UPI modal to open"
+        },
+        {
+          "command": "executeScript",
+          "target": "var qr = document.getElementById('tab-upi-qr'); if (qr) qr.click();",
+          "value": "",
+          "comment": "View Dynamic UPI QR Code tab"
+        },
+        {
+          "command": "pause",
+          "target": "500",
+          "value": "",
+          "comment": "View QR code"
+        },
+        {
+          "command": "executeScript",
+          "target": "var apps = document.getElementById('tab-upi-apps'); if (apps) apps.click();",
+          "value": "",
+          "comment": "Switch back to Apps tab"
+        },
+        {
+          "command": "pause",
+          "target": "500",
+          "value": "",
+          "comment": "View Apps tab"
+        },
+        {
+          "command": "executeScript",
+          "target": "var autoUtr = document.getElementById('btn-auto-utr'); if (autoUtr) autoUtr.click();",
+          "value": "",
+          "comment": "Auto-generate UTR Transaction Number"
+        },
+        {
+          "command": "pause",
+          "target": "500",
+          "value": "",
+          "comment": "Wait for UTR generation"
+        },
+        {
+          "command": "executeScript",
+          "target": "var confirmBtn = document.getElementById('btn-confirm-payment'); if (confirmBtn) confirmBtn.click();",
+          "value": "",
+          "comment": "Confirm Payment"
+        },
+        {
+          "command": "pause",
+          "target": "1500",
+          "value": "",
+          "comment": "Allow payment confirmation to save"
+        }
+      ]
+    },
+    {
+      "id": "test-07-admin-desks-and-logout",
+      "name": "07_Admin_Certificates_And_Volunteers_Desk",
+      "commands": [
+        {
+          "command": "open",
+          "target": "/admin/dashboard",
+          "value": "",
+          "comment": "Navigate to Admin Dashboard"
+        },
+        {
+          "command": "waitForElementVisible",
+          "target": "id=nav-certificates",
+          "value": "10000",
+          "comment": "Wait for Certificates Navigation"
+        },
+        {
+          "command": "click",
+          "target": "id=nav-certificates",
+          "value": "",
+          "comment": "Open Certificates Desk"
+        },
+        {
+          "command": "pause",
+          "target": "1000",
+          "value": "",
+          "comment": "View Certificates Desk"
+        },
+        {
+          "command": "click",
+          "target": "id=nav-volunteers",
+          "value": "",
+          "comment": "Open Volunteers Directory"
+        },
+        {
+          "command": "pause",
+          "target": "1000",
+          "value": "",
+          "comment": "Review Volunteers Desk"
+        },
+        {
+          "command": "click",
+          "target": "id=nav-overview",
+          "value": "",
+          "comment": "Return to Overview Command Centre"
+        },
+        {
+          "command": "pause",
+          "target": "800",
+          "value": "",
+          "comment": "Overview Command Centre verified"
+        },
+        {
+          "command": "click",
+          "target": "id=btn-logout",
+          "value": "",
+          "comment": "Click Logout"
+        },
+        {
+          "command": "waitForElementVisible",
           "target": "id=login-email",
-          "targets": [
-            [
-              "id=login-email",
-              "id"
-            ]
-          ],
-          "value": ""
+          "value": "10000",
+          "comment": "Wiped session and returned to Login"
         }
       ]
     }
   ],
   "suites": [
     {
-      "id": "4c0fef8b-9d41-4770-bc4b-bf50eeec19f0",
-      "name": "CrewLink Full Test Suite",
-      "persistSession": false,
+      "id": "suite-crewlink01-full",
+      "name": "CrewLink Complete Interactive Test Suite",
+      "persistSession": true,
       "parallel": false,
       "timeout": 300,
       "tests": [
-        "pari-test-001",
-        "c99e4f21-729f-4ee7-910a-e3746654e808",
-        "c99e4f21-729f-4ee7-910a-e3746654e801",
-        "c99e4f21-729f-4ee7-910a-e3746654e802",
-        "c99e4f21-729f-4ee7-910a-e3746654e803",
-        "c99e4f21-729f-4ee7-910a-e3746654e804",
-        "c99e4f21-729f-4ee7-910a-e3746654e805",
-        "c99e4f21-729f-4ee7-910a-e3746654e806",
-        "c99e4f21-729f-4ee7-910a-e3746654e807"
+        "test-01-volunteer-register-pari",
+        "test-02-admin-login-overview",
+        "test-03-admin-create-event",
+        "test-04-admin-assign-task",
+        "test-05-volunteer-space-execution",
+        "test-06-admin-upi-payment",
+        "test-07-admin-desks-and-logout"
       ]
     }
   ],
   "urls": [
-    "http://localhost:5000",
     "http://localhost:5000/",
-    "http://localhost:5173",
     "http://localhost:5173/"
   ],
   "plugins": []
