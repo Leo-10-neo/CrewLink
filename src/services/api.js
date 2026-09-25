@@ -1,6 +1,9 @@
 import axios from 'axios';
 import { Capacitor } from '@capacitor/core';
 
+// Set global axios timeout to prevent network requests hanging indefinitely on mobile
+axios.defaults.timeout = 10000;
+
 // Helper to format URL
 const formatUrl = (raw) => {
   if (!raw) return '';
