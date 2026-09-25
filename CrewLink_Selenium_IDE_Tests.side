@@ -43,6 +43,14 @@
           "value": ""
         },
         {
+          "id": "aaa-cleanup-step-001",
+          "comment": "DELETE previous test volunteer accounts so re-runs do not fail with User Already Exists",
+          "command": "executeAsyncScript",
+          "target": "var done = arguments[arguments.length - 1]; fetch('/api/test/cleanup', {method:'POST'}).then(function(r){return r.json()}).then(function(d){done('ok:'+d.deletedCount)}).catch(function(e){done('err')});",
+          "targets": [],
+          "value": ""
+        },
+        {
           "id": "9f7dff0f-c716-462e-a5ca-2c49db4495a7",
           "comment": "Wait for Become a Volunteer button",
           "command": "waitForElementVisible",
@@ -373,27 +381,69 @@
           "value": ""
         },
         {
-          "id": "72cc5172-1eb4-45da-9f5a-78cfb7006038",
-          "comment": "Experience step reached",
-          "command": "pause",
-          "target": "600",
+          "id": "bbb-step3-wait-submit",
+          "comment": "Wait for Step 3 Experience form to appear",
+          "command": "waitForElementVisible",
+          "target": "id=reg-btn-submit",
           "targets": [
             [
-              "600",
+              "id=reg-btn-submit",
               "id"
+            ],
+            [
+              "css=#reg-btn-submit",
+              "css:finder"
+            ]
+          ],
+          "value": "8000"
+        },
+        {
+          "id": "bbb-step3-click-submit",
+          "comment": "Click Complete Registration",
+          "command": "click",
+          "target": "id=reg-btn-submit",
+          "targets": [
+            [
+              "id=reg-btn-submit",
+              "id"
+            ],
+            [
+              "css=#reg-btn-submit",
+              "css:finder"
             ]
           ],
           "value": ""
         },
         {
-          "id": "c7648341-7acc-420b-95eb-de0bedeca6ae",
-          "comment": "Go to Login page",
-          "command": "open",
-          "target": "/login",
+          "id": "bbb-step3-wait-success",
+          "comment": "Wait for Registration Success screen with Proceed to Login button",
+          "command": "waitForElementVisible",
+          "target": "linkText=Proceed to Login",
           "targets": [
             [
-              "/login",
-              "id"
+              "linkText=Proceed to Login",
+              "linkText"
+            ],
+            [
+              "css=a.btn-primary",
+              "css:finder"
+            ]
+          ],
+          "value": "10000"
+        },
+        {
+          "id": "bbb-step3-click-proceed",
+          "comment": "Click Proceed to Login link",
+          "command": "click",
+          "target": "linkText=Proceed to Login",
+          "targets": [
+            [
+              "linkText=Proceed to Login",
+              "linkText"
+            ],
+            [
+              "css=a.btn-primary",
+              "css:finder"
             ]
           ],
           "value": ""

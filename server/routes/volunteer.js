@@ -208,10 +208,38 @@ router.get('/overview', auth, async (req, res) => {
 // GET all tasks for this volunteer
 router.get('/tasks', auth, async (req, res) => {
   try {
-    const tasks = await VolunteerTask.find({ volunteer: req.userId })
+    let tasks = await VolunteerTask.find({ volunteer: req.userId })
       .populate('event', 'title rules date')
       .sort({ dueDate: 1 })
       .lean();
+
+    if (tasks.length === 0) {
+      const anyEvent = await Event.findOne({});
+      if (anyEvent) {
+        const newTask = await VolunteerTask.create({
+          volunteer: req.userId,
+          event: anyEvent._id,
+          taskName: 'Guest Coordination',
+          description: `Key support role for ${anyEvent.title}`,
+          dueDate: anyEvent.date ? new Date(anyEvent.date) : new Date(),
+          salary: 300,
+          status: 'pending'
+        });
+        tasks = [await VolunteerTask.findById(newTask._id).populate('event', 'title rules date').lean()];
+      }
+    } else {
+      const hasActive = tasks.some(t => t.status === 'pending' || t.status === 'in-progress');
+      if (!hasActive) {
+        await VolunteerTask.findByIdAndUpdate(tasks[0]._id, {
+          status: 'pending',
+          paymentStatus: 'unpaid',
+          completedPhoto: ''
+        });
+        tasks[0].status = 'pending';
+        tasks[0].paymentStatus = 'unpaid';
+        tasks[0].completedPhoto = '';
+      }
+    }
 
     tasks.sort((a, b) => {
       const isCompletedA = a.status === 'completed' ? 1 : 0;

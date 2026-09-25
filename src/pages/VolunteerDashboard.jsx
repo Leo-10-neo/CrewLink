@@ -205,7 +205,7 @@ const VolunteerDashboard = () => {
       else if (activeTab === 'attendance') fetchAttendance();
       else if (activeTab === 'certificates') fetchCertificates();
       else if (activeTab === 'overview') fetchOverview();
-      else if (activeTab === 'profile') fetchProfile();
+      // Removed profile fetch to prevent overwriting user input while they type
     };
 
     refreshActiveTab();
@@ -532,7 +532,7 @@ const VolunteerDashboard = () => {
     if (!profile) return <div className="text-gray-400 py-12 text-center">Loading…</div>;
     const userProfile = profile.user || user || {};
     const profileValue = (key) => {
-      const val = profile[key] || userProfile[key] || '';
+      const val = profile[key] !== undefined && profile[key] !== null ? profile[key] : (userProfile[key] || '');
       return Array.isArray(val) ? val.join(', ') : val;
     };
     const field = (label, key, placeholder) => (
@@ -789,6 +789,8 @@ const VolunteerDashboard = () => {
                     </button>
                     {t.status !== 'completed' && (
                       <button
+                        id={`btn-task-${t.status === 'pending' ? 'start' : 'complete'}-${t._id}`}
+                        data-testid="btn-task-action"
                         onClick={() => {
                           if (t.status === 'pending') {
                             handleUpdateTaskStatus(t._id, 'in-progress');
@@ -798,7 +800,7 @@ const VolunteerDashboard = () => {
                         }}
                         className="px-3 py-1.5 bg-blue-50 text-blue-700 font-medium text-xs rounded-lg hover:bg-blue-100 transition-colors"
                       >
-                        {t.status === 'pending' ? 'Start' : 'Complete'}
+                        {t.status === 'pending' ? 'Start task' : 'Complete task'}
                       </button>
                     )}
                   </div>
@@ -886,6 +888,8 @@ const VolunteerDashboard = () => {
                         </button>
                         {t.status !== 'completed' && (
                           <button
+                            id={`desktop-btn-task-${t.status === 'pending' ? 'start' : 'complete'}-${t._id}`}
+                            data-testid="btn-task-action"
                             onClick={() => {
                               if (t.status === 'pending') {
                                 handleUpdateTaskStatus(t._id, 'in-progress');
@@ -893,7 +897,7 @@ const VolunteerDashboard = () => {
                                 setCompletingTask(t);
                               }
                             }}
-                            className="px-4 py-1.5 bg-blue-50 text-blue-700 font-medium text-sm rounded-lg hover:bg-blue-100 transition-colors"
+                            className="px-4 py-1.5 bg-blue-50 text-blue-700 font-medium text-sm rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
                           >
                             {t.status === 'pending' ? 'Start task' : 'Complete task'}
                           </button>
@@ -1942,6 +1946,16 @@ const VolunteerDashboard = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full border border-purple-200">
               Volunteer
             </span>
+            <button
+              id="mobile-header-logout"
+              data-testid="mobile-header-logout"
+              onClick={handleLogout}
+              className="p-1.5 text-gray-600 hover:text-red-600 rounded-lg hover:bg-gray-100/60 focus:outline-none"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <LogOut size={18} />
+            </button>
             <div className="relative">
               <button 
                 onClick={() => setShowNotifications(!showNotifications)} 
@@ -2112,6 +2126,17 @@ const VolunteerDashboard = () => {
                 </div>
               )}
             </div>
+            <button
+              id="topbar-logout"
+              data-testid="topbar-logout"
+              onClick={handleLogout}
+              className="p-2 text-gray-500 hover:text-red-600 transition-colors rounded-lg hover:bg-gray-100/60 flex items-center space-x-1.5 cursor-pointer"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <LogOut size={19} />
+              <span className="text-xs font-semibold text-gray-600 hover:text-red-600 hidden lg:inline">Logout</span>
+            </button>
           </div>
         </header>
 

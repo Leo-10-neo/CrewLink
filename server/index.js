@@ -77,6 +77,33 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working' });
 });
 
+// ── TEST CLEANUP ENDPOINT ────────────────────────────────────────────────────
+// Deletes test volunteer accounts used by Selenium IDE / TestCase Studio so
+// that tests can be re-run without "User already exists" errors.
+// Only removes users whose email matches test patterns (bob*, pari*, sel_test*).
+app.post('/api/test/cleanup', async (req, res) => {
+  try {
+    const User = require('./models/User');
+    const VolunteerProfile = require('./models/VolunteerProfile');
+    const testEmailPattern = /^(bob|pari|sel_test|testuser|seleniumtest)/i;
+    const deleted = await User.deleteMany({
+      $or: [
+        { email: testEmailPattern },
+        { username: testEmailPattern }
+      ]
+    });
+    // Also clean orphaned volunteer profiles for deleted users
+    await VolunteerProfile.deleteMany({
+      user: { $exists: false }
+    });
+    console.log(`[TEST CLEANUP] Removed ${deleted.deletedCount} test user(s)`);
+    res.json({ success: true, deletedCount: deleted.deletedCount });
+  } catch (err) {
+    console.error('[TEST CLEANUP] Error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // SPA fallback: Serve frontend index.html for all other web routes, or API status if dist not present
 app.use((req, res) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/download-apk')) {

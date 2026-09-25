@@ -11,7 +11,7 @@ const formatUrl = (raw) => {
   return url;
 };
 
-export const PUBLIC_INTERNET_URL = 'https://breaking-brad-performer-mere.trycloudflare.com';
+export const PUBLIC_INTERNET_URL = 'https://dress-money-instructor-proxy.trycloudflare.com';
 export const RAW_REGISTRY_URL = 'https://raw.githubusercontent.com/Leo-10-neo/CrewLink/main/current_tunnel_url.txt';
 export const CLOUD_REGISTRY_URL = 'https://api.github.com/repos/Leo-10-neo/CrewLink/contents/current_tunnel_url.txt';
 export const LAN_WIFI_URL = 'http://192.168.0.121:5000';
@@ -141,78 +141,83 @@ export const autoDiscoverTunnelUrl = async (force = false) => {
     const candidates = [];
 
     // Local Wi-Fi candidate (instant if phone is on home Wi-Fi)
-    candidates.push(LAN_WIFI_URL);
+    if (LAN_WIFI_URL) candidates.push(LAN_WIFI_URL);
 
     // Current stored base if exists
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('crewlink_api_base');
       if (stored) candidates.push(formatUrl(stored));
+
+      // Dynamic host if running in browser on local network (e.g. http://192.168.0.x:5173 -> :5000)
+      if (window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        if (/^(\d{1,3}\.){3}\d{1,3}$/.test(window.location.hostname)) {
+          candidates.push(`http://${window.location.hostname}:5000`);
+        }
+      }
+
+      // Localhost candidate for PC
+      candidates.push('http://localhost:5000');
+      candidates.push('http://127.0.0.1:5000');
     }
 
-    // Built-in public URL
+    // Built-in public URL (Cloudflare tunnel)
     if (PUBLIC_INTERNET_URL) {
       candidates.push(PUBLIC_INTERNET_URL);
     }
 
-    // Query GitHub Raw Registry with cache-busting
-    try {
-      const rawRes = await axios.get(`${RAW_REGISTRY_URL}?_cb=${Date.now()}`, { 
-        timeout: 4000, 
-        _skipIntercept: true 
-      });
-      if (rawRes.data && typeof rawRes.data === 'string' && rawRes.data.includes('trycloudflare.com')) {
-        const candidateUrl = formatUrl(rawRes.data.trim());
-        if (!candidateUrl.includes('api.trycloudflare.com')) {
-          candidates.unshift(candidateUrl);
-        }
-      }
-    } catch (_) {}
-
-    // Fallback: GitHub REST API (without setting forbidden User-Agent header)
-    try {
-      const apiRes = await axios.get(CLOUD_REGISTRY_URL, {
-        headers: { Accept: 'application/vnd.github.v3+json' },
-        timeout: 4000,
-        _skipIntercept: true
-      });
-      
-      let decodedUrl = '';
-      if (typeof apiRes.data === 'string' && apiRes.data.includes('trycloudflare.com')) {
-        decodedUrl = apiRes.data.trim();
-      } else if (apiRes.data && apiRes.data.content && apiRes.data.encoding === 'base64') {
-        // Decode base64 content
-        try {
-          decodedUrl = atob(apiRes.data.content.replace(/\s/g, '')).trim();
-        } catch (_) {}
-      }
-
-      if (decodedUrl && decodedUrl.includes('trycloudflare.com') && !decodedUrl.includes('api.trycloudflare.com')) {
-        const ghUrl = formatUrl(decodedUrl);
-        if (!candidates.includes(ghUrl)) {
-          candidates.unshift(ghUrl);
-        }
-      }
-    } catch (_) {}
-
     // Deduplicate candidates
-    const uniqueCandidates = [...new Set(candidates.filter(Boolean))];
+    let uniqueCandidates = [...new Set(candidates.filter(Boolean))];
 
-    // Race candidates in parallel to find the fastest responsive server
+    // Quick parallel race across known candidates first (fastest responds in < 300ms)
     try {
-      const winningUrl = await Promise.any(
+      const quickWinner = await Promise.any(
         uniqueCandidates.map(async (candidate) => {
-          const test = await testServerConnection(candidate, 3500);
-          if (test.success) {
-            return candidate;
-          }
-          throw new Error(`Failed to connect to ${candidate}`);
+          const test = await testServerConnection(candidate, 2200);
+          if (test.success) return candidate;
+          throw new Error(`Unreachable: ${candidate}`);
         })
       );
+      if (quickWinner) {
+        setApiBase(quickWinner);
+        console.log('✅ CrewLink API Connected to:', quickWinner);
+        return { success: true, url: quickWinner };
+      }
+    } catch (_) {}
 
-      if (winningUrl) {
-        setApiBase(winningUrl);
-        console.log('✅ CrewLink API Connected to:', winningUrl);
-        return { success: true, url: winningUrl };
+    // If quick candidates failed, fetch latest tunnel URL from GitHub registry
+    try {
+      const fetchRaw = axios.get(`${RAW_REGISTRY_URL}?_cb=${Date.now()}`, { timeout: 3500, _skipIntercept: true })
+        .then(r => (r.data && typeof r.data === 'string' && r.data.includes('trycloudflare.com')) ? formatUrl(r.data.trim()) : null)
+        .catch(() => null);
+
+      const fetchApi = axios.get(CLOUD_REGISTRY_URL, { headers: { Accept: 'application/vnd.github.v3+json' }, timeout: 3500, _skipIntercept: true })
+        .then(apiRes => {
+          let decodedUrl = '';
+          if (typeof apiRes.data === 'string' && apiRes.data.includes('trycloudflare.com')) {
+            decodedUrl = apiRes.data.trim();
+          } else if (apiRes.data && apiRes.data.content && apiRes.data.encoding === 'base64') {
+            try { decodedUrl = atob(apiRes.data.content.replace(/\s/g, '')).trim(); } catch (_) {}
+          }
+          return (decodedUrl && decodedUrl.includes('trycloudflare.com')) ? formatUrl(decodedUrl) : null;
+        })
+        .catch(() => null);
+
+      const [rawUrl, apiUrl] = await Promise.all([fetchRaw, fetchApi]);
+      const cloudCandidates = [rawUrl, apiUrl].filter(Boolean).filter(u => !u.includes('api.trycloudflare.com'));
+
+      if (cloudCandidates.length > 0) {
+        const cloudWinner = await Promise.any(
+          cloudCandidates.map(async (candidate) => {
+            const test = await testServerConnection(candidate, 3000);
+            if (test.success) return candidate;
+            throw new Error(`Unreachable: ${candidate}`);
+          })
+        );
+        if (cloudWinner) {
+          setApiBase(cloudWinner);
+          console.log('✅ CrewLink API Connected via Cloud Registry to:', cloudWinner);
+          return { success: true, url: cloudWinner };
+        }
       }
     } catch (_) {}
 
@@ -347,15 +352,19 @@ api.interceptors.response.use((res) => res, createResponseErrorInterceptor(api))
 // Ensures that when the user wakes the app after 2 hours, connection is refreshed!
 // ─────────────────────────────────────────────────────────────────────────────
 if (typeof window !== 'undefined') {
-  // 1. Initial proactive discovery
-  setTimeout(() => {
-    autoDiscoverTunnelUrl(false).catch(() => {});
-  }, 300);
+  // 1. Initial proactive discovery (immediate, zero delay)
+  autoDiscoverTunnelUrl(false).catch(() => {});
 
-  // 2. On app resume / phone unlock / tab focus
+  // 2. On network reconnected (Wi-Fi or mobile data restored)
+  window.addEventListener('online', () => {
+    console.log('📶 Device back online! Running CrewLink auto-discovery...');
+    autoDiscoverTunnelUrl(true).catch(() => {});
+  });
+
+  // 3. On app resume / phone unlock / tab focus
   const handleResume = () => {
     if (!document.hidden) {
-      testServerConnection(getApiBase(), 2500).then((res) => {
+      testServerConnection(getApiBase(), 2000).then((res) => {
         if (!res.success) {
           autoDiscoverTunnelUrl(true).catch(() => {});
         }
@@ -366,16 +375,16 @@ if (typeof window !== 'undefined') {
   document.addEventListener('visibilitychange', handleResume);
   window.addEventListener('focus', handleResume);
 
-  // 3. Periodic background check every 30 seconds
+  // 4. Periodic background check every 15 seconds
   setInterval(() => {
     if (!document.hidden) {
-      testServerConnection(getApiBase(), 3000).then((res) => {
+      testServerConnection(getApiBase(), 2500).then((res) => {
         if (!res.success) {
           autoDiscoverTunnelUrl(true).catch(() => {});
         }
       }).catch(() => {});
     }
-  }, 30000);
+  }, 15000);
 }
 
 // Auth API

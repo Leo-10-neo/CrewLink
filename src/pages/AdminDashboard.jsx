@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import VoiceNotePlayer from '../components/VoiceNotePlayer';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
-import { API_BASE, API_URL } from '../services/api';
+import { API_BASE, API_URL, autoDiscoverTunnelUrl } from '../services/api';
 
 const emptyEvent = { title: '', description: '', rules: '', date: '', location: '', capacity: '', price: '', imageUrl: '' };
 const navItems = [
@@ -21,6 +21,7 @@ export default function AdminDashboard() {
   const { showNotification } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const [activeView, setActiveView] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -102,7 +103,7 @@ export default function AdminDashboard() {
 
   const config = { headers: { Authorization: `Bearer ${token}` } };
 
-  const fetchData = async (retry = true) => {
+  const fetchData = async (retryCount = 0) => {
     try {
       const [eventResponse, userResponse, certResponse, notifResponse] = await Promise.all([
         axios.get(`${API_URL}/events/all`, config).catch(err => { console.error('Events error:', err.message); throw err; }), 
@@ -118,9 +119,17 @@ export default function AdminDashboard() {
       setError(''); // Auto-clear error banner on success
     } catch (error) { 
       console.error('Error fetching data:', error.message);
-      if (retry) {
-        console.log('Temporary connection pause. Retrying workspace fetch in 1.2s...');
-        setTimeout(() => fetchData(false), 1200);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        setError('Your session has expired. Please log in again.');
+        return;
+      }
+      
+      // Auto-reconnect with exponential backoff if network or tunnel is briefly offline
+      if (retryCount < 3) {
+        const nextDelay = (retryCount + 1) * 1500;
+        console.log(`Connection pause. Retrying workspace fetch in ${nextDelay}ms...`);
+        autoDiscoverTunnelUrl(true).catch(() => {});
+        setTimeout(() => fetchData(retryCount + 1), nextDelay);
       } else {
         setError('Some workspace data could not be loaded. Check the API connection.'); 
       }
@@ -427,7 +436,34 @@ export default function AdminDashboard() {
           </div>
         )}
         <span className="avatar">{user?.username?.[0]?.toUpperCase() || 'D'}</span><span>{user?.username || 'Devika Rao'}</span><button id="topbar-logout" data-testid="topbar-logout" className="logout-icon" onClick={signOut} aria-label="Logout"><LogOut size={21} /></button></div></header>
-      <section className="admin-content"><div className="page-heading"><div><h1>{copy[0]}</h1><p>{copy[1]}</p></div>{(activeView === 'events' || activeView === 'overview') && <button id="btn-create-event" data-testid="btn-create-event" className="primary-action" onClick={() => setShowEventModal(true)}><Plus size={18} /> Create event</button>}</div>{error && <div className="admin-alert">{error}<button onClick={() => setError('')} aria-label="Dismiss"><X size={17} /></button></div>}
+      <section className="admin-content"><div className="page-heading"><div><h1>{copy[0]}</h1><p>{copy[1]}</p></div>{(activeView === 'events' || activeView === 'overview') && <button id="btn-create-event" data-testid="btn-create-event" className="primary-action" onClick={() => setShowEventModal(true)}><Plus size={18} /> Create event</button>}</div>{error && (
+        <div className="admin-alert" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+          <span>{error}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button 
+              id="btn-reconnect-api"
+              onClick={() => {
+                setIsReconnecting(true);
+                setError('');
+                autoDiscoverTunnelUrl(true).then(() => fetchData(0)).finally(() => setIsReconnecting(false));
+              }}
+              style={{
+                background: 'rgba(255,255,255,0.25)',
+                border: '1px solid rgba(255,255,255,0.4)',
+                borderRadius: '6px',
+                color: 'inherit',
+                padding: '4px 10px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              {isReconnecting ? 'Reconnecting...' : 'Reconnect'}
+            </button>
+            <button onClick={() => setError('')} aria-label="Dismiss"><X size={17} /></button>
+          </div>
+        </div>
+      )}
         {activeView === 'overview' && <Overview events={events} users={users} pending={pending.length} onVolunteersClick={() => setActiveView('volunteers')} />}
         {activeView === 'events' && <EventsView events={visibleEvents} formatDate={formatDate} onEdit={editEvent} onDelete={deleteEvent} onStatus={updateStatus} />}
         {activeView === 'volunteers' && <VolunteersView volunteers={volunteers} events={events} onAssign={assignVolunteer} onUpdateStatus={updateVolunteerStatus} onViewProfile={setViewingProfile} onDelete={deleteVolunteer} />}
