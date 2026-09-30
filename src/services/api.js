@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Capacitor } from '@capacitor/core';
+import CrewLinkSync from '../plugins/CrewLinkSync';
 
 // Set global axios timeout to prevent network requests hanging indefinitely on mobile
 axios.defaults.timeout = 10000;
@@ -14,7 +15,7 @@ const formatUrl = (raw) => {
   return url;
 };
 
-export const PUBLIC_INTERNET_URL = 'https://dress-money-instructor-proxy.trycloudflare.com';
+export const PUBLIC_INTERNET_URL = 'https://gods-lodge-cambridge-things.trycloudflare.com';
 export const RAW_REGISTRY_URL = 'https://raw.githubusercontent.com/Leo-10-neo/CrewLink/main/current_tunnel_url.txt';
 export const CLOUD_REGISTRY_URL = 'https://api.github.com/repos/Leo-10-neo/CrewLink/contents/current_tunnel_url.txt';
 export const LAN_WIFI_URL = 'http://192.168.0.121:5000';
@@ -42,7 +43,7 @@ export const getApiBase = () => {
   }
   
   // 3. Native mobile (Capacitor / Android WebView): Default directly to public internet URL!
-  if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) {
+  if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
     return PUBLIC_INTERNET_URL;
   }
 
@@ -98,10 +99,11 @@ export const setApiBase = (url) => {
         const userStr = localStorage.getItem('user');
         const user = userStr ? JSON.parse(userStr) : null;
         if (token && user) {
-          Capacitor.Plugins?.CrewLinkSync?.syncUser({
+          CrewLinkSync.syncUser({
             token,
             role: user.role || 'volunteer',
             serverUrl: formatted,
+            userJson: userStr
           }).catch(() => {});
         }
       }
@@ -310,6 +312,14 @@ const createResponseErrorInterceptor = (clientInstance) => async (error) => {
     error.code === 'ERR_NETWORK' || 
     error.code === 'ECONNABORTED' ||
     [502, 503, 504, 521, 522, 523, 524, 404].includes(error.response?.status);
+
+  if (error.response?.status === 401) {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.dispatchEvent(new CustomEvent('crewlink:auth_failed'));
+    }
+  }
 
   const isCrewLinkEndpoint = 
     originalRequest.url?.includes('/api/') || 

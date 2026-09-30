@@ -170,4 +170,18 @@ router.patch('/:id/status', adminAuth, async (req, res) => {
   }
 });
 
+// Delete a certificate (Admin)
+router.delete('/:id', adminAuth, async (req, res) => {
+  try {
+    const cert = await Certificate.findByIdAndDelete(req.params.id);
+    if (!cert) {
+      return res.status(404).json({ message: 'Certificate not found' });
+    }
+    res.json({ message: 'Certificate deleted successfully', id: req.params.id });
+  } catch (error) {
+    console.error('Delete certificate error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router;

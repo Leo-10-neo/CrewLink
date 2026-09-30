@@ -142,6 +142,10 @@ public class CrewLinkBackgroundService extends Service {
         super.onTaskRemoved(rootIntent);
         Log.d(TAG, "App task cleared/swiped from recents. Scheduling quick restart alarm.");
         isAppInForeground = false;
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit().putBoolean(KEY_IS_FOREGROUND, false).apply();
+        } catch (Exception ignored) {}
 
         // Schedule an alarm to ensure service stays alive even if process is recycled
         Intent restartIntent = new Intent(getApplicationContext(), CrewLinkBackgroundService.class);

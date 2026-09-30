@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
+import CrewLinkSync from '../plugins/CrewLinkSync';
 import axios from 'axios';
 import { API_URL, getApiBase } from '../services/api';
 
@@ -154,7 +155,7 @@ export const NotificationProvider = ({ children }) => {
     window.addEventListener('click', handleFirstInteraction);
 
     // Check if app was launched via notification click from background service
-    if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) {
+    if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
       try {
         const syncPlugin = Capacitor.Plugins?.CrewLinkSync;
         if (syncPlugin) {
@@ -177,24 +178,20 @@ export const NotificationProvider = ({ children }) => {
   // Keep native Android Background Sync Service alive and updated with current auth token
   useEffect(() => {
     const syncNativeService = () => {
-      if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) {
+      if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
         try {
           const token = localStorage.getItem('token');
           const userStr = localStorage.getItem('user');
           const user = userStr ? JSON.parse(userStr) : null;
-          const syncPlugin = Capacitor.Plugins?.CrewLinkSync;
 
-          if (syncPlugin) {
-            if (token && user) {
-              syncPlugin.syncUser({
-                token,
+          if (token && user) {
+            CrewLinkSync.syncUser({
+              token,
                 role: user.role || 'volunteer',
-                serverUrl: getApiBase()
+                serverUrl: getApiBase(),
+                userJson: userStr
               }).catch(() => {});
-            } else {
-              syncPlugin.clearUser().catch(() => {});
             }
-          }
         } catch (e) {
           console.log('Error syncing native service:', e);
         }
@@ -210,9 +207,9 @@ export const NotificationProvider = ({ children }) => {
 
     const onVisibilityChange = () => {
       const isForeground = !document.hidden;
-      if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) {
+      if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
         try {
-          Capacitor.Plugins?.CrewLinkSync?.setAppForeground({ isForeground }).catch(() => {});
+          CrewLinkSync.setAppForeground({ isForeground }).catch(() => {});
         } catch (_) {}
       }
     };
@@ -373,7 +370,29 @@ export const NotificationProvider = ({ children }) => {
         navigator.vibrate([35, 45, 35]);
       } catch (_) {}
     }
-  }, []);
+
+    // ==========================================
+    // 3. INSIDE THE APP: Visual Notification Toast
+    // ==========================================
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    setIsExiting(false);
+    setNotification({
+      id: data.id || notifUniqueKey,
+      title,
+      message,
+      taskId: notifTaskId,
+      link: data.link,
+      onClick: data.onClick,
+      type: data.type || 'info'
+    });
+
+    // Auto-hide after 5 seconds
+    timerRef.current = setTimeout(() => {
+      hideNotification();
+    }, 5000);
+
+  }, [hideNotification]);
 
   // 4. Global polling for notifications so notifications work outside dashboards & outside the app
   useEffect(() => {
@@ -464,8 +483,81 @@ export const NotificationProvider = ({ children }) => {
   }, []);
 
   return (
-    <NotificationContext.Provider value={{ showNotification, hideNotification, notification: null }}>
+    <NotificationContext.Provider value={{ showNotification, hideNotification, notification }}>
       {children}
+      
+      {/* In-App Visual Notification Popup overlay */}
+      {notification && (
+        <div 
+          onClick={() => {
+            if (notification.onClick) {
+              notification.onClick();
+            } else if (notification.taskId) {
+              try {
+                const userStr = localStorage.getItem('user');
+                const user = userStr ? JSON.parse(userStr) : {};
+                if (user.role === 'admin') {
+                  window.location.href = `/admin/dashboard?view=tasks&taskId=${notification.taskId}`;
+                } else {
+                  window.location.href = `/volunteer/event-support/${notification.taskId}`;
+                }
+              } catch (_) {
+                if (notification.link) window.location.href = notification.link;
+              }
+            } else if (notification.link) {
+              window.location.href = notification.link;
+            }
+            hideNotification();
+          }}
+          style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: 99999,
+            background: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            padding: '16px',
+            maxWidth: '350px',
+            border: '1px solid #e2e8f0',
+            borderLeft: '4px solid #7c3aed',
+            cursor: 'pointer',
+            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            transform: isExiting ? 'translateX(120%) scale(0.95)' : 'translateX(0) scale(1)',
+            opacity: isExiting ? 0 : 1,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>
+              {notification.title}
+            </h4>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                hideNotification();
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                padding: '0',
+                fontSize: '18px',
+                lineHeight: '1',
+                marginTop: '-2px'
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: '1.4' }}>
+            {notification.message}
+          </p>
+        </div>
+      )}
     </NotificationContext.Provider>
   );
 };

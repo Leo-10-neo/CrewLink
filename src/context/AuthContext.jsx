@@ -1,4 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
+import CrewLinkSync from '../plugins/CrewLinkSync';
 import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
@@ -12,11 +15,49 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAuth();
+    
+    const handleAuthFailed = () => logout();
+    window.addEventListener('crewlink:auth_failed', handleAuthFailed);
+    return () => window.removeEventListener('crewlink:auth_failed', handleAuthFailed);
   }, []);
 
+  const syncToNative = async (token, userObj) => {
+    try {
+      // Use official capacitor/preferences for bulletproof JS persistence
+      await Preferences.set({ key: 'token', value: token });
+      await Preferences.set({ key: 'user', value: JSON.stringify(userObj) });
+
+      // Sync to custom plugin strictly for the background polling service
+      if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
+        const serverUrl = localStorage.getItem('crewlink_api_base') || '';
+        CrewLinkSync.syncUser({
+          token,
+          role: userObj.role || 'volunteer',
+          serverUrl,
+          userJson: JSON.stringify(userObj)
+        }).catch(() => {});
+      }
+    } catch (_) {}
+  };
+
   const checkAuth = async () => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    let storedToken = localStorage.getItem('token');
+    let storedUser = localStorage.getItem('user');
+    
+    // Recovery for Android when localStorage gets wiped on force-close
+    try {
+      const prefToken = await Preferences.get({ key: 'token' });
+      const prefUser = await Preferences.get({ key: 'user' });
+      
+      if (prefToken.value && prefUser.value) {
+        storedToken = prefToken.value;
+        storedUser = prefUser.value;
+        localStorage.setItem('token', storedToken);
+        localStorage.setItem('user', storedUser);
+      }
+    } catch (err) {
+      console.warn('Preferences fallback failed:', err);
+    }
     
     if (storedToken && storedUser) {
       try {
@@ -25,7 +66,6 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
       } catch (error) {
         console.error('Error parsing stored user:', error);
-        logout();
       }
     }
     
@@ -43,6 +83,7 @@ export const AuthProvider = ({ children }) => {
         setToken(newToken);
         setUser(userData);
         setIsAuthenticated(true);
+        syncToNative(newToken, userData);
         
         return { success: true, user: userData };
       }
@@ -71,6 +112,7 @@ export const AuthProvider = ({ children }) => {
         setToken(newToken);
         setUser(userData);
         setIsAuthenticated(true);
+        syncToNative(newToken, userData);
         
         return { success: true, user: userData };
       }
@@ -96,6 +138,7 @@ export const AuthProvider = ({ children }) => {
         setToken(newToken);
         setUser(newUser);
         setIsAuthenticated(true);
+        syncToNative(newToken, newUser);
         
         return { success: true, user: newUser };
       }
@@ -110,10 +153,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     setIsLoggingOut(true);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    
+    try {
+      await Preferences.remove({ key: 'token' });
+      await Preferences.remove({ key: 'user' });
+      
+      if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
+        CrewLinkSync.clearUser().catch(() => {});
+      }
+    } catch (_) {}
+    
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);

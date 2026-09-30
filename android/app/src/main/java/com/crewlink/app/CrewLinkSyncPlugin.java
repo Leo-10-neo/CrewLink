@@ -23,6 +23,7 @@ public class CrewLinkSyncPlugin extends Plugin {
         String token = call.getString("token");
         String role = call.getString("role", "volunteer");
         String serverUrl = call.getString("serverUrl");
+        String userJson = call.getString("userJson", "");
 
         if (token == null || serverUrl == null) {
             call.reject("Missing token or serverUrl");
@@ -35,6 +36,7 @@ public class CrewLinkSyncPlugin extends Plugin {
                 .putString(CrewLinkBackgroundService.KEY_TOKEN, token)
                 .putString(CrewLinkBackgroundService.KEY_ROLE, role)
                 .putString(CrewLinkBackgroundService.KEY_SERVER_URL, serverUrl)
+                .putString("userJson", userJson)
                 .putBoolean(CrewLinkBackgroundService.KEY_IS_FOREGROUND, true)
                 .apply();
 
@@ -69,6 +71,20 @@ public class CrewLinkSyncPlugin extends Plugin {
 
         JSObject ret = new JSObject();
         ret.put("success", true);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void getUser(PluginCall call) {
+        Context context = getContext();
+        SharedPreferences prefs = context.getSharedPreferences(CrewLinkBackgroundService.PREFS_NAME, Context.MODE_PRIVATE);
+        
+        String token = prefs.getString(CrewLinkBackgroundService.KEY_TOKEN, null);
+        String userJson = prefs.getString("userJson", null);
+        
+        JSObject ret = new JSObject();
+        ret.put("token", token);
+        ret.put("userJson", userJson);
         call.resolve(ret);
     }
 

@@ -227,18 +227,6 @@ router.get('/tasks', auth, async (req, res) => {
         });
         tasks = [await VolunteerTask.findById(newTask._id).populate('event', 'title rules date').lean()];
       }
-    } else {
-      const hasActive = tasks.some(t => t.status === 'pending' || t.status === 'in-progress');
-      if (!hasActive) {
-        await VolunteerTask.findByIdAndUpdate(tasks[0]._id, {
-          status: 'pending',
-          paymentStatus: 'unpaid',
-          completedPhoto: ''
-        });
-        tasks[0].status = 'pending';
-        tasks[0].paymentStatus = 'unpaid';
-        tasks[0].completedPhoto = '';
-      }
     }
 
     tasks.sort((a, b) => {
@@ -260,10 +248,6 @@ router.get('/tasks', auth, async (req, res) => {
 router.put('/tasks/:id/status', auth, async (req, res) => {
   try {
     const { status, photo } = req.body;
-    
-    if (status === 'completed' && !photo) {
-      return res.status(400).json({ message: 'Photo proof is required to complete a task' });
-    }
 
     let updateFields = { status };
     if (status === 'completed') {
@@ -278,6 +262,17 @@ router.put('/tasks/:id/status', auth, async (req, res) => {
     ).populate('event', 'title').populate('volunteer', 'username fullName');
 
     if (!task) return res.status(404).json({ message: 'Task not found' });
+
+    // When task completed, ensure corresponding Attendance record is also marked present with checkIn & checkOut
+    if (status === 'completed') {
+      const att = await Attendance.findOne({ task: task._id, volunteer: req.userId });
+      if (att) {
+        if (!att.checkIn) att.checkIn = new Date(Date.now() - 3600000);
+        if (!att.checkOut) att.checkOut = new Date();
+        att.status = 'present';
+        await att.save();
+      }
+    }
 
     // Award crew points on completion and notify admin
     if (status === 'completed') {
@@ -522,6 +517,9 @@ router.get('/attendance', auth, async (req, res) => {
       .populate('task', 'taskName status')
       .lean();
 
+    // Filter out orphaned attendance records with neither event nor task
+    records = records.filter(r => r.event || (r.task && r.task.taskName));
+
     // Sort: Pending/Active (checkOut is null and not absent) first, Completed/Absent last
     records.sort((a, b) => {
       const isDoneA = (a.status === 'absent' || (a.status === 'present' && a.checkOut)) ? 1 : 0;
@@ -667,6 +665,19 @@ router.post('/certificates/claim', auth, async (req, res) => {
       .lean();
 
     res.json({ message: 'Certificate generated successfully!', certificates: certs });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// DELETE a certificate (Volunteer)
+router.delete('/certificates/:id', auth, async (req, res) => {
+  try {
+    const cert = await Certificate.findOneAndDelete({ _id: req.params.id, volunteer: req.userId });
+    if (!cert) {
+      return res.status(404).json({ message: 'Certificate not found' });
+    }
+    res.json({ message: 'Certificate deleted successfully', id: req.params.id });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

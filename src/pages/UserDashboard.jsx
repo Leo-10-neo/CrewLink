@@ -3,6 +3,7 @@ import { Container, Card, Button, Row, Col, Alert, Modal, Form } from 'react-boo
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { API_URL } from '../services/api';
 
 const UserDashboard = () => {
   const [events, setEvents] = useState([]);
@@ -21,7 +22,7 @@ const UserDashboard = () => {
 
   const fetchEvents = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/events');
+      const response = await axios.get(`${API_URL}/events`);
       setEvents(response.data);
     } catch (error) {
       setError('Failed to fetch events');
@@ -32,7 +33,7 @@ const UserDashboard = () => {
 
   const fetchRegisteredEvents = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/auth/me', {
+      const response = await axios.get(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRegisteredEvents(response.data.user.registeredEvents || []);
@@ -43,7 +44,7 @@ const UserDashboard = () => {
 
   const handleRegister = async (eventId) => {
     try {
-      await axios.post(`http://localhost:5000/api/events/${eventId}/register`, {}, {
+      await axios.post(`${API_URL}/events/${eventId}/register`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       await fetchEvents();
@@ -56,7 +57,7 @@ const UserDashboard = () => {
 
   const handleUnregister = async (eventId) => {
     try {
-      await axios.post(`http://localhost:5000/api/events/${eventId}/unregister`, {}, {
+      await axios.post(`${API_URL}/events/${eventId}/unregister`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       await fetchEvents();

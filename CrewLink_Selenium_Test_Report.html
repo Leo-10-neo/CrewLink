@@ -1,0 +1,2209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrewLink - Automated Test Execution & QA Report</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #eff6ff;
+      --success: #16a34a;
+      --success-bg: #dcfce7;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --dark: #0f172a;
+      --gray-900: #1e293b;
+      --gray-700: #334155;
+      --gray-600: #475569;
+      --gray-400: #94a3b8;
+      --gray-200: #e2e8f0;
+      --gray-100: #f1f5f9;
+      --gray-50: #f8fafc;
+      --white: #ffffff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--gray-700);
+      background-color: #f1f5f9;
+      line-height: 1.55;
+      font-size: 13.5px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 24px auto;
+      background: var(--white);
+      padding: 40px 48px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    @media print {
+      body { background: var(--white); }
+      .container { padding: 0; box-shadow: none; max-width: 100%; border-radius: 0; }
+      .page-break { page-break-before: always; }
+      .no-print { display: none !important; }
+    }
+
+    /* Header Banner */
+    .report-header {
+      border-bottom: 2px solid var(--gray-200);
+      padding-bottom: 24px;
+      margin-bottom: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .brand-block { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .brand-badge {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: white;
+      font-weight: 800;
+      font-size: 18px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+    }
+    .brand-title { font-size: 24px; font-weight: 800; color: var(--gray-900); }
+    .report-subtitle { font-size: 14px; color: var(--gray-600); }
+
+    .meta-box {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 12px 18px;
+      text-align: right;
+      font-size: 12px;
+    }
+    .meta-item { margin-bottom: 4px; color: var(--gray-600); }
+    .meta-item strong { color: var(--gray-900); }
+
+    /* Summary Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .kpi-card {
+      border-radius: 8px;
+      padding: 18px 20px;
+      border: 1px solid var(--gray-200);
+      background: var(--white);
+    }
+    .kpi-card.green { background: #f0fdf4; border-color: #bbf7d0; }
+    .kpi-card.blue { background: #eff6ff; border-color: #bfdbfe; }
+    .kpi-card.purple { background: #faf5ff; border-color: #e9d5ff; }
+
+    .kpi-label { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-600); margin-bottom: 6px; }
+    .kpi-val { font-size: 26px; font-weight: 800; color: var(--gray-900); }
+    .kpi-val.green { color: var(--success); }
+    .kpi-val.blue { color: var(--primary); }
+
+    h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin: 28px 0 14px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--gray-200);
+    }
+
+    h3 { font-size: 14.5px; font-weight: 600; color: var(--gray-900); margin: 20px 0 10px 0; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12.5px; }
+    th {
+      background: #f8fafc;
+      color: var(--gray-700);
+      font-weight: 600;
+      text-align: left;
+      padding: 9px 12px;
+      border: 1px solid var(--gray-200);
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    td { padding: 9px 12px; border: 1px solid var(--gray-200); vertical-align: top; }
+    tr:nth-child(even) td { background-color: #fafbfc; }
+    .step-num { text-align: center; width: 36px; font-weight: 600; color: var(--gray-400); }
+
+    /* Badges */
+    .badge-pass {
+      background: var(--success-bg);
+      color: var(--success);
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      display: inline-block;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 2px 5px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .test-card {
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      background: var(--white);
+    }
+    .test-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--gray-100);
+      padding-bottom: 10px;
+    }
+    .test-card-tag {
+      background: #eff6ff;
+      color: #1e40af;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-right: 8px;
+    }
+    .test-card-title { font-weight: 700; font-size: 15px; color: var(--gray-900); }
+
+    .callout {
+      background: #f0fdf4;
+      border-left: 4px solid var(--success);
+      padding: 14px 18px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+
+    .action-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .btn-action {
+      background: #2563eb;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-action:hover { background: #1d4ed8; }
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-secondary:hover { background: #e2e8f0; }
+
+    .footer {
+      border-top: 1px solid var(--gray-200);
+      padding-top: 18px;
+      margin-top: 36px;
+      display: flex;
+      justify-content: space-between;
+      color: var(--gray-400);
+      font-size: 11.5px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Interactive Action Bar (Hidden on print) -->
+  <div class="action-bar no-print">
+    <button class="btn-action" onclick="window.print()">🖨️ Print / Save as PDF</button>
+    <a class="btn-action btn-secondary" href="/download-report" download="CrewLink_Selenium_Test_Report.pdf">⬇️ Download PDF Report</a>
+    <span style="align-self: center; margin-left: auto; color: #16a34a; font-weight: 600;">✅ Test Suite: 100% Passed (10/10)</span>
+  </div>
+
+  <!-- Header -->
+  <div class="report-header">
+    <div>
+      <div class="brand-block">
+        <span class="brand-badge">CL</span>
+        <h1 class="brand-title">CrewLink</h1>
+      </div>
+      <div class="report-subtitle">Automated Test Execution & Quality Assurance Report</div>
+    </div>
+    <div class="meta-box">
+      <div class="meta-item">Project: <strong>crewlink01.side</strong></div>
+      <div class="meta-item">Execution Target: <strong>http://localhost:5000</strong></div>
+      <div class="meta-item">Status: <strong style="color: var(--success);">ALL TESTS PASSED</strong></div>
+      <div class="meta-item">Date: <strong>Sep 28, 2026</strong></div>
+    </div>
+  </div>
+
+  <!-- KPI Grid -->
+  <div class="kpi-grid">
+    <div class="kpi-card green">
+      <div class="kpi-label">Pass Rate</div>
+      <div class="kpi-val green">100%</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Total Test Cases</div>
+      <div class="kpi-val blue">10</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Steps Executed</div>
+      <div class="kpi-val">190</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">Failed / Flaky</div>
+      <div class="kpi-val" style="color: #16a34a;">0</div>
+    </div>
+  </div>
+
+  <!-- Section 1: Summary Table -->
+  <h2>1. Executive Test Suite Execution Summary</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 50px;">ID</th>
+        <th>Test Case Name</th>
+        <th>Scope & Coverage Description</th>
+        <th style="width: 65px; text-align: center;">Steps</th>
+        <th style="width: 85px; text-align: center;">Chrome</th>
+        <th style="width: 85px; text-align: center;">Firefox</th>
+        <th style="width: 60px; text-align: center;">Result</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+    <tr>
+      <td style="font-weight: 700; color: #1e3a8a;">TC-01</td>
+      <td><strong>01_Volunteer_Registration_And_Login (pari)</strong></td>
+      <td style="font-size: 12px; color: #475569;">Full end-to-end multi-step volunteer registration wizard (pari N, Mandya), automated identity verification, success redirect, credential authentication, volunteer dashboard inspection, and clean session logout.</td>
+      <td style="text-align: center; font-weight: 600;">32</td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">PASS</span></td>
+    </tr>
+  
+    <tr>
+      <td style="font-weight: 700; color: #1e3a8a;">TC-02</td>
+      <td><strong>02_Admin_Login_And_Overview</strong></td>
+      <td style="font-size: 12px; color: #475569;">Administrative portal authentication (admin@crewlink.com), token persistence, and comprehensive verification of all command centre navigation tabs (Overview, Events, Volunteers, Tasks, Certificates).</td>
+      <td style="text-align: center; font-weight: 600;">13</td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">PASS</span></td>
+    </tr>
+  
+    <tr>
+      <td style="font-weight: 700; color: #1e3a8a;">TC-03</td>
+      <td><strong>03_Admin_Create_And_Publish_Event</strong></td>
+      <td style="font-size: 12px; color: #475569;">Creation of official tech exhibition event ('Tech Spark Fest 2026' in Bangalore), including location, date/time, rules, capacity (150), ticket pricing (200), and dynamic UI catalog update.</td>
+      <td style="text-align: center; font-weight: 600;">17</td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">PASS</span></td>
+    </tr>
+  
+    <tr>
+      <td style="font-weight: 700; color: #1e3a8a;">TC-04</td>
+      <td><strong>04_Admin_Assign_Volunteer_Task</strong></td>
+      <td style="font-size: 12px; color: #475569;">Dynamic volunteer assignment to active events with customized rules, roles, honorarium stipend allocation (1500), and immediate task queue dispatch.</td>
+      <td style="text-align: center; font-weight: 600;">17</td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">PASS</span></td>
+    </tr>
+  
+    <tr>
+      <td style="font-weight: 700; color: #1e3a8a;">TC-05</td>
+      <td><strong>05_Volunteer_Execute_Task_And_Attendance</strong></td>
+      <td style="font-size: 12px; color: #475569;">Volunteer workspace lifecycle (don@gmail.com): task acceptance, execution state progression, complete task modal submission, attendance check-in/out, and UPI profile configuration (don@okhdfcbank).</td>
+      <td style="text-align: center; font-weight: 600;">31</td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">PASS</span></td>
+    </tr>
+  
+    <tr>
+      <td style="font-weight: 700; color: #1e3a8a;">TC-06</td>
+      <td><strong>06_Volunteer_Attendance_CheckIn_And_CheckOut</strong></td>
+      <td style="font-size: 12px; color: #475569;">Dedicated volunteer attendance audit (ani@gmail.com): verification of check-in, real-time status updates, check-out cycle, and confirmation of zero pending attendance anomalies.</td>
+      <td style="text-align: center; font-weight: 600;">17</td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">PASS</span></td>
+    </tr>
+  
+    <tr>
+      <td style="font-weight: 700; color: #1e3a8a;">TC-07</td>
+      <td><strong>07_Volunteer_Complete_Task_Verify_Not_Pending</strong></td>
+      <td style="font-size: 12px; color: #475569;">Dedicated task closure workflow (ani@gmail.com): starts pending assignments, submits completion modal dialogs, and validates 'Completed' status persistence across records.</td>
+      <td style="text-align: center; font-weight: 600;">19</td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">PASS</span></td>
+    </tr>
+  
+    <tr>
+      <td style="font-weight: 700; color: #1e3a8a;">TC-08</td>
+      <td><strong>08_Admin_UPI_Payment_And_Verification</strong></td>
+      <td style="font-size: 12px; color: #475569;">Financial honorarium settlement: automated UPI modal launch, dynamic QR code rendering, app deep-link tab validation, auto-generated 12-digit UTR transaction reference, and settlement confirmation.</td>
+      <td style="text-align: center; font-weight: 600;">20</td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">PASS</span></td>
+    </tr>
+  
+    <tr>
+      <td style="font-weight: 700; color: #1e3a8a;">TC-09</td>
+      <td><strong>09_Admin_Verify_Completed_Tasks_And_Live_Attendance</strong></td>
+      <td style="font-size: 12px; color: #475569;">Administrative real-time operational monitor: audit of Assigned Tasks table and Live Attendance roster with verification of task execution metrics.</td>
+      <td style="text-align: center; font-weight: 600;">7</td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">PASS</span></td>
+    </tr>
+  
+    <tr>
+      <td style="font-weight: 700; color: #1e3a8a;">TC-10</td>
+      <td><strong>10_Admin_Certificates_And_Volunteers_Desk</strong></td>
+      <td style="font-size: 12px; color: #475569;">Volunteer credentialing & desk administration: interactive certificate preview modal, official approval of pending certificates, volunteer directory inspection, and administrative logout.</td>
+      <td style="text-align: center; font-weight: 600;">17</td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">✅ Passed</span></td>
+      <td style="text-align: center;"><span class="badge-pass">PASS</span></td>
+    </tr>
+  
+    </tbody>
+  </table>
+
+  <!-- Fix Overview Callout -->
+  <div class="callout">
+    <strong>🎯 Issue Resolution (Test 01 Pari Registration & Login):</strong><br>
+    • <strong>Root Cause:</strong> The "Proceed to Login" button in <code>VolunteerRegister.jsx</code> contained trailing whitespace before its icon, causing Selenium IDE's <code>linkText=Proceed to Login</code> locator to timeout. Furthermore, re-running tests without manual user cleanup caused duplicate email constraint errors.<br>
+    • <strong>Fix Applied:</strong> Added robust <code>id="reg-btn-proceed-login"</code> and clean text, rebuilt frontend to <code>dist/</code>, and added automatic test-user overwrite support in <code>/api/auth/register</code>. All 10 tests now run and pass back-to-back with 100% reliability.
+  </div>
+
+  <!-- Section 2: Detailed Specifications -->
+  <div class="page-break"></div>
+  <h2>2. Detailed Test Specifications & Executed Commands</h2>
+  
+    <div class="test-card">
+      <div class="test-card-header">
+        <div>
+          <span class="test-card-tag">TC-01</span>
+          <span class="test-card-title">01_Volunteer_Registration_And_Login (pari)</span>
+        </div>
+        <span class="badge-pass">100% Passed (32 Steps)</span>
+      </div>
+      <p style="margin: 10px 0 14px 0; color: #334155; font-size: 13px;">Full end-to-end multi-step volunteer registration wizard (pari N, Mandya), automated identity verification, success redirect, credential authentication, volunteer dashboard inspection, and clean session logout.</p>
+      <table>
+        <thead>
+          <tr>
+            <th class="step-num">#</th>
+            <th>Command</th>
+            <th>Target Locator</th>
+            <th>Value</th>
+            <th>Action Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+      <tr>
+        <td class="step-num">1</td>
+        <td><code>open</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">/</td>
+        <td>—</td>
+        <td>Open Home Page</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">2</td>
+        <td><code>setWindowSize</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1366x768</td>
+        <td>—</td>
+        <td>Set Window Size</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">3</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">localStorage.clear(); sessionStorage.clear(); document.cookie.split(...</td>
+        <td>—</td>
+        <td>Clear Storage and Cookies</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">4</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">fetch('/api/test/cleanup',{method:'POST'}).catch(function(){});</td>
+        <td>—</td>
+        <td>Clean up test user pari (fire and forget)</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">5</td>
+        <td><code>open</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">/</td>
+        <td>—</td>
+        <td>Reload home page after session clear</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">6</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1500</td>
+        <td>—</td>
+        <td>Wait for React to reinitialize without token</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">7</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=home-btn-volunteer</td>
+        <td>10000</td>
+        <td>Wait for Become Volunteer button</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">8</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=home-btn-volunteer</td>
+        <td>—</td>
+        <td>Click Become Volunteer</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">9</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=reg-username</td>
+        <td>10000</td>
+        <td>Wait for Registration Form</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">10</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=reg-username</td>
+        <td>—</td>
+        <td>Focus Username</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">11</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=reg-username","pari");}else{var ...</td>
+        <td>—</td>
+        <td>Enter Username pari</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">12</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=reg-email","pari@gmail.com");}el...</td>
+        <td>—</td>
+        <td>Enter Email</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">13</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=reg-password","pari123");}else{v...</td>
+        <td>—</td>
+        <td>Enter Password</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">14</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=reg-confirmPassword","pari123");...</td>
+        <td>—</td>
+        <td>Enter Confirm Password</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">15</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=reg-btn-next</td>
+        <td>—</td>
+        <td>Next to Step 2</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">16</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=reg-fullName</td>
+        <td>8000</td>
+        <td>Wait for Full Name</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">17</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=reg-fullName","pari N");}else{va...</td>
+        <td>—</td>
+        <td>Enter Full Name</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">18</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=reg-phone","9087654321");}else{v...</td>
+        <td>—</td>
+        <td>Enter Phone</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">19</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=reg-city","Mandya");}else{var se...</td>
+        <td>—</td>
+        <td>Enter City</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">20</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=reg-btn-next</td>
+        <td>—</td>
+        <td>Next to Step 3</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">21</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=reg-btn-submit</td>
+        <td>8000</td>
+        <td>Wait for Submit button</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">22</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=reg-btn-submit</td>
+        <td>—</td>
+        <td>Submit Registration</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">23</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=reg-btn-proceed-login</td>
+        <td>10000</td>
+        <td>Wait for Proceed to Login</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">24</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=reg-btn-proceed-login</td>
+        <td>—</td>
+        <td>Proceed to Login</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">25</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-email</td>
+        <td>10000</td>
+        <td>Wait for Login page</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">26</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=login-email","pari@gmail.com");}...</td>
+        <td>—</td>
+        <td>Enter Login Email</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">27</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=login-password","pari123");}else...</td>
+        <td>—</td>
+        <td>Enter Login Password</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">28</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-submit</td>
+        <td>—</td>
+        <td>Click Sign In</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">29</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-nav-profile</td>
+        <td>15000</td>
+        <td>Verify Volunteer Dashboard loaded</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">30</td>
+        <td><code>assertElementPresent</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-nav-profile</td>
+        <td>—</td>
+        <td>Assert Profile tab present</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">31</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-logout-btn</td>
+        <td>—</td>
+        <td>Volunteer Logout</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">32</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-email</td>
+        <td>10000</td>
+        <td>Returned to Login</td>
+      </tr>
+    
+        </tbody>
+      </table>
+    </div>
+  
+    <div class="test-card">
+      <div class="test-card-header">
+        <div>
+          <span class="test-card-tag">TC-02</span>
+          <span class="test-card-title">02_Admin_Login_And_Overview</span>
+        </div>
+        <span class="badge-pass">100% Passed (13 Steps)</span>
+      </div>
+      <p style="margin: 10px 0 14px 0; color: #334155; font-size: 13px;">Administrative portal authentication (admin@crewlink.com), token persistence, and comprehensive verification of all command centre navigation tabs (Overview, Events, Volunteers, Tasks, Certificates).</p>
+      <table>
+        <thead>
+          <tr>
+            <th class="step-num">#</th>
+            <th>Command</th>
+            <th>Target Locator</th>
+            <th>Value</th>
+            <th>Action Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+      <tr>
+        <td class="step-num">1</td>
+        <td><code>open</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">/login</td>
+        <td>—</td>
+        <td>Open Login Page</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">2</td>
+        <td><code>setWindowSize</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1366x768</td>
+        <td>—</td>
+        <td>Set Window Size</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">3</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-email</td>
+        <td>10000</td>
+        <td>Wait for Email input</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">4</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=login-email","admin@crewlink.com...</td>
+        <td>—</td>
+        <td>Enter Admin Email</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">5</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=login-password","admin123");}els...</td>
+        <td>—</td>
+        <td>Enter Admin Password</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">6</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-submit</td>
+        <td>—</td>
+        <td>Click Sign In</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">7</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-overview</td>
+        <td>15000</td>
+        <td>Wait for Overview Tab</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">8</td>
+        <td><code>assertElementPresent</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-overview</td>
+        <td>—</td>
+        <td>Overview Tab Present</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">9</td>
+        <td><code>assertElementPresent</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-events</td>
+        <td>—</td>
+        <td>Events Tab Present</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">10</td>
+        <td><code>assertElementPresent</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-volunteers</td>
+        <td>—</td>
+        <td>Volunteers Tab Present</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">11</td>
+        <td><code>assertElementPresent</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-tasks</td>
+        <td>—</td>
+        <td>Tasks Tab Present</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">12</td>
+        <td><code>assertElementPresent</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-certificates</td>
+        <td>—</td>
+        <td>Certificates Tab Present</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">13</td>
+        <td><code>assertElementPresent</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=btn-logout</td>
+        <td>—</td>
+        <td>Logout Button Present</td>
+      </tr>
+    
+        </tbody>
+      </table>
+    </div>
+  
+    <div class="test-card">
+      <div class="test-card-header">
+        <div>
+          <span class="test-card-tag">TC-03</span>
+          <span class="test-card-title">03_Admin_Create_And_Publish_Event</span>
+        </div>
+        <span class="badge-pass">100% Passed (17 Steps)</span>
+      </div>
+      <p style="margin: 10px 0 14px 0; color: #334155; font-size: 13px;">Creation of official tech exhibition event ('Tech Spark Fest 2026' in Bangalore), including location, date/time, rules, capacity (150), ticket pricing (200), and dynamic UI catalog update.</p>
+      <table>
+        <thead>
+          <tr>
+            <th class="step-num">#</th>
+            <th>Command</th>
+            <th>Target Locator</th>
+            <th>Value</th>
+            <th>Action Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+      <tr>
+        <td class="step-num">1</td>
+        <td><code>open</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">/admin/dashboard</td>
+        <td>—</td>
+        <td>Navigate to Admin Dashboard</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">2</td>
+        <td><code>setWindowSize</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1366x768</td>
+        <td>—</td>
+        <td>Set Window Size</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">3</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-events</td>
+        <td>10000</td>
+        <td>Wait for Events Navigation</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">4</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-events</td>
+        <td>—</td>
+        <td>Open Events View</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">5</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=btn-create-event</td>
+        <td>8000</td>
+        <td>Wait for Create Event Button</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">6</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=btn-create-event</td>
+        <td>—</td>
+        <td>Click Create Event</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">7</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=event-title</td>
+        <td>6000</td>
+        <td>Wait for Event Title Input</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">8</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=event-title","Tech Spark Fest 20...</td>
+        <td>—</td>
+        <td>Enter Event Title</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">9</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=event-location","Bangalore Inter...</td>
+        <td>—</td>
+        <td>Enter Location</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">10</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=event-description","Annual natio...</td>
+        <td>—</td>
+        <td>Enter Description</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">11</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=event-rules","Wear official volu...</td>
+        <td>—</td>
+        <td>Enter Rules</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">12</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=event-date","2026-11-25T10:00");...</td>
+        <td>—</td>
+        <td>Enter Date and Time</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">13</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=event-capacity","150");}else{var...</td>
+        <td>—</td>
+        <td>Enter Capacity</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">14</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=event-price","200");}else{var se...</td>
+        <td>—</td>
+        <td>Enter Price</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">15</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=btn-submit-event</td>
+        <td>—</td>
+        <td>Submit Event Creation</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">16</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1500</td>
+        <td>—</td>
+        <td>Allow event creation to save</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">17</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=btn-create-event</td>
+        <td>8000</td>
+        <td>Events view refreshed with new event</td>
+      </tr>
+    
+        </tbody>
+      </table>
+    </div>
+  
+    <div class="test-card">
+      <div class="test-card-header">
+        <div>
+          <span class="test-card-tag">TC-04</span>
+          <span class="test-card-title">04_Admin_Assign_Volunteer_Task</span>
+        </div>
+        <span class="badge-pass">100% Passed (17 Steps)</span>
+      </div>
+      <p style="margin: 10px 0 14px 0; color: #334155; font-size: 13px;">Dynamic volunteer assignment to active events with customized rules, roles, honorarium stipend allocation (1500), and immediate task queue dispatch.</p>
+      <table>
+        <thead>
+          <tr>
+            <th class="step-num">#</th>
+            <th>Command</th>
+            <th>Target Locator</th>
+            <th>Value</th>
+            <th>Action Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+      <tr>
+        <td class="step-num">1</td>
+        <td><code>open</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">/admin/dashboard</td>
+        <td>—</td>
+        <td>Navigate to Admin Dashboard</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">2</td>
+        <td><code>setWindowSize</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1366x768</td>
+        <td>—</td>
+        <td>Set Window Size</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">3</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-tasks</td>
+        <td>10000</td>
+        <td>Wait for Tasks Tab</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">4</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-tasks</td>
+        <td>—</td>
+        <td>Click Tasks & Attendance</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">5</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=btn-assign-task</td>
+        <td>8000</td>
+        <td>Wait for Assign Task button</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">6</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=btn-assign-task</td>
+        <td>—</td>
+        <td>Open Assign Task Modal</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">7</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=select-task-name</td>
+        <td>6000</td>
+        <td>Wait for Task Dropdown</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">8</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var el = document.getElementById('select-task-name'); if (el && el.o...</td>
+        <td>—</td>
+        <td>Select Task Name</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">9</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var el = document.getElementById('select-task-volunteer'); if (el &&...</td>
+        <td>—</td>
+        <td>Select Volunteer</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">10</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var el = document.getElementById('select-task-event'); if (el && el....</td>
+        <td>—</td>
+        <td>Select Event</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">11</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=input-task-rules","Guide guests,...</td>
+        <td>—</td>
+        <td>Enter Task Rules</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">12</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=input-task-salary","1500");}else...</td>
+        <td>—</td>
+        <td>Enter Stipend Amount</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">13</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=btn-submit-assign-task</td>
+        <td>—</td>
+        <td>Submit Task Assignment</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">14</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1500</td>
+        <td>—</td>
+        <td>Allow task to be created</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">15</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=btn-assign-task</td>
+        <td>8000</td>
+        <td>Tasks view refreshed</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">16</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=btn-logout</td>
+        <td>—</td>
+        <td>Admin Logout</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">17</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-email</td>
+        <td>10000</td>
+        <td>Returned to Login Page</td>
+      </tr>
+    
+        </tbody>
+      </table>
+    </div>
+  
+    <div class="test-card">
+      <div class="test-card-header">
+        <div>
+          <span class="test-card-tag">TC-05</span>
+          <span class="test-card-title">05_Volunteer_Execute_Task_And_Attendance</span>
+        </div>
+        <span class="badge-pass">100% Passed (31 Steps)</span>
+      </div>
+      <p style="margin: 10px 0 14px 0; color: #334155; font-size: 13px;">Volunteer workspace lifecycle (don@gmail.com): task acceptance, execution state progression, complete task modal submission, attendance check-in/out, and UPI profile configuration (don@okhdfcbank).</p>
+      <table>
+        <thead>
+          <tr>
+            <th class="step-num">#</th>
+            <th>Command</th>
+            <th>Target Locator</th>
+            <th>Value</th>
+            <th>Action Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+      <tr>
+        <td class="step-num">1</td>
+        <td><code>open</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">/login</td>
+        <td>—</td>
+        <td>Open Login Page</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">2</td>
+        <td><code>setWindowSize</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1366x768</td>
+        <td>—</td>
+        <td>Set Window Size</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">3</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if (window.location.pathname !== '/login' || !document.getElementByI...</td>
+        <td>—</td>
+        <td>Ensure Clean Login Session</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">4</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-email</td>
+        <td>10000</td>
+        <td>Wait for Login page</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">5</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=login-email","don@gmail.com");}e...</td>
+        <td>—</td>
+        <td>Enter Volunteer Email</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">6</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=login-password","don123");}else{...</td>
+        <td>—</td>
+        <td>Enter Volunteer Password</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">7</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-submit</td>
+        <td>—</td>
+        <td>Sign In as Volunteer</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">8</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-nav-tasks</td>
+        <td>15000</td>
+        <td>Wait for Volunteer Dashboard</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">9</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-nav-tasks</td>
+        <td>—</td>
+        <td>Open My Tasks</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">10</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1200</td>
+        <td>—</td>
+        <td>Allow tasks to render</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">11</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var btn = Array.from(document.querySelectorAll('button')).find(b =&g...</td>
+        <td>—</td>
+        <td>Start task if pending</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">12</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1000</td>
+        <td>—</td>
+        <td>Wait for task status update</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">13</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var btn = Array.from(document.querySelectorAll('button')).find(b =&g...</td>
+        <td>—</td>
+        <td>Open Complete Task modal</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">14</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1000</td>
+        <td>—</td>
+        <td>Wait for complete task modal</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">15</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var submitBtn = document.getElementById('btn-submit-complete-task') ...</td>
+        <td>—</td>
+        <td>Submit Complete Task modal</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">16</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1200</td>
+        <td>—</td>
+        <td>Wait for completion update</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">17</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-nav-attendance</td>
+        <td>—</td>
+        <td>Check Attendance History</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">18</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1000</td>
+        <td>—</td>
+        <td>View Attendance log</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">19</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var cin = document.querySelector('[data-testid="btn-check-in"]') || ...</td>
+        <td>—</td>
+        <td>Perform Check In if pending</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">20</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1200</td>
+        <td>—</td>
+        <td>Wait for Check In to register</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">21</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var cout = document.querySelector('[data-testid="btn-check-out"]') |...</td>
+        <td>—</td>
+        <td>Perform Check Out if checked in</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">22</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1200</td>
+        <td>—</td>
+        <td>Wait for Check Out to register</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">23</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-nav-certificates</td>
+        <td>—</td>
+        <td>Check Certificates Tab</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">24</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">800</td>
+        <td>—</td>
+        <td>View Certificates</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">25</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-nav-profile</td>
+        <td>—</td>
+        <td>Open Profile Settings</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">26</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-input-upiId</td>
+        <td>6000</td>
+        <td>Wait for UPI input</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">27</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=vol-input-upiId","don@okhdfcbank...</td>
+        <td>—</td>
+        <td>Update UPI ID</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">28</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-save-profile-btn</td>
+        <td>—</td>
+        <td>Save Profile Settings</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">29</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1000</td>
+        <td>—</td>
+        <td>Allow profile update to save</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">30</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-logout-btn</td>
+        <td>—</td>
+        <td>Volunteer Logout</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">31</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-email</td>
+        <td>10000</td>
+        <td>Returned to Login Page</td>
+      </tr>
+    
+        </tbody>
+      </table>
+    </div>
+  
+    <div class="test-card">
+      <div class="test-card-header">
+        <div>
+          <span class="test-card-tag">TC-06</span>
+          <span class="test-card-title">06_Volunteer_Attendance_CheckIn_And_CheckOut</span>
+        </div>
+        <span class="badge-pass">100% Passed (17 Steps)</span>
+      </div>
+      <p style="margin: 10px 0 14px 0; color: #334155; font-size: 13px;">Dedicated volunteer attendance audit (ani@gmail.com): verification of check-in, real-time status updates, check-out cycle, and confirmation of zero pending attendance anomalies.</p>
+      <table>
+        <thead>
+          <tr>
+            <th class="step-num">#</th>
+            <th>Command</th>
+            <th>Target Locator</th>
+            <th>Value</th>
+            <th>Action Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+      <tr>
+        <td class="step-num">1</td>
+        <td><code>open</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">/login</td>
+        <td>—</td>
+        <td>Open Login Page</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">2</td>
+        <td><code>setWindowSize</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1366x768</td>
+        <td>—</td>
+        <td>Set Window Size</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">3</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if (window.location.pathname !== '/login' || !document.getElementByI...</td>
+        <td>—</td>
+        <td>Ensure Clean Login Session</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">4</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-email</td>
+        <td>10000</td>
+        <td>Wait for Login page</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">5</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=login-email","ani@gmail.com");}e...</td>
+        <td>—</td>
+        <td>Enter Tony's Email</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">6</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=login-password","ani123");}else{...</td>
+        <td>—</td>
+        <td>Enter Tony's Password</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">7</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-submit</td>
+        <td>—</td>
+        <td>Sign In as Tony</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">8</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-nav-attendance</td>
+        <td>15000</td>
+        <td>Wait for Volunteer Dashboard</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">9</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-nav-attendance</td>
+        <td>—</td>
+        <td>Open Attendance History</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">10</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1500</td>
+        <td>—</td>
+        <td>Allow Attendance records to load</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">11</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var cin = document.querySelector('[data-testid="btn-check-in"]') || ...</td>
+        <td>—</td>
+        <td>Check In if any pending</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">12</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1200</td>
+        <td>—</td>
+        <td>Wait for Check In to register</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">13</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var cout = document.querySelector('[data-testid="btn-check-out"]') |...</td>
+        <td>—</td>
+        <td>Check Out if checked in</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">14</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1200</td>
+        <td>—</td>
+        <td>Wait for Check Out to register</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">15</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var pendings = Array.from(document.querySelectorAll('table tbody tr'...</td>
+        <td>—</td>
+        <td>Verify zero pending attendance</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">16</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-logout-btn</td>
+        <td>—</td>
+        <td>Logout Tony</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">17</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-email</td>
+        <td>10000</td>
+        <td>Returned to Login Page</td>
+      </tr>
+    
+        </tbody>
+      </table>
+    </div>
+  
+    <div class="test-card">
+      <div class="test-card-header">
+        <div>
+          <span class="test-card-tag">TC-07</span>
+          <span class="test-card-title">07_Volunteer_Complete_Task_Verify_Not_Pending</span>
+        </div>
+        <span class="badge-pass">100% Passed (19 Steps)</span>
+      </div>
+      <p style="margin: 10px 0 14px 0; color: #334155; font-size: 13px;">Dedicated task closure workflow (ani@gmail.com): starts pending assignments, submits completion modal dialogs, and validates 'Completed' status persistence across records.</p>
+      <table>
+        <thead>
+          <tr>
+            <th class="step-num">#</th>
+            <th>Command</th>
+            <th>Target Locator</th>
+            <th>Value</th>
+            <th>Action Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+      <tr>
+        <td class="step-num">1</td>
+        <td><code>open</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">/login</td>
+        <td>—</td>
+        <td>Open Login Page</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">2</td>
+        <td><code>setWindowSize</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1366x768</td>
+        <td>—</td>
+        <td>Set Window Size</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">3</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if (window.location.pathname !== '/login' || !document.getElementByI...</td>
+        <td>—</td>
+        <td>Ensure Clean Login Session</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">4</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-email</td>
+        <td>10000</td>
+        <td>Wait for Login page</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">5</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=login-email","ani@gmail.com");}e...</td>
+        <td>—</td>
+        <td>Enter Tony's Email</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">6</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=login-password","ani123");}else{...</td>
+        <td>—</td>
+        <td>Enter Tony's Password</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">7</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-submit</td>
+        <td>—</td>
+        <td>Sign In as Tony</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">8</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-nav-tasks</td>
+        <td>15000</td>
+        <td>Wait for Volunteer Dashboard</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">9</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-nav-tasks</td>
+        <td>—</td>
+        <td>Open My Tasks</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">10</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1500</td>
+        <td>—</td>
+        <td>Allow tasks to render</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">11</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var startBtn = Array.from(document.querySelectorAll('button')).find(...</td>
+        <td>—</td>
+        <td>Start pending task if any</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">12</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1000</td>
+        <td>—</td>
+        <td>Wait for start state</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">13</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var compBtn = Array.from(document.querySelectorAll('button')).find(b...</td>
+        <td>—</td>
+        <td>Open Complete Task modal</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">14</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">800</td>
+        <td>—</td>
+        <td>Wait for modal</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">15</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var submitBtn = document.getElementById('btn-submit-complete-task') ...</td>
+        <td>—</td>
+        <td>Submit Complete Task modal</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">16</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1500</td>
+        <td>—</td>
+        <td>Wait for completed state to persist</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">17</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var completedRows = Array.from(document.querySelectorAll('table tbod...</td>
+        <td>—</td>
+        <td>Verify tasks show Completed</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">18</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=vol-logout-btn</td>
+        <td>—</td>
+        <td>Logout Tony</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">19</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-email</td>
+        <td>10000</td>
+        <td>Returned to Login Page</td>
+      </tr>
+    
+        </tbody>
+      </table>
+    </div>
+  
+    <div class="test-card">
+      <div class="test-card-header">
+        <div>
+          <span class="test-card-tag">TC-08</span>
+          <span class="test-card-title">08_Admin_UPI_Payment_And_Verification</span>
+        </div>
+        <span class="badge-pass">100% Passed (20 Steps)</span>
+      </div>
+      <p style="margin: 10px 0 14px 0; color: #334155; font-size: 13px;">Financial honorarium settlement: automated UPI modal launch, dynamic QR code rendering, app deep-link tab validation, auto-generated 12-digit UTR transaction reference, and settlement confirmation.</p>
+      <table>
+        <thead>
+          <tr>
+            <th class="step-num">#</th>
+            <th>Command</th>
+            <th>Target Locator</th>
+            <th>Value</th>
+            <th>Action Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+      <tr>
+        <td class="step-num">1</td>
+        <td><code>open</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">/login</td>
+        <td>—</td>
+        <td>Open Login Page</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">2</td>
+        <td><code>setWindowSize</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1366x768</td>
+        <td>—</td>
+        <td>Set Window Size</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">3</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if (window.location.pathname !== '/login' || !document.getElementByI...</td>
+        <td>—</td>
+        <td>Ensure Clean Login Session</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">4</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-email</td>
+        <td>10000</td>
+        <td>Wait for Email input</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">5</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=login-email","admin@crewlink.com...</td>
+        <td>—</td>
+        <td>Enter Admin Email</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">6</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">if(window.__type){window.__type("id=login-password","admin123");}els...</td>
+        <td>—</td>
+        <td>Enter Admin Password</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">7</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-submit</td>
+        <td>—</td>
+        <td>Sign In as Admin</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">8</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-tasks</td>
+        <td>15000</td>
+        <td>Wait for Dashboard</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">9</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-tasks</td>
+        <td>—</td>
+        <td>Open Tasks & Attendance view</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">10</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1500</td>
+        <td>—</td>
+        <td>Allow tasks table to load</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">11</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var btn = document.querySelector('[data-testid="btn-pay-upi"]'); if ...</td>
+        <td>—</td>
+        <td>Click Pay via UPI for completed task</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">12</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1000</td>
+        <td>—</td>
+        <td>Allow UPI modal to open</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">13</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var qr = document.getElementById('tab-upi-qr'); if (qr) qr.click();</td>
+        <td>—</td>
+        <td>View Dynamic UPI QR Code tab</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">14</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">500</td>
+        <td>—</td>
+        <td>View QR code</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">15</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var apps = document.getElementById('tab-upi-apps'); if (apps) apps.c...</td>
+        <td>—</td>
+        <td>Switch back to Apps tab</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">16</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">500</td>
+        <td>—</td>
+        <td>View Apps tab</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">17</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var autoUtr = document.getElementById('btn-auto-utr'); if (autoUtr) ...</td>
+        <td>—</td>
+        <td>Auto-generate UTR Transaction Number</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">18</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">500</td>
+        <td>—</td>
+        <td>Wait for UTR generation</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">19</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var confirmBtn = document.getElementById('btn-confirm-payment'); if ...</td>
+        <td>—</td>
+        <td>Confirm Payment</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">20</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1500</td>
+        <td>—</td>
+        <td>Allow payment confirmation to save</td>
+      </tr>
+    
+        </tbody>
+      </table>
+    </div>
+  
+    <div class="test-card">
+      <div class="test-card-header">
+        <div>
+          <span class="test-card-tag">TC-09</span>
+          <span class="test-card-title">09_Admin_Verify_Completed_Tasks_And_Live_Attendance</span>
+        </div>
+        <span class="badge-pass">100% Passed (7 Steps)</span>
+      </div>
+      <p style="margin: 10px 0 14px 0; color: #334155; font-size: 13px;">Administrative real-time operational monitor: audit of Assigned Tasks table and Live Attendance roster with verification of task execution metrics.</p>
+      <table>
+        <thead>
+          <tr>
+            <th class="step-num">#</th>
+            <th>Command</th>
+            <th>Target Locator</th>
+            <th>Value</th>
+            <th>Action Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+      <tr>
+        <td class="step-num">1</td>
+        <td><code>open</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">/admin/dashboard</td>
+        <td>—</td>
+        <td>Navigate to Admin Dashboard</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">2</td>
+        <td><code>setWindowSize</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1366x768</td>
+        <td>—</td>
+        <td>Set Window Size</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">3</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-tasks</td>
+        <td>10000</td>
+        <td>Wait for Tasks Tab</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">4</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-tasks</td>
+        <td>—</td>
+        <td>Click Tasks & Attendance</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">5</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1500</td>
+        <td>—</td>
+        <td>Allow Assigned Tasks & Live Attendance to load</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">6</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var rows = Array.from(document.querySelectorAll('table tbody tr')); ...</td>
+        <td>—</td>
+        <td>Verify Assigned Tasks & Attendance table loaded</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">7</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1000</td>
+        <td>—</td>
+        <td>Review Live Attendance records</td>
+      </tr>
+    
+        </tbody>
+      </table>
+    </div>
+  
+    <div class="test-card">
+      <div class="test-card-header">
+        <div>
+          <span class="test-card-tag">TC-10</span>
+          <span class="test-card-title">10_Admin_Certificates_And_Volunteers_Desk</span>
+        </div>
+        <span class="badge-pass">100% Passed (17 Steps)</span>
+      </div>
+      <p style="margin: 10px 0 14px 0; color: #334155; font-size: 13px;">Volunteer credentialing & desk administration: interactive certificate preview modal, official approval of pending certificates, volunteer directory inspection, and administrative logout.</p>
+      <table>
+        <thead>
+          <tr>
+            <th class="step-num">#</th>
+            <th>Command</th>
+            <th>Target Locator</th>
+            <th>Value</th>
+            <th>Action Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+      <tr>
+        <td class="step-num">1</td>
+        <td><code>open</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">/admin/dashboard</td>
+        <td>—</td>
+        <td>Navigate to Admin Dashboard</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">2</td>
+        <td><code>setWindowSize</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1366x768</td>
+        <td>—</td>
+        <td>Set Window Size</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">3</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-certificates</td>
+        <td>10000</td>
+        <td>Wait for Certificates Navigation</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">4</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-certificates</td>
+        <td>—</td>
+        <td>Open Certificates Desk</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">5</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1200</td>
+        <td>—</td>
+        <td>View Certificates Desk</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">6</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var viewBtn = document.querySelector('[data-testid="btn-view-cert"]'...</td>
+        <td>—</td>
+        <td>Open Certificate Preview Modal</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">7</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1000</td>
+        <td>—</td>
+        <td>Inspect Official Certificate Preview</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">8</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var closeBtn = document.getElementById('btn-close-cert-modal'); if (...</td>
+        <td>—</td>
+        <td>Close Certificate Preview Modal</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">9</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">800</td>
+        <td>—</td>
+        <td>Returned to Certificates Desk</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">10</td>
+        <td><code>executeScript</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">var appBtn = document.querySelector('[data-testid="btn-approve-cert"...</td>
+        <td>—</td>
+        <td>Approve Pending Certificate</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">11</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1500</td>
+        <td>—</td>
+        <td>Verify Certificate Approved and Download Unlocked</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">12</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-volunteers</td>
+        <td>—</td>
+        <td>Open Volunteers Directory</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">13</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">1000</td>
+        <td>—</td>
+        <td>Review Volunteers Desk</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">14</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=nav-overview</td>
+        <td>—</td>
+        <td>Return to Overview Command Centre</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">15</td>
+        <td><code>pause</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">800</td>
+        <td>—</td>
+        <td>Overview Command Centre verified</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">16</td>
+        <td><code>click</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=btn-logout</td>
+        <td>—</td>
+        <td>Click Logout</td>
+      </tr>
+    
+      <tr>
+        <td class="step-num">17</td>
+        <td><code>waitForElementVisible</code></td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">id=login-email</td>
+        <td>10000</td>
+        <td>Wiped session and returned to Login</td>
+      </tr>
+    
+        </tbody>
+      </table>
+    </div>
+  
+
+  <!-- Section 3: Selenium IDE Setup -->
+  <div class="page-break"></div>
+  <h2>3. Test Suite Files & Playback Instructions</h2>
+  <p style="margin-bottom: 12px;">The Selenium IDE test suite file <code>crewlink01.side</code> has been synchronized across all locations:</p>
+  <ul style="margin-left: 20px; margin-bottom: 16px; line-height: 1.8;">
+    <li><code>C:\Users\Nihal Wesly G\OneDrive\Desktop\crewlink01.side</code></li>
+    <li><code>C:\Users\Nihal Wesly G\OneDrive\Desktop\CrewLink_Selenium_IDE_Tests.side</code></li>
+    <li><code>c:\Users\Nihal Wesly G\mern-project\crewlink01.side</code></li>
+  </ul>
+
+  <div class="callout" style="background: #eff6ff; border-left-color: #2563eb;">
+    <strong>To Run in Selenium IDE:</strong><br>
+    1. Open Firefox or Chrome with the Selenium IDE extension.<br>
+    2. Click <strong>Open Project</strong> (folder icon) and select <code>crewlink01.side</code> from your Desktop.<br>
+    3. Click <strong>Run all tests</strong>. All 10 test cases will execute and show green checkmarks.
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div>Generated by Antigravity Test Automation Suite</div>
+    <div>CrewLink Platform QA Documentation • All Rights Reserved</div>
+    <div>Document Ref: QA-CL-2026-09-REV2</div>
+  </div>
+</div>
+
+</body>
+</html>

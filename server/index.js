@@ -72,6 +72,24 @@ app.get('/download-apk', (req, res) => {
   });
 });
 
+// Download and view QA Test Execution Reports
+app.get('/download-report', (req, res) => {
+  const pdfPath = path.join(__dirname, '../CrewLink_Selenium_Test_Report.pdf');
+  if (fs.existsSync(pdfPath)) {
+    res.setHeader('Content-Type', 'application/pdf');
+    return res.download(pdfPath, 'CrewLink_Selenium_Test_Report.pdf');
+  }
+  res.status(404).send('PDF Report not found.');
+});
+
+app.get('/test-report', (req, res) => {
+  const htmlPath = path.join(__dirname, '../CrewLink_Selenium_Test_Report.html');
+  if (fs.existsSync(htmlPath)) {
+    return res.sendFile(htmlPath);
+  }
+  res.status(404).send('HTML Report not found.');
+});
+
 // Test route
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working' });
@@ -96,6 +114,29 @@ app.post('/api/test/cleanup', async (req, res) => {
     await VolunteerProfile.deleteMany({
       user: { $exists: false }
     });
+
+    // Ensure at least one certificate is in 'pending' status so Admin Certificate approval tests can re-run indefinitely
+    const Certificate = require('./models/Certificate');
+    const pendingCert = await Certificate.findOne({ status: 'pending' });
+    if (!pendingCert) {
+      const anyCert = await Certificate.findOne({ certificateId: 'CL-2026-WREC' }) || await Certificate.findOne({});
+      if (anyCert) {
+        await Certificate.updateOne({ _id: anyCert._id }, { $set: { status: 'pending', approvedAt: null, approvedBy: null } });
+        console.log(`[TEST CLEANUP] Reset certificate ${anyCert.certificateId} to pending status`);
+      }
+    }
+
+    // Ensure at least one task is in 'pending' status so Task Desk STATUS column shows Pending
+    const VolunteerTask = require('./models/VolunteerTask');
+    const pendingTask = await VolunteerTask.findOne({ status: 'pending' });
+    if (!pendingTask) {
+      const anyTask = await VolunteerTask.findOne({});
+      if (anyTask) {
+        await VolunteerTask.updateOne({ _id: anyTask._id }, { $set: { status: 'pending' } });
+        console.log(`[TEST CLEANUP] Reset task ${anyTask.taskName} to pending status`);
+      }
+    }
+
     console.log(`[TEST CLEANUP] Removed ${deleted.deletedCount} test user(s)`);
     res.json({ success: true, deletedCount: deleted.deletedCount });
   } catch (err) {

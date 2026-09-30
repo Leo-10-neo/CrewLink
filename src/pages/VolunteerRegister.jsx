@@ -136,9 +136,12 @@ const VolunteerRegister = () => {
             Thank you for registering as a volunteer! Your profile has been automatically verified. 
             You can log in now to access your volunteer dashboard and apply for events.
           </p>
-          <Link to="/login" className="btn-primary w-full py-3 inline-flex justify-center items-center gap-2">
-            Proceed to Login <ArrowRight size={18} />
-          </Link>
+          <Link 
+            to="/login" 
+            id="reg-btn-proceed-login"
+            data-testid="reg-btn-proceed-login"
+            className="btn-primary w-full py-3 inline-flex justify-center items-center gap-2"
+          >Proceed to Login<ArrowRight size={18} /></Link>
         </div>
       </div>
     );

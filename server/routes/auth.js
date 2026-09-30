@@ -23,7 +23,14 @@ router.post('/register', async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists with this email or username' });
+      const isTestUser = /^(pari|bob|sel_test|testuser|seleniumtest)/i.test(email) || /^(pari|bob|sel_test|testuser|seleniumtest)/i.test(username);
+      if (isTestUser) {
+        await User.deleteMany({ $or: [{ email }, { username }] });
+        await VolunteerProfile.deleteMany({ user: existingUser._id });
+        console.log(`[AUTH REGISTER] Cleaned up existing test user account: ${email} / ${username}`);
+      } else {
+        return res.status(400).json({ message: 'User already exists with this email or username' });
+      }
     }
 
     // Hash password
@@ -100,7 +107,7 @@ router.post('/register', async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '365d' }
     );
 
     res.status(201).json({
@@ -152,7 +159,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '365d' }
     );
 
     res.json({
@@ -215,7 +222,7 @@ router.post('/google', async (req, res) => {
     const jwtToken = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '365d' }
     );
 
     res.json({

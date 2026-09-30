@@ -148,10 +148,7 @@ async function runTests(baseUrl = 'http://localhost:5000') {
     await page.waitForSelector('#select-task-name', { timeout: 6000 });
     await page.selectOption('#select-task-name', { index: 1 });
 
-    const volunteerSelect = page.locator('#select-task-volunteer');
-    await volunteerSelect.selectOption({ label: 'don (don@gmail.com)' }).catch(async () => {
-      await volunteerSelect.selectOption({ index: 1 });
-    });
+    await page.selectOption('#select-task-volunteer', { index: 1 });
 
     const eventSelect = page.locator('#select-task-event');
     await eventSelect.selectOption({ index: 1 });
@@ -187,12 +184,27 @@ async function runTests(baseUrl = 'http://localhost:5000') {
     const completeBtn = page.locator('button:has-text("Complete task"), [data-testid="btn-task-action"]:has-text("Complete task")').first();
     if (await completeBtn.isVisible()) {
       await completeBtn.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(600);
+      const submitModal = page.locator('#btn-submit-complete-task, [data-testid="btn-submit-complete-task"]').first();
+      if (await submitModal.isVisible()) {
+        await submitModal.click();
+        await page.waitForTimeout(1000);
+      }
     }
 
     // Attendance tab
     await page.click('#vol-nav-attendance');
-    await page.waitForTimeout(600);
+    await page.waitForTimeout(800);
+    const checkInBtn = page.locator('[data-testid="btn-check-in"], button:has-text("Check In")').first();
+    if (await checkInBtn.isVisible()) {
+      await checkInBtn.click();
+      await page.waitForTimeout(1000);
+    }
+    const checkOutBtn = page.locator('[data-testid="btn-check-out"], button:has-text("Check Out")').first();
+    if (await checkOutBtn.isVisible()) {
+      await checkOutBtn.click();
+      await page.waitForTimeout(1000);
+    }
 
     // Profile UPI
     await page.click('#vol-nav-profile');
@@ -206,8 +218,73 @@ async function runTests(baseUrl = 'http://localhost:5000') {
     await page.waitForSelector('#login-email', { timeout: 10000 });
   });
 
-  // TEST 6
-  await test('06_Admin_UPI_Payment_And_Verification', async () => {
+  // TEST 6: Dedicated Volunteer Attendance Check In & Check Out (Tony)
+  await test('06_Volunteer_Attendance_CheckIn_And_CheckOut', async () => {
+    await page.fill('#login-email', 'ani@gmail.com');
+    await page.fill('#login-password', 'ani123');
+    await page.click('#login-submit');
+
+    await page.waitForSelector('#vol-nav-attendance', { timeout: 15000 });
+    await page.click('#vol-nav-attendance');
+    await page.waitForTimeout(1000);
+
+    const checkInBtn = page.locator('[data-testid="btn-check-in"], button:has-text("Check In")').first();
+    if (await checkInBtn.isVisible()) {
+      await checkInBtn.click();
+      await page.waitForTimeout(1000);
+    }
+    const checkOutBtn = page.locator('[data-testid="btn-check-out"], button:has-text("Check Out")').first();
+    if (await checkOutBtn.isVisible()) {
+      await checkOutBtn.click();
+      await page.waitForTimeout(1000);
+    }
+
+    const attendanceText = await page.textContent('body');
+    if (!attendanceText.includes('Present') && !attendanceText.includes('Completed')) {
+      throw new Error('Attendance not marked Present or Completed');
+    }
+
+    await page.click('#vol-logout-btn');
+    await page.waitForSelector('#login-email', { timeout: 10000 });
+  });
+
+  // TEST 7: Dedicated Volunteer Complete Tasks - Verify Not Pending (Tony)
+  await test('07_Volunteer_Complete_Task_Verify_Not_Pending', async () => {
+    await page.fill('#login-email', 'ani@gmail.com');
+    await page.fill('#login-password', 'ani123');
+    await page.click('#login-submit');
+
+    await page.waitForSelector('#vol-nav-tasks', { timeout: 15000 });
+    await page.click('#vol-nav-tasks');
+    await page.waitForTimeout(1000);
+
+    const startBtn = page.locator('button:has-text("Start task")').first();
+    if (await startBtn.isVisible()) {
+      await startBtn.click();
+      await page.waitForTimeout(1000);
+    }
+    const compBtn = page.locator('button:has-text("Complete task")').first();
+    if (await compBtn.isVisible()) {
+      await compBtn.click();
+      await page.waitForTimeout(600);
+      const submitModal = page.locator('#btn-submit-complete-task').first();
+      if (await submitModal.isVisible()) {
+        await submitModal.click();
+        await page.waitForTimeout(1000);
+      }
+    }
+
+    const tasksText = await page.textContent('body');
+    if (!tasksText.includes('Completed')) {
+      throw new Error('Completed task status not found');
+    }
+
+    await page.click('#vol-logout-btn');
+    await page.waitForSelector('#login-email', { timeout: 10000 });
+  });
+
+  // TEST 8: Admin UPI Payment Modal & Verification
+  await test('08_Admin_UPI_Payment_And_Verification', async () => {
     // Ensure at least one task is completed & unpaid for UPI modal test
     await mongoose.connection.db.collection('volunteertasks').updateOne(
       {},
@@ -248,13 +325,42 @@ async function runTests(baseUrl = 'http://localhost:5000') {
     }
   });
 
-  // TEST 7
-  await test('07_Admin_Certificates_And_Volunteers_Desk', async () => {
+  // TEST 9: Admin Verify Completed Tasks and Live Attendance
+  await test('09_Admin_Verify_Completed_Tasks_And_Live_Attendance', async () => {
+    await page.waitForSelector('#nav-tasks', { timeout: 10000 });
+    await page.click('#nav-tasks');
+    await page.waitForTimeout(1000);
+
+    const tableText = await page.textContent('table');
+    if (!tableText.includes('Completed') && !tableText.includes('present')) {
+      throw new Error('Assigned Tasks & Live Attendance not displaying completed or present state');
+    }
+  });
+
+  // TEST 10: Admin Certificates Approval & Volunteers Desk Management
+  await test('10_Admin_Certificates_And_Volunteers_Desk', async () => {
     await page.click('#nav-certificates');
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(1000);
     const certText = await page.textContent('body');
     if (!certText.includes('Certificates')) {
       throw new Error('Certificates view not loaded');
+    }
+
+    // View Certificate Modal
+    const viewBtn = await page.$('[data-testid="btn-view-cert"]');
+    if (viewBtn) {
+      await viewBtn.click();
+      await page.waitForSelector('.certificate-modal-backdrop, [data-testid="btn-close-cert-modal"]', { timeout: 5000 });
+      await page.waitForTimeout(500);
+      await page.click('[data-testid="btn-close-cert-modal"]');
+      await page.waitForTimeout(500);
+    }
+
+    // Approve Pending Certificate
+    const approveBtn = await page.$('[data-testid="btn-approve-cert"]');
+    if (approveBtn) {
+      await approveBtn.click();
+      await page.waitForTimeout(1500);
     }
 
     await page.click('#nav-volunteers');
@@ -263,6 +369,9 @@ async function runTests(baseUrl = 'http://localhost:5000') {
     if (!volText.includes('Volunteer')) {
       throw new Error('Volunteers view not loaded');
     }
+
+    await page.click('#nav-overview');
+    await page.waitForTimeout(600);
 
     await page.click('#btn-logout');
     await page.waitForSelector('#login-email', { timeout: 10000 });
@@ -282,7 +391,7 @@ async function runTests(baseUrl = 'http://localhost:5000') {
 async function main() {
   await runTests('http://localhost:5000');
   await runTests('http://localhost:5173');
-  console.log('\n🎉 ALL 7 TESTS IN CREWLINK01 SUITE PASSED ON BOTH PORTS WITH 0 ERRORS!\n');
+  console.log('\n🎉 ALL 10 TESTS IN CREWLINK01 SUITE PASSED ON BOTH PORTS WITH 0 ERRORS!\n');
   process.exit(0);
 }
 

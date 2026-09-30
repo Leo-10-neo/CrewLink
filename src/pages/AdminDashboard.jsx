@@ -8,6 +8,9 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import VoiceNotePlayer from '../components/VoiceNotePlayer';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
+import html2canvas from 'html2canvas';
+import { Share } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import { API_BASE, API_URL, autoDiscoverTunnelUrl } from '../services/api';
 
 const emptyEvent = { title: '', description: '', rules: '', date: '', location: '', capacity: '', price: '', imageUrl: '' };
@@ -38,6 +41,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [isDownloading, setIsDownloading] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [eventForm, setEventForm] = useState(emptyEvent);
@@ -254,6 +258,55 @@ export default function AdminDashboard() {
   };
 
   const signOut = () => { logout(); navigate('/login'); };
+
+  const handleDownloadCertificate = async (certificate) => {
+    setIsDownloading(true);
+    try {
+      const certElement = document.getElementById('certificate-print-area');
+      if (!certElement) return;
+
+      const canvas = await html2canvas(certElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+
+      const dataUrl = canvas.toDataURL('image/png');
+
+      if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
+        try {
+          const fileName = `Certificate_${certificate.certificateId}.png`;
+          const savedFile = await Filesystem.writeFile({
+            path: fileName,
+            data: dataUrl,
+            directory: Directory.Cache
+          });
+
+          await Share.share({
+            title: 'CrewLink Certificate',
+            text: 'Check out this certificate!',
+            url: savedFile.uri,
+            dialogTitle: 'Share or Save Certificate'
+          });
+        } catch (e) {
+          console.error('Native save/share failed:', e);
+          alert('Failed to save or share certificate on device.');
+        }
+      } else {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `Certificate_${certificate.certificateId}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('Error downloading certificate:', error);
+      alert('Failed to generate certificate image.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
   const markNotificationAsRead = async (id) => {
     try {
       await axios.put(`${API_URL}/notifications/${id}/read`, {}, config);
@@ -1311,6 +1364,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                     <td style={{ padding: '16px 18px', textAlign: 'right' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
                         <button
+                          id={`btn-approve-application-${app._id}`}
+                          data-testid="btn-approve-application"
                           disabled={actionLoading === app._id}
                           onClick={() => handleApplicationStatus(app._id, 'approved')}
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', background: '#059669', color: '#fff', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', opacity: actionLoading === app._id ? 0.6 : 1 }}
@@ -1318,6 +1373,8 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                           <Check size={14} /> Approve
                         </button>
                         <button
+                          id={`btn-reject-application-${app._id}`}
+                          data-testid="btn-reject-application"
                           disabled={actionLoading === app._id}
                           onClick={() => handleApplicationStatus(app._id, 'rejected')}
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', cursor: 'pointer', transition: 'background-color 0.2s', opacity: actionLoading === app._id ? 0.6 : 1 }}
@@ -1488,14 +1545,18 @@ const TasksView = ({ token, volunteers, events, refreshTrigger, user, initialOpe
                         ) : (
                           <>
                             <button 
+                              id={`btn-att-present-${task._id}`}
+                              data-testid="btn-att-present"
                               onClick={() => markAttendance(task, 'present')}
-                              className="bg-indigo-50 text-indigo-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition-colors whitespace-nowrap"
+                              className="bg-indigo-50 text-indigo-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition-colors whitespace-nowrap cursor-pointer"
                             >
                               Present
                             </button>
                             <button 
+                              id={`btn-att-absent-${task._id}`}
+                              data-testid="btn-att-absent"
                               onClick={() => markAttendance(task, 'absent')}
-                              className="bg-red-50 text-red-600 px-3.5 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors whitespace-nowrap"
+                              className="bg-red-50 text-red-600 px-3.5 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors whitespace-nowrap cursor-pointer"
                             >
                               Absent
                             </button>
@@ -2372,6 +2433,72 @@ const CertificatesView = ({ certificates, pendingVolunteers, onGenerate, token }
   const [selectedEvents, setSelectedEvents] = useState({});
   const [selectedCert, setSelectedCert] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadCertificate = async (certificate) => {
+    setIsDownloading(true);
+    try {
+      const certElement = document.getElementById('certificate-print-area');
+      if (!certElement) return;
+
+      const canvas = await html2canvas(certElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+
+      const dataUrl = canvas.toDataURL('image/png');
+
+      if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
+        try {
+          const fileName = `Certificate_${certificate.certificateId}.png`;
+          const savedFile = await Filesystem.writeFile({
+            path: fileName,
+            data: dataUrl,
+            directory: Directory.Cache
+          });
+
+          await Share.share({
+            title: 'CrewLink Certificate',
+            text: 'Check out this certificate!',
+            url: savedFile.uri,
+            dialogTitle: 'Share or Save Certificate'
+          });
+        } catch (e) {
+          console.error('Native save/share failed:', e);
+          alert('Failed to save or share certificate on device.');
+        }
+      } else {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `Certificate_${certificate.certificateId}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('Error downloading certificate:', error);
+      alert('Failed to generate certificate image.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDelete = async (certId) => {
+    if (!window.confirm('Are you sure you want to delete this certificate?')) return;
+    setDeletingId(certId);
+    try {
+      await axios.delete(`${API_URL}/admin/certificates/${certId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await onGenerate();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete certificate');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleGenerate = async (volunteerId) => {
     const eventId = selectedEvents[volunteerId];
@@ -2435,8 +2562,9 @@ const CertificatesView = ({ certificates, pendingVolunteers, onGenerate, token }
   };
 
   return (
-    <div className="table-panel">
-      <div className="table-head cert-table-head">
+    <>
+      <div className="table-panel">
+        <div className="table-head cert-table-head">
         <span>VOLUNTEER</span>
         <span>EVENT</span>
         <span>CREW POINTS</span>
@@ -2470,6 +2598,8 @@ const CertificatesView = ({ certificates, pendingVolunteers, onGenerate, token }
           <div className="row-actions flex items-center gap-1.5">
             {cert.status !== 'approved' && (
               <button 
+                id={`btn-approve-cert-${cert._id}`}
+                data-testid="btn-approve-cert"
                 onClick={() => handleApprove(cert._id)}
                 disabled={updatingId === cert._id}
                 className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-colors inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
@@ -2481,6 +2611,8 @@ const CertificatesView = ({ certificates, pendingVolunteers, onGenerate, token }
             )}
             {cert.status === 'pending' && (
               <button 
+                id={`btn-reject-cert-${cert._id}`}
+                data-testid="btn-reject-cert"
                 onClick={() => handleReject(cert._id)}
                 disabled={updatingId === cert._id}
                 className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium text-xs rounded-lg transition-colors cursor-pointer"
@@ -2490,6 +2622,8 @@ const CertificatesView = ({ certificates, pendingVolunteers, onGenerate, token }
               </button>
             )}
             <button 
+              id={`btn-view-cert-${cert._id}`}
+              data-testid="btn-view-cert"
               onClick={() => openCertificate(cert, false)} 
               className="px-3 py-1.5 bg-gray-100 text-gray-700 font-medium text-xs rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
             >
@@ -2497,6 +2631,8 @@ const CertificatesView = ({ certificates, pendingVolunteers, onGenerate, token }
             </button>
             {cert.status === 'approved' && (
               <button 
+                id={`btn-download-cert-${cert._id}`}
+                data-testid="btn-download-cert"
                 onClick={() => openCertificate(cert, true)} 
                 className="px-3.5 py-1.5 bg-indigo-600 text-white font-medium text-xs rounded-lg hover:bg-indigo-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
               >
@@ -2504,6 +2640,17 @@ const CertificatesView = ({ certificates, pendingVolunteers, onGenerate, token }
                 <span>Download</span>
               </button>
             )}
+            <button
+              id={`btn-delete-cert-${cert._id}`}
+              data-testid="btn-delete-cert"
+              onClick={() => handleDelete(cert._id)}
+              disabled={deletingId === cert._id}
+              className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium text-xs rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              title="Delete Certificate"
+            >
+              <Trash2 size={13} />
+              <span>{deletingId === cert._id ? 'Deleting...' : 'Delete'}</span>
+            </button>
           </div>
         </div>
       ))}
@@ -2564,26 +2711,39 @@ const CertificatesView = ({ certificates, pendingVolunteers, onGenerate, token }
       {certificates.length === 0 && pendingVolunteers.length === 0 && (
         <div className="empty-table-state">No certificates available or pending. Approve volunteers for events first.</div>
       )}
+      </div>
 
       {/* Certificate Modal for Preview and Download/Print */}
       {selectedCert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs overflow-y-auto certificate-modal-backdrop">
+        <div 
+          className="fixed inset-0 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs overflow-y-auto certificate-modal-backdrop"
+          style={{ zIndex: 99999 }}
+        >
           <div className="relative w-full max-w-4xl my-8">
             {/* Modal Controls Bar */}
-            <div className="flex items-center justify-between mb-3 px-2 certificate-no-print">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 px-2 certificate-no-print gap-3">
               <span className="text-white text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
                 <Award size={16} className="text-amber-400" />
                 Certificate Preview & Download
               </span>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
                 <button
-                  onClick={() => window.print()}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                  id="btn-print-cert-modal"
+                  data-testid="btn-print-cert-modal"
+                  onClick={() => handleDownloadCertificate(selectedCert)}
+                  disabled={isDownloading}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                 >
-                  <Printer size={15} />
-                  <span>Download / Print PDF</span>
+                  {isDownloading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Download size={15} />
+                  )}
+                  <span>{isDownloading ? 'Saving...' : 'Download & Save'}</span>
                 </button>
                 <button
+                  id="btn-close-cert-modal"
+                  data-testid="btn-close-cert-modal"
                   onClick={() => setSelectedCert(null)}
                   className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors cursor-pointer"
                   aria-label="Close"
@@ -2594,7 +2754,11 @@ const CertificatesView = ({ certificates, pendingVolunteers, onGenerate, token }
             </div>
 
             {/* Certificate Paper */}
-            <div className="certificate-print-area bg-white p-3 sm:p-8 rounded-2xl sm:rounded-3xl shadow-2xl flex items-center justify-center">
+            <div 
+              id="certificate-print-area"
+              data-testid="certificate-print-area"
+              className="certificate-print-area bg-white p-3 sm:p-8 rounded-2xl sm:rounded-3xl shadow-2xl flex items-center justify-center"
+            >
               <div 
                 className="w-full max-w-[820px] bg-[#fffdfa] border-4 sm:border-8 border-double border-[#d4af37] rounded-xl sm:rounded-2xl p-4 sm:p-12 relative text-center shadow-lg overflow-hidden select-none"
                 style={{ fontFamily: "'Georgia', serif" }}
@@ -2671,7 +2835,7 @@ const CertificatesView = ({ certificates, pendingVolunteers, onGenerate, token }
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 const EventModal = ({ form, setForm, editing, onClose, onSubmit }) => {

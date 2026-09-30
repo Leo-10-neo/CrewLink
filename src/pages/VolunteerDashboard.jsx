@@ -6,8 +6,12 @@ import { useNotification } from '../context/NotificationContext';
 import {
   LayoutDashboard, User, ClipboardList, Clock, Award,
   LogOut, Search, Bell, CalendarDays, CheckCircle2, X, MessageSquare, Download, FileText, Lock, Menu,
-  ShieldAlert, ScrollText, ShieldCheck, Smartphone, Copy
+  ShieldAlert, ScrollText, ShieldCheck, Smartphone, Copy, Trash2
 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { Share } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 
 import { API_BASE, API_URL } from '../services/api';
 
@@ -28,6 +32,7 @@ const VolunteerDashboard = () => {
   const [certificates, setCertificates] = useState([]);
   const [certMeta, setCertMeta] = useState({ points: 0, requiredPoints: 500, isEligible: false });
   const [selectedCert, setSelectedCert] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [claimingCert, setClaimingCert] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -223,6 +228,55 @@ const VolunteerDashboard = () => {
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
+  const handleDownloadCertificate = async () => {
+    setIsDownloading(true);
+    try {
+      const certElement = document.getElementById('certificate-print-area');
+      if (!certElement) return;
+
+      const canvas = await html2canvas(certElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+
+      const dataUrl = canvas.toDataURL('image/png');
+
+      if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
+        try {
+          const fileName = `Certificate_${selectedCert.certificateId}.png`;
+          const savedFile = await Filesystem.writeFile({
+            path: fileName,
+            data: dataUrl,
+            directory: Directory.Cache
+          });
+
+          await Share.share({
+            title: 'My CrewLink Certificate',
+            text: 'Check out my volunteer certificate!',
+            url: savedFile.uri,
+            dialogTitle: 'Share or Save Certificate'
+          });
+        } catch (e) {
+          console.error('Native save/share failed:', e);
+          alert('Failed to save or share certificate on device.');
+        }
+      } else {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `Certificate_${selectedCert.certificateId}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('Error downloading certificate:', error);
+      alert('Failed to generate certificate image.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const markNotificationAsRead = async (id) => {
     try {
       await axios.put(`${API_URL}/notifications/${id}/read`, {}, { headers });
@@ -390,6 +444,17 @@ const VolunteerDashboard = () => {
       showToast(e.response?.data?.message || 'Failed to generate certificate');
     } finally {
       setClaimingCert(false);
+    }
+  };
+
+  const handleDeleteCertificate = async (certId) => {
+    if (!window.confirm('Are you sure you want to delete this certificate?')) return;
+    try {
+      await axios.delete(`${API}/certificates/${certId}`, { headers });
+      await fetchCertificates();
+      showToast('Certificate deleted successfully');
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Failed to delete certificate');
     }
   };
 
@@ -969,7 +1034,7 @@ const VolunteerDashboard = () => {
               </button>
             </div>
             <div className="p-6">
-              <p className="text-sm text-gray-600 mb-4">Please upload a photo of your completed work (Required).</p>
+              <p className="text-sm text-gray-600 mb-4">You can optionally upload a photo of your completed work:</p>
               <div className="mb-6">
                 <input 
                   type="file" 
@@ -993,20 +1058,21 @@ const VolunteerDashboard = () => {
               <div className="flex justify-end space-x-3">
                 <button 
                   onClick={() => { setCompletingTask(null); setTaskPhoto(''); }}
-                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button 
+                  id="btn-submit-complete-task"
+                  data-testid="btn-submit-complete-task"
                   onClick={() => {
-                    handleUpdateTaskStatus(completingTask._id, 'completed', taskPhoto);
+                    handleUpdateTaskStatus(completingTask._id, 'completed', taskPhoto || '');
                     setCompletingTask(null);
                     setTaskPhoto('');
                   }}
-                  disabled={!taskPhoto}
-                  className="px-4 py-2 text-sm font-medium text-white bg-[#5b52f6] hover:bg-[#4a42d4] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-5 py-2 text-sm font-semibold text-white bg-[#5b52f6] hover:bg-[#4a42d4] rounded-lg transition-colors cursor-pointer shadow-sm active:scale-95"
                 >
-                  Submit
+                  Submit & Complete
                 </button>
               </div>
             </div>
@@ -1114,15 +1180,19 @@ const VolunteerDashboard = () => {
                   <td className="py-5 px-6 text-right">
                     {r.status === 'pending' ? (
                       <button
+                        id={`btn-check-in-${r._id}`}
+                        data-testid="btn-check-in"
                         onClick={() => handleToggleAttendance(r._id)}
-                        className="px-5 py-2 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-200 transition-all active:scale-95"
+                        className="px-5 py-2 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-200 transition-all active:scale-95 cursor-pointer"
                       >
                         Check In
                       </button>
                     ) : r.status === 'present' && !r.checkOut ? (
                       <button
+                        id={`btn-check-out-${r._id}`}
+                        data-testid="btn-check-out"
                         onClick={() => handleToggleAttendance(r._id)}
-                        className="px-5 py-2 bg-white border-2 border-gray-200 text-gray-700 font-bold text-sm rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all active:scale-95"
+                        className="px-5 py-2 bg-white border-2 border-gray-200 text-gray-700 font-bold text-sm rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all active:scale-95 cursor-pointer"
                       >
                         Check Out
                       </button>
@@ -1283,6 +1353,8 @@ const VolunteerDashboard = () => {
                       <td className="py-5 px-6 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button 
+                            id={`btn-vol-view-cert-${c._id}`}
+                            data-testid="btn-vol-view-cert"
                             onClick={() => openCertificate(c, false)}
                             className="px-3.5 py-1.5 bg-gray-100 text-gray-700 font-semibold text-xs rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
                           >
@@ -1290,6 +1362,8 @@ const VolunteerDashboard = () => {
                           </button>
                           {c.status === 'approved' ? (
                             <button 
+                              id={`btn-vol-download-cert-${c._id}`}
+                              data-testid="btn-vol-download-cert"
                               onClick={() => openCertificate(c, true)}
                               className="px-4 py-1.5 bg-indigo-600 text-white font-semibold text-xs rounded-lg hover:bg-indigo-700 shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                             >
@@ -1298,6 +1372,7 @@ const VolunteerDashboard = () => {
                             </button>
                           ) : (
                             <button 
+                              id={`btn-vol-pending-cert-${c._id}`}
                               disabled
                               className="px-3.5 py-1.5 bg-gray-100 text-gray-400 font-medium text-xs rounded-lg cursor-not-allowed flex items-center gap-1.5"
                               title="Certificate will be downloadable once approved by admin"
@@ -1306,6 +1381,15 @@ const VolunteerDashboard = () => {
                               <span>Pending</span>
                             </button>
                           )}
+                          <button
+                            id={`btn-vol-delete-cert-${c._id}`}
+                            data-testid="btn-vol-delete-cert"
+                            onClick={() => handleDeleteCertificate(c._id)}
+                            className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete Certificate"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1627,6 +1711,8 @@ const VolunteerDashboard = () => {
                       </button>
                     ) : (
                       <button
+                        id={`btn-apply-event-task-${ev._id}`}
+                        data-testid="btn-apply-event-task"
                         onClick={() => openApplyModal(ev)}
                         className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
                       >
@@ -1643,7 +1729,11 @@ const VolunteerDashboard = () => {
 
         {/* APPLY FOR TASK MODAL */}
         {showApplyModal && selectedEventForApply && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div
+            id="apply-task-modal"
+            data-testid="apply-task-modal"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto"
+          >
             <div className="glass-panel bg-white/95 max-w-lg w-full rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/80 relative my-8 animate-scale-up">
               <div className="flex items-center justify-between pb-4 mb-5 border-b border-gray-100">
                 <div>
@@ -1675,6 +1765,8 @@ const VolunteerDashboard = () => {
                     Select Event Role / Task *
                   </label>
                   <select
+                    id="apply-task-name"
+                    data-testid="apply-task-name"
                     value={applyForm.taskName}
                     onChange={(e) => setApplyForm({ ...applyForm, taskName: e.target.value })}
                     className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-purple-200 outline-none"
@@ -1713,6 +1805,8 @@ const VolunteerDashboard = () => {
                     Requested Compensation / Salary (₹) *
                   </label>
                   <input 
+                    id="apply-salary"
+                    data-testid="apply-salary"
                     type="number"
                     min="200"
                     step="50"
@@ -1730,6 +1824,8 @@ const VolunteerDashboard = () => {
                     Experience or Application Note (Optional)
                   </label>
                   <textarea 
+                    id="apply-note"
+                    data-testid="apply-note"
                     rows="3"
                     value={applyForm.note}
                     onChange={(e) => setApplyForm({ ...applyForm, note: e.target.value })}
@@ -1740,6 +1836,8 @@ const VolunteerDashboard = () => {
 
                 <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-3">
                   <button
+                    id="btn-apply-cancel"
+                    data-testid="btn-apply-cancel"
                     type="button"
                     onClick={() => setShowApplyModal(false)}
                     className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-xs hover:bg-gray-50 transition-colors cursor-pointer"
@@ -1747,6 +1845,8 @@ const VolunteerDashboard = () => {
                     Cancel
                   </button>
                   <button
+                    id="btn-apply-submit"
+                    data-testid="btn-apply-submit"
                     type="submit"
                     disabled={submittingApply}
                     className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all disabled:opacity-50 cursor-pointer"
@@ -2176,32 +2276,41 @@ const VolunteerDashboard = () => {
         <div className="modal-backdrop certificate-no-print" style={{ zIndex: 9999 }}>
           <div className="bg-white rounded-3xl max-w-4xl w-full p-6 md:p-8 max-h-[96vh] overflow-y-auto shadow-2xl relative">
             {/* Modal Top Bar */}
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100 certificate-no-print">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-4 border-b border-gray-100 certificate-no-print gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">🎓</span>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg">Official Certificate of Appreciation</h3>
-                  <p className="text-xs text-gray-400 font-mono">ID: {selectedCert.certificateId}</p>
+                  <h3 className="font-bold text-gray-900 text-lg leading-tight">Official Certificate of Appreciation</h3>
+                  <p className="text-xs text-gray-400 font-mono mt-1">ID: {selectedCert.certificateId}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
                 {selectedCert.status === 'approved' ? (
                   <button
-                    onClick={() => window.print()}
-                    className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm rounded-xl hover:shadow-lg hover:shadow-indigo-200 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                    id="btn-vol-print-cert-modal"
+                    data-testid="btn-vol-print-cert-modal"
+                    onClick={handleDownloadCertificate}
+                    disabled={isDownloading}
+                    className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm rounded-xl hover:shadow-lg hover:shadow-indigo-200 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
-                    <Download size={16} />
-                    <span>Download / Print PDF</span>
+                    {isDownloading ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Download size={16} />
+                    )}
+                    <span>{isDownloading ? 'Saving...' : 'Download & Save'}</span>
                   </button>
                 ) : (
-                  <span className="px-3.5 py-2 bg-amber-50 text-amber-700 font-semibold text-xs rounded-xl border border-amber-200 flex items-center gap-1.5">
+                  <span className="flex-1 sm:flex-none px-3.5 py-2 bg-amber-50 text-amber-700 font-semibold text-xs rounded-xl border border-amber-200 flex items-center justify-center gap-1.5">
                     <Clock size={14} />
                     <span>Awaiting Admin Approval</span>
                   </span>
                 )}
                 <button
+                  id="btn-vol-close-cert-modal"
+                  data-testid="btn-vol-close-cert-modal"
                   onClick={() => setSelectedCert(null)}
-                  className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                  className="p-2.5 sm:p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer bg-gray-50 sm:bg-transparent shrink-0"
                 >
                   <X size={20} />
                 </button>
