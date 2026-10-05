@@ -43,6 +43,8 @@ const VolunteerDashboard = () => {
   const [upiReceiptTask, setUpiReceiptTask] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const [photoPreview, setPhotoPreview] = useState(null);
 
   // Events tab states
   const [eventsList, setEventsList] = useState([]);
@@ -112,6 +114,7 @@ const VolunteerDashboard = () => {
         emergencyContact: savedEmergencyContact,
         bloodGroup: data.bloodGroup || source.bloodGroup || ''
       });
+      setPhotoPreview(prev => (prev === null ? (data.photo || source.photo || '') : prev));
     } catch (e) { console.error(e); }
   };
 
@@ -150,7 +153,6 @@ const VolunteerDashboard = () => {
     const handleReconnected = () => {
       console.log('✅ API reconnected. Refreshing volunteer data...');
       fetchOverview();
-      fetchProfile();
       fetchEventsWithStatus(false);
     };
 
@@ -158,7 +160,6 @@ const VolunteerDashboard = () => {
       if (!document.hidden) {
         setTimeout(() => {
           fetchOverview();
-          fetchProfile();
           fetchEventsWithStatus(false);
         }, 500);
       }
@@ -371,6 +372,64 @@ const VolunteerDashboard = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   // ── Handlers ──────────────────────────────
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('Please select a valid image file');
+      return;
+    }
+
+    setPhotoError('');
+    const reader = new FileReader();
+    reader.onerror = () => {
+      setPhotoError('Failed to read image file');
+    };
+    reader.onload = (event) => {
+      const result = event.target.result;
+      // 1. Immediately show the preview so the user sees their photo right away
+      setPhotoPreview(result);
+      setProfile(prev => ({
+        ...prev,
+        photo: result
+      }));
+
+      // 2. Perform background canvas compression to keep payload optimized for MongoDB
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxDim = 800;
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.85);
+          setPhotoPreview(compressed);
+          setProfile(prev => ({
+            ...prev,
+            photo: compressed
+          }));
+        } catch (err) {
+          console.warn('Canvas resize failed:', err);
+        }
+      };
+      img.src = result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
@@ -380,12 +439,14 @@ const VolunteerDashboard = () => {
         return [];
       };
 
+      const finalPhoto = photoPreview !== null ? photoPreview : (profile?.photo !== undefined ? profile.photo : (profile?.user?.photo || ''));
+
       const { data } = await axios.put(`${API}/profile`, {
         fullName: profile?.fullName || profile?.user?.fullName || '',
         city: profile?.city || profile?.user?.city || '',
         phone: profile?.phone || profile?.user?.phone || '',
         upiId: profile?.upiId || profile?.user?.upiId || '',
-        photo: profile?.photo || profile?.user?.photo || '',
+        photo: finalPhoto,
         aadharNo: profile?.aadharNo || profile?.user?.aadharNo || '',
         panCardNo: profile?.panCardNo || profile?.user?.panCardNo || '',
         address: profile?.address || profile?.user?.address || '',
@@ -400,6 +461,7 @@ const VolunteerDashboard = () => {
         bloodGroup: profile?.bloodGroup || profile?.user?.bloodGroup || '',
       }, { headers });
       setProfile(data);
+      setPhotoPreview(data.photo || '');
       showToast('Profile saved');
     } catch (e) { showToast('Failed to save'); }
     setSaving(false);
@@ -623,6 +685,8 @@ const VolunteerDashboard = () => {
       emergencyContact: { ...emergencyContact, [key]: value }
     });
 
+    const displayPhoto = photoPreview !== null ? photoPreview : profileValue('photo');
+
     return (
       <div className="max-w-4xl mx-auto animate-fade-in">
         <div className="mb-6">
@@ -640,7 +704,6 @@ const VolunteerDashboard = () => {
             {field('Full name', 'fullName', 'Your full name')}
             {field('City', 'city', 'e.g. Bengaluru')}
             {field('Phone', 'phone', '9876503333')}
-            {field('UPI ID (for receiving payments)', 'upiId', 'e.g. 9876543210@upi or volunteer@okaxis')}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
               <input
@@ -704,12 +767,56 @@ const VolunteerDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Volunteer Photo</label>
-              <div className="px-4 py-3 border-l-4 border-blue-400 bg-blue-50/50 rounded-r-lg">
-                {profileValue('photo') ? (
-                  <img src={profileValue('photo')} alt="Volunteer" className="w-24 h-24 object-cover rounded-md border border-gray-200" />
-                ) : (
-                  <span className="text-sm text-gray-500 italic">No photo provided</span>
-                )}
+              <div className="p-4 border-l-4 border-blue-500 bg-blue-50/50 rounded-r-xl border border-gray-200/80 shadow-xs">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                  {displayPhoto ? (
+                    <div className="relative shrink-0 group">
+                      <img 
+                        src={displayPhoto} 
+                        alt="Volunteer" 
+                        className="w-24 h-24 object-cover rounded-xl border border-gray-200 shadow-xs bg-white" 
+                      />
+                      <button
+                        type="button"
+                        id="btn-remove-vol-photo"
+                        data-testid="btn-remove-vol-photo"
+                        onClick={() => {
+                          setPhotoPreview('');
+                          setProfile(prev => ({ ...prev, photo: '' }));
+                          setPhotoError('');
+                          const fileInput = document.getElementById('vol-profile-photo-file');
+                          if (fileInput) fileInput.value = '';
+                        }}
+                        className="absolute -top-2 -right-2 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1 shadow-md transition cursor-pointer"
+                        title="Remove photo"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 rounded-xl bg-white border border-gray-200 flex flex-col items-center justify-center text-gray-400 shrink-0 shadow-2xs">
+                      <User size={32} className="text-gray-400" />
+                      <span className="text-[11px] font-medium text-gray-400 mt-1">No Photo</span>
+                    </div>
+                  )}
+
+                  <div className="flex-1 w-full space-y-2">
+                    <div>
+                      <input
+                        type="file"
+                        id="vol-profile-photo-file"
+                        data-testid="vol-profile-photo-file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                      />
+                      <p className="text-[11px] text-gray-500 mt-1">JPG, PNG or GIF (Max 2MB)</p>
+                    </div>
+                    {photoError && (
+                      <p className="text-xs text-rose-600 font-semibold">{photoError}</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
             <div>

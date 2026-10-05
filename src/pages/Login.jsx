@@ -360,7 +360,7 @@ const Login = () => {
                 id="login-email"
                 data-testid="login-email"
                 name="email"
-                placeholder="admin@crewlink.com or username"
+                placeholder=""
                 value={formData.email}
                 onChange={handleChange}
                 autoCapitalize="none"
@@ -381,7 +381,7 @@ const Login = () => {
                   id="login-password"
                   data-testid="login-password"
                   name="password"
-                  placeholder="••••••••"
+                  placeholder=""
                   value={formData.password}
                   onChange={handleChange}
                   className={`w-full px-4 py-3 bg-gray-900/50 border ${errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-700 focus:border-blue-500 focus:ring-blue-500'} rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 transition-colors pr-10`}

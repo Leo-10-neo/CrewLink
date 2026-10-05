@@ -133,11 +133,11 @@ const VolunteerRegister = () => {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Complete!</h2>
           <p className="text-gray-600 mb-8">
-            Thank you for registering as a volunteer! Your profile has been automatically verified. 
+            Thank you for registering as a volunteer! Your profile has been automatically verified.
             You can log in now to access your volunteer dashboard and apply for events.
           </p>
-          <Link 
-            to="/login" 
+          <Link
+            to="/login"
             id="reg-btn-proceed-login"
             data-testid="reg-btn-proceed-login"
             className="btn-primary w-full py-3 inline-flex justify-center items-center gap-2"
@@ -162,8 +162,8 @@ const VolunteerRegister = () => {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Progress Bar */}
           <div className="w-full bg-gray-100 h-1.5">
-            <div 
-              className="bg-accent h-1.5 transition-all duration-500 ease-out" 
+            <div
+              className="bg-accent h-1.5 transition-all duration-500 ease-out"
               style={{ width: `${(step / 3) * 100}%` }}
             ></div>
           </div>
@@ -181,7 +181,7 @@ const VolunteerRegister = () => {
             )}
 
             <div>
-              
+
               {/* STEP 1: ACCOUNT & BASIC IDENTITY */}
               {step === 1 && (
                 <div className="space-y-6 animate-slide-up">
@@ -354,7 +354,7 @@ const VolunteerRegister = () => {
                 ) : (
                   <div></div>
                 )}
-                
+
                 {step < 3 ? (
                   <button type="button" id="reg-btn-next" data-testid="reg-btn-next" onClick={nextStep} className="btn-primary px-8 py-2">
                     Next Step
@@ -368,7 +368,7 @@ const VolunteerRegister = () => {
             </div>
           </div>
         </div>
-        
+
         <p className="text-center mt-6 text-gray-500 text-sm">
           Already have an account? <Link to="/login" className="text-blue-600 hover:underline">Sign in here</Link>
         </p>

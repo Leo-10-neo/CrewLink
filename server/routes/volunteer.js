@@ -134,7 +134,7 @@ router.put('/profile', auth, async (req, res) => {
         city: city || user.city || '',
         phone: phone || user.phone || '',
         upiId: upiId ?? user.upiId ?? '',
-        photo: photo || user.photo || '',
+        photo: photo !== undefined ? photo : (user.photo || ''),
         aadharNo: aadharNo || user.aadharNo || '',
         panCardNo: panCardNo || user.panCardNo || '',
         address: address || user.address || '',
@@ -212,22 +212,6 @@ router.get('/tasks', auth, async (req, res) => {
       .populate('event', 'title rules date')
       .sort({ dueDate: 1 })
       .lean();
-
-    if (tasks.length === 0) {
-      const anyEvent = await Event.findOne({});
-      if (anyEvent) {
-        const newTask = await VolunteerTask.create({
-          volunteer: req.userId,
-          event: anyEvent._id,
-          taskName: 'Guest Coordination',
-          description: `Key support role for ${anyEvent.title}`,
-          dueDate: anyEvent.date ? new Date(anyEvent.date) : new Date(),
-          salary: 300,
-          status: 'pending'
-        });
-        tasks = [await VolunteerTask.findById(newTask._id).populate('event', 'title rules date').lean()];
-      }
-    }
 
     tasks.sort((a, b) => {
       const isCompletedA = a.status === 'completed' ? 1 : 0;

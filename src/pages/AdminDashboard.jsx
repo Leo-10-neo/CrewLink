@@ -14,6 +14,32 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { API_BASE, API_URL, autoDiscoverTunnelUrl } from '../services/api';
 
 const emptyEvent = { title: '', description: '', rules: '', date: '', location: '', capacity: '', price: '', imageUrl: '' };
+const emptyVolunteer = {
+  fullName: '',
+  city: '',
+  phone: '',
+  upiId: '',
+  email: '',
+  username: '',
+  password: '',
+  expertRole: 'Guest Management',
+  skills: '',
+  availability: '',
+  experience: '',
+  preferredEventTypes: '',
+  languages: '',
+  emergencyName: '',
+  emergencyPhone: '',
+  emergencyRelation: '',
+  bloodGroup: '',
+  photo: '',
+  aadharNo: '',
+  panCardNo: '',
+  age: '',
+  gender: '',
+  address: '',
+  profileStatus: 'Verified'
+};
 const navItems = [
   ['overview', 'Overview', Grid2X2], ['events', 'Events & approvals', CalendarDays], ['volunteers', 'Volunteers', UsersRound],
   ['tasks', 'Tasks & attendance', ClipboardCheck], ['certificates', 'Certificates', Award],
@@ -45,6 +71,10 @@ export default function AdminDashboard() {
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [eventForm, setEventForm] = useState(emptyEvent);
+  const [showVolunteerModal, setShowVolunteerModal] = useState(false);
+  const [editingVolunteer, setEditingVolunteer] = useState(null);
+  const [volunteerForm, setVolunteerForm] = useState(emptyVolunteer);
+  const [volunteerSaving, setVolunteerSaving] = useState(false);
   const [viewingProfile, setViewingProfile] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -230,6 +260,67 @@ export default function AdminDashboard() {
       else await axios.post(`${API_URL}/events`, eventForm, config);
       await fetchData(); closeModal();
     } catch (requestError) { setError(requestError.response?.data?.message || 'Unable to save this event.'); }
+  };
+
+  const closeVolunteerModal = () => {
+    setShowVolunteerModal(false);
+    setEditingVolunteer(null);
+    setVolunteerForm(emptyVolunteer);
+  };
+
+  const openAddVolunteer = () => {
+    setEditingVolunteer(null);
+    setVolunteerForm(emptyVolunteer);
+    setShowVolunteerModal(true);
+  };
+
+  const openEditVolunteer = (volunteer) => {
+    setEditingVolunteer(volunteer);
+    setVolunteerForm({
+      fullName: volunteer.fullName || volunteer.username || '',
+      city: volunteer.city || '',
+      phone: volunteer.phone || '',
+      upiId: volunteer.upiId || '',
+      email: volunteer.email || '',
+      username: volunteer.username || '',
+      password: '',
+      expertRole: volunteer.expertRole || 'Volunteer',
+      skills: Array.isArray(volunteer.skills) ? volunteer.skills.join(', ') : (volunteer.skills || ''),
+      availability: Array.isArray(volunteer.availability) ? volunteer.availability.join(', ') : (volunteer.availability || ''),
+      experience: volunteer.experience || '',
+      preferredEventTypes: Array.isArray(volunteer.preferredEventTypes) ? volunteer.preferredEventTypes.join(', ') : (volunteer.preferredEventTypes || ''),
+      languages: Array.isArray(volunteer.languages) ? volunteer.languages.join(', ') : (volunteer.languages || ''),
+      emergencyName: volunteer.emergencyContact?.name || '',
+      emergencyPhone: volunteer.emergencyContact?.phone || '',
+      emergencyRelation: volunteer.emergencyContact?.relation || '',
+      bloodGroup: volunteer.bloodGroup || '',
+      photo: volunteer.photo || '',
+      aadharNo: volunteer.aadharNo || '',
+      panCardNo: volunteer.panCardNo || '',
+      age: volunteer.age ?? '',
+      gender: volunteer.gender || '',
+      address: volunteer.address || '',
+      profileStatus: volunteer.profileStatus || 'Verified'
+    });
+    setShowVolunteerModal(true);
+  };
+
+  const saveVolunteer = async (event) => {
+    event.preventDefault();
+    setVolunteerSaving(true);
+    try {
+      if (editingVolunteer) {
+        await axios.put(`${API_URL}/users/${editingVolunteer._id}/volunteer`, volunteerForm, config);
+      } else {
+        await axios.post(`${API_URL}/users/volunteer`, volunteerForm, config);
+      }
+      await fetchData();
+      closeVolunteerModal();
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'Unable to save volunteer.');
+    } finally {
+      setVolunteerSaving(false);
+    }
   };
   const updateStatus = async (id, status) => { try { await axios.patch(`${API_URL}/events/${id}/status`, { status }, config); await fetchData(); } catch { setError(`Unable to mark this event ${status}.`); } };
   const deleteEvent = async (id) => { if (!window.confirm('Delete this event?')) return; try { await axios.delete(`${API_URL}/events/${id}`, config); await fetchData(); } catch { setError('Unable to delete this event.'); } };
@@ -489,7 +580,7 @@ export default function AdminDashboard() {
           </div>
         )}
         <span className="avatar">{user?.username?.[0]?.toUpperCase() || 'D'}</span><span>{user?.username || 'Devika Rao'}</span><button id="topbar-logout" data-testid="topbar-logout" className="logout-icon" onClick={signOut} aria-label="Logout"><LogOut size={21} /></button></div></header>
-      <section className="admin-content"><div className="page-heading"><div><h1>{copy[0]}</h1><p>{copy[1]}</p></div>{(activeView === 'events' || activeView === 'overview') && <button id="btn-create-event" data-testid="btn-create-event" className="primary-action" onClick={() => setShowEventModal(true)}><Plus size={18} /> Create event</button>}</div>{error && (
+      <section className="admin-content"><div className="page-heading"><div><h1>{copy[0]}</h1><p>{copy[1]}</p></div>{(activeView === 'events' || activeView === 'overview') && <button id="btn-create-event" data-testid="btn-create-event" className="primary-action" onClick={() => setShowEventModal(true)}><Plus size={18} /> Create event</button>}{activeView === 'volunteers' && <button id="btn-add-volunteer" data-testid="btn-add-volunteer" className="primary-action" onClick={openAddVolunteer}><Plus size={18} /> Add volunteer</button>}</div>{error && (
         <div className="admin-alert" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
           <span>{error}</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -519,7 +610,7 @@ export default function AdminDashboard() {
       )}
         {activeView === 'overview' && <Overview events={events} users={users} pending={pending.length} onVolunteersClick={() => setActiveView('volunteers')} />}
         {activeView === 'events' && <EventsView events={visibleEvents} formatDate={formatDate} onEdit={editEvent} onDelete={deleteEvent} onStatus={updateStatus} />}
-        {activeView === 'volunteers' && <VolunteersView volunteers={volunteers} events={events} onAssign={assignVolunteer} onUpdateStatus={updateVolunteerStatus} onViewProfile={setViewingProfile} onDelete={deleteVolunteer} />}
+        {activeView === 'volunteers' && <VolunteersView volunteers={volunteers} events={events} onAssign={assignVolunteer} onUpdateStatus={updateVolunteerStatus} onViewProfile={setViewingProfile} onDelete={deleteVolunteer} onAddVolunteer={openAddVolunteer} onEditVolunteer={openEditVolunteer} />}
         {activeView === 'tasks' && <TasksView token={token} volunteers={volunteers} events={events} refreshTrigger={notifications[0]?._id} user={user} initialOpenChatTaskId={openChatTaskId} onChatOpened={() => setOpenChatTaskId(null)} onChatActiveChange={handleChatActiveChange} />}
         {activeView === 'certificates' && <CertificatesView certificates={certificates} pendingVolunteers={pendingVolunteers} onGenerate={fetchData} token={token} />}
       </section>
@@ -540,9 +631,10 @@ export default function AdminDashboard() {
       ))}
     </nav>
     {showEventModal && <EventModal form={eventForm} setForm={setEventForm} editing={editingEvent} onClose={closeModal} onSubmit={saveEvent} />}
+    {showVolunteerModal && <VolunteerModal form={volunteerForm} setForm={setVolunteerForm} editing={editingVolunteer} saving={volunteerSaving} onClose={closeVolunteerModal} onSubmit={saveVolunteer} />}
     {viewingProfile && (
         <div className="modal-backdrop">
-          <div className="event-modal" style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="event-modal" style={{ maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="modal-header">
               <h2>Volunteer Profile: {viewingProfile.fullName || viewingProfile.username}</h2>
               <button onClick={() => setViewingProfile(null)}><X size={20} /></button>
@@ -566,6 +658,7 @@ export default function AdminDashboard() {
                 <div><strong>Age:</strong> {viewingProfile.age || 'N/A'}</div>
                 <div><strong>Gender:</strong> {viewingProfile.gender || 'N/A'}</div>
                 <div><strong>City:</strong> {viewingProfile.city || 'N/A'}</div>
+                <div><strong>Role / Team:</strong> {viewingProfile.expertRole || 'Volunteer'}</div>
                 <div><strong>Address:</strong> {viewingProfile.address || 'N/A'}</div>
                 <div><strong>Aadhar No:</strong> {viewingProfile.aadharNo || 'N/A'}</div>
                 <div><strong>PAN Card No:</strong> {viewingProfile.panCardNo || 'N/A'}</div>
@@ -574,10 +667,10 @@ export default function AdminDashboard() {
 
               <div className="pt-4 border-t border-gray-100">
                 <h4 className="font-semibold mb-2">Skills & Experience</h4>
-                <p><strong>Skills:</strong> {viewingProfile.skills?.length > 0 ? viewingProfile.skills.join(', ') : 'None listed'}</p>
-                <p><strong>Languages:</strong> {viewingProfile.languages?.length > 0 ? viewingProfile.languages.join(', ') : 'None listed'}</p>
-                <p><strong>Availability:</strong> {viewingProfile.availability?.length > 0 ? viewingProfile.availability.join(', ') : 'None listed'}</p>
-                <p><strong>Preferred Events:</strong> {viewingProfile.preferredEventTypes?.length > 0 ? viewingProfile.preferredEventTypes.join(', ') : 'None listed'}</p>
+                <p><strong>Skills:</strong> {viewingProfile.skills?.length > 0 ? (Array.isArray(viewingProfile.skills) ? viewingProfile.skills.join(', ') : viewingProfile.skills) : 'None listed'}</p>
+                <p><strong>Languages:</strong> {viewingProfile.languages?.length > 0 ? (Array.isArray(viewingProfile.languages) ? viewingProfile.languages.join(', ') : viewingProfile.languages) : 'None listed'}</p>
+                <p><strong>Availability:</strong> {viewingProfile.availability?.length > 0 ? (Array.isArray(viewingProfile.availability) ? viewingProfile.availability.join(', ') : viewingProfile.availability) : 'None listed'}</p>
+                <p><strong>Preferred Events:</strong> {viewingProfile.preferredEventTypes?.length > 0 ? (Array.isArray(viewingProfile.preferredEventTypes) ? viewingProfile.preferredEventTypes.join(', ') : viewingProfile.preferredEventTypes) : 'None listed'}</p>
                 <p className="mt-2"><strong>Experience Summary:</strong> {viewingProfile.experience || 'No experience summary provided.'}</p>
               </div>
 
@@ -594,8 +687,19 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
-            <div className="modal-actions mt-6">
-              <button onClick={() => setViewingProfile(null)}>Close</button>
+            <div className="modal-actions mt-6" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button 
+                type="button"
+                className="primary-action" 
+                onClick={() => { 
+                  const target = viewingProfile; 
+                  setViewingProfile(null); 
+                  openEditVolunteer(target); 
+                }}
+              >
+                Edit profile
+              </button>
+              <button type="button" onClick={() => setViewingProfile(null)}>Close</button>
             </div>
           </div>
         </div>
@@ -650,10 +754,10 @@ const EventsView = ({ events, formatDate, onEdit, onDelete, onStatus }) => (
     )}
   </div>
 );
-const VolunteersView = ({ volunteers, events, onAssign, onUpdateStatus, onViewProfile, onDelete }) => {
+const VolunteersView = ({ volunteers, events, onAssign, onUpdateStatus, onViewProfile, onDelete, onAddVolunteer, onEditVolunteer }) => {
   return (
     <div className="table-panel">
-      <div className="table-head volunteer-table-head" style={{ gridTemplateColumns: '1.5fr 1fr 1.5fr .8fr 1.5fr' }}>
+      <div className="table-head volunteer-table-head" style={{ gridTemplateColumns: '1.4fr 1.1fr 1.4fr .8fr 1.7fr' }}>
         <span>VOLUNTEER</span>
         <span>EMAIL</span>
         <span>IDENTITY & DETAILS</span>
@@ -661,10 +765,22 @@ const VolunteersView = ({ volunteers, events, onAssign, onUpdateStatus, onViewPr
         <span>ACTIONS</span>
       </div>
       {volunteers.length === 0 ? (
-        <div className="empty-table-state">No volunteer accounts found yet.</div>
+        <div className="empty-table-state" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '36px 16px' }}>
+          <span>No volunteer accounts found yet.</span>
+          <button 
+            type="button" 
+            id="btn-add-first-volunteer" 
+            data-testid="btn-add-first-volunteer" 
+            className="primary-action" 
+            onClick={onAddVolunteer}
+            style={{ fontSize: '13px' }}
+          >
+            <Plus size={16} /> Add volunteer
+          </button>
+        </div>
       ) : (
         volunteers.map((volunteer) => (
-          <div className="table-row volunteer-row" key={volunteer._id} style={{ gridTemplateColumns: '1.5fr 1fr 1.5fr .8fr 1.5fr' }}>
+          <div className="table-row volunteer-row" key={volunteer._id} style={{ gridTemplateColumns: '1.4fr 1.1fr 1.4fr .8fr 1.7fr' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexDirection: 'row' }}>
               {volunteer.photo ? (
                  <img src={volunteer.photo} alt={volunteer.username} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
@@ -702,6 +818,13 @@ const VolunteersView = ({ volunteers, events, onAssign, onUpdateStatus, onViewPr
             </select>
             
             <div className="row-actions">
+              <button 
+                id={`edit-volunteer-${volunteer._id}`}
+                data-testid={`edit-volunteer-${volunteer._id}`}
+                onClick={() => onEditVolunteer && onEditVolunteer(volunteer)}
+              >
+                Edit
+              </button>
               <button 
                 id={`profile-volunteer-${volunteer._id}`}
                 data-testid={`profile-volunteer-${volunteer._id}`}
@@ -2883,6 +3006,431 @@ const EventModal = ({ form, setForm, editing, onClose, onSubmit }) => {
         <div className="modal-actions">
           <button type="button" id="btn-cancel-event" data-testid="btn-cancel-event" onClick={onClose}>Cancel</button>
           <button className="primary-action" id="btn-submit-event" data-testid="btn-submit-event" type="submit">{editing ? 'Save changes' : 'Create event'}</button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+const VolunteerModal = ({ form, setForm, editing, saving, onClose, onSubmit }) => {
+  const [photoError, setPhotoError] = useState('');
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setPhotoError('Photo size should be less than 2MB');
+        e.target.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm(prev => ({ ...prev, photo: reader.result }));
+        setPhotoError('');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const roleOptions = [
+    'Decoration Team',
+    'Guest Management',
+    'Event Coordinator team',
+    'Event Coordinator Assistant',
+    'Registration Volunteer',
+    'Crowd Management',
+    'Stage Management',
+    'Technical Support',
+    'Photography/Video Team',
+    'Photography Volunteer',
+    'Videography Volunteer',
+    'Food & Catering Support',
+    'Hospitality Volunteer',
+    'Logistics Volunteer',
+    'Transportation Volunteer',
+    'Security/Safety Support',
+    'Communication Volunteer',
+    'Social Media Volunteer',
+    'First-Aid Support',
+    'Activity/Game Volunteer',
+    'Help Desk Volunteer',
+    'Backstage Volunteer',
+    'Volunteer'
+  ];
+
+  return (
+    <div className="modal-backdrop">
+      <form 
+        className="event-modal" 
+        onSubmit={onSubmit}
+        style={{ 
+          width: 'min(860px, 98vw)', 
+          maxHeight: '92vh', 
+          overflowY: 'auto',
+          position: 'relative'
+        }}
+      >
+        <div className="modal-header" style={{ position: 'sticky', top: '-27px', background: '#ffffff', zIndex: 20, paddingTop: '10px', paddingBottom: '14px', borderBottom: '1px solid #f1f5f9' }}>
+          <div>
+            <h2 style={{ fontSize: '22px', fontWeight: 600, color: '#0f172a' }}>
+              {editing ? 'Edit volunteer details' : 'Add volunteer to crew'}
+            </h2>
+            <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+              {editing ? 'Update volunteer profile, identity and role details.' : 'Register a volunteer in the admin space with complete background and credentials.'}
+            </p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
+        </div>
+
+        {/* Section 1: Main Volunteer Profile Details (matching Image 2) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginTop: '8px' }}>
+          <label>
+            Full name *
+            <input 
+              id="vol-fullName" 
+              data-testid="vol-fullName" 
+              required 
+              value={form.fullName} 
+              onChange={e => setForm({ ...form, fullName: e.target.value })} 
+              placeholder="" 
+            />
+          </label>
+          <label>
+            City
+            <input 
+              id="vol-city" 
+              data-testid="vol-city" 
+              value={form.city} 
+              onChange={e => setForm({ ...form, city: e.target.value })} 
+              placeholder="" 
+            />
+          </label>
+          <label>
+            Phone *
+            <input 
+              id="vol-phone" 
+              data-testid="vol-phone" 
+              required
+              type="tel"
+              value={form.phone} 
+              onChange={e => setForm({ ...form, phone: e.target.value })} 
+              placeholder="" 
+            />
+          </label>
+          <label>
+            Email *
+            <input 
+              id="vol-email" 
+              data-testid="vol-email" 
+              required 
+              type="email"
+              value={form.email} 
+              onChange={e => setForm({ ...form, email: e.target.value })} 
+              placeholder="" 
+            />
+          </label>
+          <label>
+            Skills
+            <input 
+              id="vol-skills" 
+              data-testid="vol-skills" 
+              value={form.skills} 
+              onChange={e => setForm({ ...form, skills: e.target.value })} 
+              placeholder="" 
+            />
+          </label>
+          <label>
+            Availability
+            <input 
+              id="vol-availability" 
+              data-testid="vol-availability" 
+              value={form.availability} 
+              onChange={e => setForm({ ...form, availability: e.target.value })} 
+              placeholder="" 
+            />
+          </label>
+          <label>
+            Experience
+            <input 
+              id="vol-experience" 
+              data-testid="vol-experience" 
+              value={form.experience} 
+              onChange={e => setForm({ ...form, experience: e.target.value })} 
+              placeholder="" 
+            />
+          </label>
+          <label>
+            Preferred event types
+            <input 
+              id="vol-preferredEventTypes" 
+              data-testid="vol-preferredEventTypes" 
+              value={form.preferredEventTypes} 
+              onChange={e => setForm({ ...form, preferredEventTypes: e.target.value })} 
+              placeholder="" 
+            />
+          </label>
+          <label>
+            Languages
+            <input 
+              id="vol-languages" 
+              data-testid="vol-languages" 
+              value={form.languages} 
+              onChange={e => setForm({ ...form, languages: e.target.value })} 
+              placeholder="" 
+            />
+          </label>
+        </div>
+
+        {/* Section 2: Account & Role Assignment */}
+        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '6px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#334155', margin: '0 0 12px 0' }}>
+            Crew Assignment &amp; Account
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+            <label>
+              Role / Team
+              <select 
+                id="vol-expertRole" 
+                data-testid="vol-expertRole"
+                value={form.expertRole || 'Decoration Team'} 
+                onChange={e => setForm({ ...form, expertRole: e.target.value })}
+                style={{ padding: '12px', borderRadius: '9px', border: '1px solid #d8e2ee', background: 'white' }}
+              >
+                {roleOptions.map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Username {editing ? '(optional)' : '(auto-generated if left blank)'}
+              <input 
+                id="vol-username" 
+                data-testid="vol-username" 
+                value={form.username} 
+                onChange={e => setForm({ ...form, username: e.target.value })} 
+                placeholder="" 
+              />
+            </label>
+            <label>
+              {editing ? 'New Password (optional)' : 'Password (optional, default: Volunteer@123)'}
+              <input 
+                id="vol-password" 
+                data-testid="vol-password" 
+                type="password"
+                value={form.password} 
+                onChange={e => setForm({ ...form, password: e.target.value })} 
+                placeholder="" 
+              />
+            </label>
+            <label>
+              Status
+              <select 
+                id="vol-profileStatus" 
+                data-testid="vol-profileStatus"
+                value={form.profileStatus || 'Verified'} 
+                onChange={e => setForm({ ...form, profileStatus: e.target.value })}
+                style={{ padding: '12px', borderRadius: '9px', border: '1px solid #d8e2ee', background: 'white' }}
+              >
+                <option value="Verified">Verified</option>
+                <option value="Pending">Pending</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        {/* Section 3: Emergency contact matching Image 2 */}
+        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '6px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#334155', margin: '0 0 12px 0' }}>
+            Emergency contact
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+            <label>
+              Contact name
+              <input 
+                id="vol-emergencyName" 
+                data-testid="vol-emergencyName" 
+                value={form.emergencyName} 
+                onChange={e => setForm({ ...form, emergencyName: e.target.value })} 
+                placeholder="" 
+              />
+            </label>
+            <label>
+              Phone
+              <input 
+                id="vol-emergencyPhone" 
+                data-testid="vol-emergencyPhone" 
+                type="tel"
+                value={form.emergencyPhone} 
+                onChange={e => setForm({ ...form, emergencyPhone: e.target.value })} 
+                placeholder="" 
+              />
+            </label>
+            <label>
+              Relation
+              <input 
+                id="vol-emergencyRelation" 
+                data-testid="vol-emergencyRelation" 
+                value={form.emergencyRelation} 
+                onChange={e => setForm({ ...form, emergencyRelation: e.target.value })} 
+                placeholder="" 
+              />
+            </label>
+            <label>
+              Blood group
+              <input 
+                id="vol-bloodGroup" 
+                data-testid="vol-bloodGroup" 
+                value={form.bloodGroup} 
+                onChange={e => setForm({ ...form, bloodGroup: e.target.value })} 
+                placeholder="" 
+              />
+            </label>
+          </div>
+        </div>
+
+        {/* Section 4: Volunteer Photo & Identity & Details matching Image 2 */}
+        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '6px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+            {/* Volunteer Photo */}
+            <div>
+              <label style={{ fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Volunteer Photo</label>
+              <div style={{ padding: '16px', borderLeft: '4px solid #3b82f6', background: '#f8fafc', borderRadius: '0 8px 8px 0', border: '1px solid #e2e8f0', borderLeftWidth: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '4px' }}>
+                  {form.photo ? (
+                    <div style={{ position: 'relative' }}>
+                      <img 
+                        src={form.photo} 
+                        alt="Volunteer" 
+                        style={{ width: '88px', height: '88px', borderRadius: '10px', objectFit: 'cover', border: '1px solid #cbd5e1' }} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setForm(prev => ({ ...prev, photo: '' }))}
+                        style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '11px', boxShadow: '0 2px 4px rgba(0,0,0,0.15)' }}
+                        title="Remove photo"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ width: '88px', height: '88px', borderRadius: '10px', background: '#e2e8f0', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', textAlign: 'center', padding: '6px' }}>
+                      No Photo
+                    </div>
+                  )}
+                  <div style={{ flex: 1, fontSize: '13px' }}>
+                    <input 
+                      type="file" 
+                      id="vol-photo-file" 
+                      data-testid="vol-photo-file" 
+                      accept="image/*" 
+                      onChange={handlePhotoUpload} 
+                      style={{ fontSize: '12px', padding: '6px' }} 
+                    />
+                    {photoError && <p style={{ color: '#ef4444', fontSize: '12px', margin: '4px 0 0 0' }}>{photoError}</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Identity & Details */}
+            <div>
+              <label style={{ fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Identity &amp; Details</label>
+              <div style={{ display: 'grid', gap: '12px' }}>
+                <label>
+                  Aadhaar number
+                  <input 
+                    id="vol-aadharNo" 
+                    data-testid="vol-aadharNo" 
+                    value={form.aadharNo} 
+                    onChange={e => setForm({ ...form, aadharNo: e.target.value })} 
+                    placeholder="" 
+                  />
+                </label>
+                <label>
+                  PAN card number
+                  <input 
+                    id="vol-panCardNo" 
+                    data-testid="vol-panCardNo" 
+                    value={form.panCardNo} 
+                    onChange={e => setForm({ ...form, panCardNo: e.target.value })} 
+                    placeholder="" 
+                  />
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <label>
+                    Age
+                    <input 
+                      id="vol-age" 
+                      data-testid="vol-age" 
+                      type="number" 
+                      value={form.age} 
+                      onChange={e => setForm({ ...form, age: e.target.value })} 
+                      placeholder="" 
+                    />
+                  </label>
+                  <label>
+                    Gender
+                    <select 
+                      id="vol-gender" 
+                      data-testid="vol-gender"
+                      value={form.gender || ''} 
+                      onChange={e => setForm({ ...form, gender: e.target.value })}
+                      style={{ padding: '12px', borderRadius: '9px', border: '1px solid #d8e2ee', background: 'white' }}
+                    >
+                      <option value="">Select gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  Address
+                  <input 
+                    id="vol-address" 
+                    data-testid="vol-address" 
+                    value={form.address} 
+                    onChange={e => setForm({ ...form, address: e.target.value })} 
+                    placeholder="" 
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Actions matching Image 2 */}
+        <div className="modal-actions" style={{ position: 'sticky', bottom: '-27px', background: '#ffffff', zIndex: 20, paddingTop: '14px', paddingBottom: '10px', borderTop: '1px solid #f1f5f9', marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+          <button 
+            type="button" 
+            id="btn-cancel-volunteer" 
+            data-testid="btn-cancel-volunteer" 
+            onClick={onClose}
+            style={{ padding: '10px 22px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', cursor: 'pointer', fontWeight: 500 }}
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            id="vol-save-profile-btn" 
+            data-testid="vol-save-profile-btn" 
+            disabled={saving}
+            style={{ 
+              padding: '11px 32px', 
+              background: '#5b52f6', 
+              color: '#ffffff', 
+              border: 'none', 
+              borderRadius: '8px', 
+              fontWeight: 600, 
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(91, 82, 246, 0.4)',
+              opacity: saving ? 0.7 : 1,
+              transition: 'background 0.2s'
+            }}
+          >
+            {saving ? 'Saving…' : 'Save profile'}
+          </button>
         </div>
       </form>
     </div>

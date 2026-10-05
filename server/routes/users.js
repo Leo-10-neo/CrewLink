@@ -31,8 +31,28 @@ router.get('/', adminAuth, async (req, res) => {
         user.phone = user.phone || prof.phone;
         user.upiId = user.upiId || prof.upiId;
         user.photo = user.photo || prof.photo;
+        user.aadharNo = user.aadharNo || prof.aadharNo;
+        user.panCardNo = user.panCardNo || prof.panCardNo;
+        user.address = user.address || prof.address;
+        user.age = user.age != null ? user.age : prof.age;
+        user.gender = user.gender || prof.gender;
+        user.experience = user.experience || prof.experience;
+        user.expertRole = user.expertRole || prof.expertRole;
+        user.bloodGroup = user.bloodGroup || prof.bloodGroup;
+        if (!user.emergencyContact || !user.emergencyContact.name) {
+          user.emergencyContact = prof.emergencyContact;
+        }
         if (!user.skills || user.skills.length === 0) {
           user.skills = typeof prof.skills === 'string' ? prof.skills.split(',').map(s => s.trim()).filter(Boolean) : (prof.skills || []);
+        }
+        if (!user.languages || user.languages.length === 0) {
+          user.languages = Array.isArray(prof.languages) ? prof.languages : (typeof prof.languages === 'string' ? prof.languages.split(',').map(s => s.trim()).filter(Boolean) : []);
+        }
+        if (!user.availability || user.availability.length === 0) {
+          user.availability = typeof prof.availability === 'string' ? prof.availability.split(',').map(s => s.trim()).filter(Boolean) : (prof.availability || []);
+        }
+        if (!user.preferredEventTypes || user.preferredEventTypes.length === 0) {
+          user.preferredEventTypes = typeof prof.preferredEventTypes === 'string' ? prof.preferredEventTypes.split(',').map(s => s.trim()).filter(Boolean) : (prof.preferredEventTypes || []);
         }
       }
       return user;
@@ -42,6 +62,231 @@ router.get('/', adminAuth, async (req, res) => {
   } catch (error) {
     console.error('Get users error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Helper to normalize array inputs
+const normalizeList = (val) => {
+  if (Array.isArray(val)) return val.map(s => String(s).trim()).filter(Boolean);
+  if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
+  return [];
+};
+
+// Add new volunteer (admin only)
+router.post('/volunteer', adminAuth, async (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const VolunteerProfile = require('../models/VolunteerProfile');
+    
+    let {
+      username, email, password,
+      fullName, city, phone, upiId,
+      skills, availability, experience, preferredEventTypes, languages,
+      expertRole, emergencyContact, emergencyName, emergencyPhone, emergencyRelation,
+      bloodGroup, photo, aadharNo, panCardNo, age, gender, address, profileStatus
+    } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    if (!phone || !String(phone).trim()) {
+      return res.status(400).json({ message: 'Phone number is required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    if (!username) {
+      const baseUser = fullName ? fullName.toLowerCase().replace(/[^a-z0-9]/g, '') : cleanEmail.split('@')[0].replace(/[^a-z0-9]/g, '');
+      username = (baseUser || 'volunteer') + Math.floor(100 + Math.random() * 900);
+    } else {
+      username = username.trim();
+    }
+
+    // Check if user with email or username already exists
+    const existing = await User.findOne({ $or: [{ email: cleanEmail }, { username }] });
+    if (existing) {
+      return res.status(400).json({ message: 'A user with this email or username already exists' });
+    }
+
+    // Password: default to Volunteer@123 if not specified
+    const plainPassword = password && password.trim() ? password.trim() : 'Volunteer@123';
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(plainPassword, salt);
+
+    const finalEmergencyContact = emergencyContact && (emergencyContact.name || emergencyContact.phone) ? emergencyContact : {
+      name: emergencyName || '',
+      phone: emergencyPhone || '',
+      relation: emergencyRelation || ''
+    };
+
+    const parsedAge = age !== '' && age !== undefined && age !== null ? parseInt(age, 10) : undefined;
+
+    const newUserData = {
+      username,
+      email: cleanEmail,
+      password: hashedPassword,
+      role: 'volunteer',
+      fullName: fullName || username,
+      city: city || '',
+      phone: phone || '',
+      upiId: upiId || '',
+      photo: photo || '',
+      aadharNo: aadharNo || '',
+      panCardNo: panCardNo || '',
+      address: address || '',
+      age: isNaN(parsedAge) ? undefined : parsedAge,
+      gender: gender || '',
+      skills: normalizeList(skills),
+      experience: experience || '',
+      languages: normalizeList(languages),
+      availability: normalizeList(availability),
+      preferredEventTypes: normalizeList(preferredEventTypes),
+      expertRole: expertRole || 'Volunteer',
+      emergencyContact: finalEmergencyContact,
+      bloodGroup: bloodGroup || '',
+      profileStatus: profileStatus || 'Verified'
+    };
+
+    const user = new User(newUserData);
+    await user.save();
+
+    // Create corresponding VolunteerProfile
+    await VolunteerProfile.create({
+      user: user._id,
+      fullName: user.fullName,
+      city: user.city,
+      phone: user.phone,
+      upiId: user.upiId,
+      photo: user.photo,
+      aadharNo: user.aadharNo,
+      panCardNo: user.panCardNo,
+      address: user.address,
+      age: user.age ?? null,
+      gender: user.gender,
+      skills: user.skills.join(', '),
+      availability: user.availability.join(', '),
+      experience: user.experience,
+      preferredEventTypes: user.preferredEventTypes.join(', '),
+      expertRole: user.expertRole,
+      languages: user.languages,
+      emergencyContact: user.emergencyContact,
+      bloodGroup: user.bloodGroup,
+      applicationStatus: 'approved'
+    });
+
+    const userObj = user.toObject();
+    delete userObj.password;
+
+    res.status(201).json({ message: 'Volunteer added successfully', volunteer: userObj });
+  } catch (error) {
+    console.error('Create volunteer error:', error);
+    res.status(500).json({ message: error.message || 'Server error creating volunteer' });
+  }
+});
+
+// Update volunteer details (admin only)
+router.put('/:id/volunteer', adminAuth, async (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const VolunteerProfile = require('../models/VolunteerProfile');
+    const userId = req.params.id;
+
+    const {
+      fullName, city, phone, upiId,
+      skills, availability, experience, preferredEventTypes, languages,
+      expertRole, emergencyContact, emergencyName, emergencyPhone, emergencyRelation,
+      bloodGroup, photo, aadharNo, panCardNo, age, gender, address, profileStatus,
+      email, username, password
+    } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Volunteer not found' });
+    }
+
+    if (fullName !== undefined) user.fullName = fullName;
+    if (city !== undefined) user.city = city;
+    if (phone !== undefined) user.phone = phone;
+    if (upiId !== undefined) user.upiId = upiId;
+    if (photo !== undefined) user.photo = photo;
+    if (aadharNo !== undefined) user.aadharNo = aadharNo;
+    if (panCardNo !== undefined) user.panCardNo = panCardNo;
+    if (address !== undefined) user.address = address;
+    if (age !== undefined) {
+      const parsedAge = age !== '' && age !== null ? parseInt(age, 10) : undefined;
+      user.age = isNaN(parsedAge) ? undefined : parsedAge;
+    }
+    if (gender !== undefined) user.gender = gender;
+    if (skills !== undefined) user.skills = normalizeList(skills);
+    if (experience !== undefined) user.experience = experience;
+    if (languages !== undefined) user.languages = normalizeList(languages);
+    if (availability !== undefined) user.availability = normalizeList(availability);
+    if (preferredEventTypes !== undefined) user.preferredEventTypes = normalizeList(preferredEventTypes);
+    if (expertRole !== undefined) user.expertRole = expertRole;
+    if (bloodGroup !== undefined) user.bloodGroup = bloodGroup;
+    if (profileStatus !== undefined) user.profileStatus = profileStatus;
+
+    if (emergencyContact !== undefined) {
+      user.emergencyContact = emergencyContact;
+    } else if (emergencyName !== undefined || emergencyPhone !== undefined || emergencyRelation !== undefined) {
+      user.emergencyContact = {
+        name: emergencyName ?? user.emergencyContact?.name ?? '',
+        phone: emergencyPhone ?? user.emergencyContact?.phone ?? '',
+        relation: emergencyRelation ?? user.emergencyContact?.relation ?? ''
+      };
+    }
+
+    if (email && email.toLowerCase().trim() !== user.email) {
+      const existingEmail = await User.findOne({ email: email.toLowerCase().trim(), _id: { $ne: userId } });
+      if (existingEmail) return res.status(400).json({ message: 'Email already taken by another user' });
+      user.email = email.toLowerCase().trim();
+    }
+
+    if (username && username.trim() !== user.username) {
+      const existingUser = await User.findOne({ username: username.trim(), _id: { $ne: userId } });
+      if (existingUser) return res.status(400).json({ message: 'Username already taken' });
+      user.username = username.trim();
+    }
+
+    if (password && password.trim()) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password.trim(), salt);
+    }
+
+    await user.save();
+
+    // Also update VolunteerProfile
+    let profile = await VolunteerProfile.findOne({ user: userId });
+    if (!profile) {
+      profile = new VolunteerProfile({ user: userId });
+    }
+    profile.fullName = user.fullName || '';
+    profile.city = user.city || '';
+    profile.phone = user.phone || '';
+    profile.upiId = user.upiId || '';
+    profile.photo = user.photo || '';
+    profile.aadharNo = user.aadharNo || '';
+    profile.panCardNo = user.panCardNo || '';
+    profile.address = user.address || '';
+    profile.age = user.age ?? null;
+    profile.gender = user.gender || '';
+    profile.skills = user.skills.join(', ');
+    profile.availability = user.availability.join(', ');
+    profile.experience = user.experience || '';
+    profile.preferredEventTypes = user.preferredEventTypes.join(', ');
+    profile.expertRole = user.expertRole || '';
+    profile.languages = user.languages;
+    profile.emergencyContact = user.emergencyContact;
+    profile.bloodGroup = user.bloodGroup || '';
+    await profile.save();
+
+    const userObj = user.toObject();
+    delete userObj.password;
+
+    res.json({ message: 'Volunteer updated successfully', volunteer: userObj });
+  } catch (error) {
+    console.error('Update volunteer error:', error);
+    res.status(500).json({ message: error.message || 'Server error updating volunteer' });
   }
 });
 
