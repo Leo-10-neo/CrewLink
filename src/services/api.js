@@ -15,7 +15,7 @@ const formatUrl = (raw) => {
   return url;
 };
 
-export const PUBLIC_INTERNET_URL = 'https://gods-lodge-cambridge-things.trycloudflare.com';
+export const PUBLIC_INTERNET_URL = 'https://0b5aefa60a21fc.lhr.life';
 export const RAW_REGISTRY_URL = 'https://raw.githubusercontent.com/Leo-10-neo/CrewLink/main/current_tunnel_url.txt';
 export const CLOUD_REGISTRY_URL = 'https://api.github.com/repos/Leo-10-neo/CrewLink/contents/current_tunnel_url.txt';
 export const LAN_WIFI_URL = 'http://192.168.0.121:5000';
@@ -192,18 +192,18 @@ export const autoDiscoverTunnelUrl = async (force = false) => {
     // If quick candidates failed, fetch latest tunnel URL from GitHub registry
     try {
       const fetchRaw = axios.get(`${RAW_REGISTRY_URL}?_cb=${Date.now()}`, { timeout: 3500, _skipIntercept: true })
-        .then(r => (r.data && typeof r.data === 'string' && r.data.includes('trycloudflare.com')) ? formatUrl(r.data.trim()) : null)
+        .then(r => (r.data && typeof r.data === 'string' && r.data.trim().startsWith('http')) ? formatUrl(r.data.trim()) : null)
         .catch(() => null);
 
       const fetchApi = axios.get(CLOUD_REGISTRY_URL, { headers: { Accept: 'application/vnd.github.v3+json' }, timeout: 3500, _skipIntercept: true })
         .then(apiRes => {
           let decodedUrl = '';
-          if (typeof apiRes.data === 'string' && apiRes.data.includes('trycloudflare.com')) {
+          if (typeof apiRes.data === 'string' && apiRes.data.trim().startsWith('http')) {
             decodedUrl = apiRes.data.trim();
           } else if (apiRes.data && apiRes.data.content && apiRes.data.encoding === 'base64') {
             try { decodedUrl = atob(apiRes.data.content.replace(/\s/g, '')).trim(); } catch (_) {}
           }
-          return (decodedUrl && decodedUrl.includes('trycloudflare.com')) ? formatUrl(decodedUrl) : null;
+          return (decodedUrl && decodedUrl.startsWith('http')) ? formatUrl(decodedUrl) : null;
         })
         .catch(() => null);
 
