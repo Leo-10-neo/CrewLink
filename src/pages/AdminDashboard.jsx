@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import QRCode from 'qrcode';
-import { Award, Bell, CalendarDays, Camera, Check, ClipboardCheck, Grid2X2, LogOut, Menu, Plus, Search, Sparkles, Trash2, UsersRound, X, Edit, MessageSquare, Image as ImageIcon, Download, Printer, Mic, Square, Send, ArrowUp, ArrowDown, Smartphone, QrCode, Copy, ExternalLink, CheckCircle2, ShieldCheck, PhoneCall, ChevronRight, ChevronDown, ChevronUp, FileSpreadsheet, Upload, AlertCircle, RefreshCw, Loader2, CheckCircle, FileText } from 'lucide-react';
+import { Award, Bell, CalendarDays, Camera, Check, ClipboardCheck, Grid2X2, LogOut, Menu, Plus, Search, Sparkles, Trash2, UsersRound, X, Edit, MessageSquare, Image as ImageIcon, Download, Printer, Mic, Square, Send, ArrowUp, ArrowDown, Smartphone, QrCode, Copy, ExternalLink, CheckCircle2, ShieldCheck, PhoneCall, ChevronRight, ChevronDown, ChevronUp, FileSpreadsheet, Upload, AlertCircle, RefreshCw, Loader2, CheckCircle, FileText, Eye, EyeOff } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
@@ -3068,6 +3068,7 @@ const EventModal = ({ form, setForm, editing, onClose, onSubmit }) => {
 
 const VolunteerModal = ({ form, setForm, editing, saving, onClose, onSubmit }) => {
   const [photoError, setPhotoError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
@@ -3267,14 +3268,43 @@ const VolunteerModal = ({ form, setForm, editing, saving, onClose, onSubmit }) =
             </label>
             <label>
               {editing ? 'New Password (optional)' : 'Password (optional, default: Volunteer@123)'}
-              <input 
-                id="vol-password" 
-                data-testid="vol-password" 
-                type="password"
-                value={form.password} 
-                onChange={e => setForm({ ...form, password: e.target.value })} 
-                placeholder="" 
-              />
+              <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                <input 
+                  id="vol-password" 
+                  data-testid="vol-password" 
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.password} 
+                  onChange={e => setForm({ ...form, password: e.target.value })} 
+                  placeholder="" 
+                  style={{ width: '100%', paddingRight: '42px', boxSizing: 'border-box' }}
+                />
+                <button
+                  type="button"
+                  id="btn-toggle-vol-password"
+                  data-testid="btn-toggle-vol-password"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '6px',
+                    cursor: 'pointer',
+                    color: '#64748b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '6px',
+                    zIndex: 2
+                  }}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </label>
             <label>
               Status
