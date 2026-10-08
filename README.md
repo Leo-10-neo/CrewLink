@@ -1,6 +1,8 @@
-# Event Management System - MERN Stack
+# CrewLink - Event Management System
 
-A full-stack event management application built with MongoDB, Express, React, and Node.js featuring user authentication, event registration, and admin management capabilities.
+🌐 **Live Web Application:** [https://crew-link-phi.vercel.app/](https://crew-link-phi.vercel.app/)
+
+A full-stack event and crew management application built with MongoDB, Express, React, and Node.js featuring volunteer coordination, task management, QR scanning, attendance, certificate generation, and an Android mobile app.
 
 ## Features
 
@@ -121,7 +123,7 @@ npm install
 npm run dev
 ```
 
-The application will be available at `http://localhost:5000/`
+The application will be available at [https://crew-link-phi.vercel.app/](https://crew-link-phi.vercel.app/) (or locally at `http://localhost:5000/`).
 
 ## API Endpoints
 
@@ -221,3 +223,16 @@ npm run dev  # Uses Vite for hot module replacement
 ## License
 
 This project is open source and available for educational purposes.
+
+### 📱 Android Application Download
+
+Download and install the official CrewLink Android application directly on your phone:
+
+- **[⬇️ Download CrewLink.apk (Direct Download)](https://raw.githubusercontent.com/Leo-10-neo/CrewLink/main/CrewLink.apk)**
+- **[📦 View File in Repository (CrewLink.apk)](./CrewLink.apk)**
+
+> **Installation Instructions:**
+> 1. Download `CrewLink.apk` using the link above.
+> 2. Open the downloaded file on your Android device.
+> 3. If prompted, allow "Install from unknown sources" in your settings.
+> 4. Launch CrewLink and log in as Admin or Volunteer!

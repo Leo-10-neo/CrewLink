@@ -28,6 +28,7 @@ build/
 
 # Built application files / Binaries
 *.apk
+!CrewLink.apk
 *.aar
 *.aab
 *.dex
