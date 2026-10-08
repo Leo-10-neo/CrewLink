@@ -12,7 +12,7 @@ import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import html2canvas from 'html2canvas';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { API_BASE, API_URL, autoDiscoverTunnelUrl } from '../services/api';
+import { API_BASE, API_URL, getApiUrl, autoDiscoverTunnelUrl } from '../services/api';
 
 const emptyEvent = { title: '', description: '', rules: '', date: '', location: '', capacity: '', price: '', imageUrl: '' };
 const emptyVolunteer = {
@@ -78,6 +78,8 @@ export default function AdminDashboard() {
   const [volunteerForm, setVolunteerForm] = useState(emptyVolunteer);
   const [volunteerSaving, setVolunteerSaving] = useState(false);
   const [viewingProfile, setViewingProfile] = useState(null);
+  const [volunteerToDelete, setVolunteerToDelete] = useState(null);
+  const [isDeletingVolunteer, setIsDeletingVolunteer] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [toast, setToast] = useState('');
@@ -339,15 +341,40 @@ export default function AdminDashboard() {
     }
   };
 
-  const deleteVolunteer = async (volunteerId) => {
+  const confirmDeleteVolunteer = async (volunteerId) => {
+    if (!volunteerId) return;
+    setIsDeletingVolunteer(true);
+    const prevUsers = [...users];
+    
+    // Instant optimistic UI update: immediately remove from table
+    setUsers((prev) => prev.filter((item) => item._id !== volunteerId));
+    setVolunteerToDelete(null);
+
     try {
-      await axios.delete(`${API_URL}/users/${volunteerId}`, config);
-      setUsers((prev) => prev.filter((item) => item._id !== volunteerId));
+      const activeUrl = typeof getApiUrl === 'function' ? getApiUrl() : API_URL;
+      const authToken = token || localStorage.getItem('token');
+      const authConfig = { headers: { Authorization: `Bearer ${authToken}` } };
+
+      await axios.delete(`${activeUrl}/users/${volunteerId}`, authConfig);
+      showNotification('Volunteer removed successfully', 'success');
       setError('');
-      await fetchData(false);
+      fetchData(false);
     } catch (err) { 
-      setError(err.response?.data?.message || 'Unable to remove volunteer.'); 
+      console.error('Delete volunteer error:', err);
+      // Revert optimistic removal on error
+      setUsers(prevUsers);
+      const errMsg = err.response?.data?.message || err.message || 'Unable to remove volunteer.';
+      setError(errMsg);
+      showNotification(errMsg, 'error');
+    } finally {
+      setIsDeletingVolunteer(false);
     }
+  };
+
+  const deleteVolunteer = (volunteerId, volunteerName) => {
+    const target = users.find(u => u._id === volunteerId);
+    const name = volunteerName || target?.fullName || target?.username || 'this volunteer';
+    setVolunteerToDelete({ id: volunteerId, name });
   };
 
   const signOut = () => { logout(); navigate('/login'); };
@@ -675,6 +702,97 @@ export default function AdminDashboard() {
         }}
       />
     )}
+    {volunteerToDelete && (
+      <div className="modal-backdrop" style={{ zIndex: 9999 }}>
+        <div style={{
+          width: 'min(440px, 94vw)',
+          background: '#ffffff',
+          borderRadius: '16px',
+          padding: '24px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          border: '1px solid #e2e8f0'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{
+              width: '46px',
+              height: '46px',
+              borderRadius: '50%',
+              background: '#fee2e2',
+              color: '#dc2626',
+              display: 'grid',
+              placeItems: 'center',
+              flexShrink: 0
+            }}>
+              <Trash2 size={22} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#0f172a' }}>Remove Volunteer</h3>
+              <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#64748b' }}>Confirm removing volunteer from crew</p>
+            </div>
+          </div>
+          <p style={{ margin: 0, fontSize: '14px', color: '#334155', lineHeight: '1.5' }}>
+            Are you sure you want to remove <strong>{volunteerToDelete.name}</strong>? Their login account, volunteer assignments, and records will be deleted.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+            <button
+              type="button"
+              id="btn-cancel-delete-volunteer"
+              data-testid="btn-cancel-delete-volunteer"
+              onClick={() => setVolunteerToDelete(null)}
+              disabled={isDeletingVolunteer}
+              style={{
+                padding: '9px 16px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                background: '#f8fafc',
+                color: '#334155',
+                fontWeight: 500,
+                cursor: 'pointer',
+                fontSize: '13px'
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              id="btn-confirm-delete-volunteer"
+              data-testid="btn-confirm-delete-volunteer"
+              onClick={() => confirmDeleteVolunteer(volunteerToDelete.id)}
+              disabled={isDeletingVolunteer}
+              style={{
+                padding: '9px 18px',
+                borderRadius: '8px',
+                border: 'none',
+                background: '#dc2626',
+                color: '#ffffff',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: '13px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)'
+              }}
+            >
+              {isDeletingVolunteer ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  <span>Removing...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 size={15} />
+                  <span>Yes, Remove</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     {viewingProfile && (
         <div className="modal-backdrop">
           <div className="event-modal" style={{ maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -890,10 +1008,7 @@ const VolunteersView = ({ volunteers, events, onAssign, onUpdateStatus, onViewPr
                 id={`remove-volunteer-${volunteer._id}`}
                 data-testid={`remove-volunteer-${volunteer._id}`}
                 className="danger" 
-                onClick={() => { 
-                  if (window.confirm(`Remove volunteer "${volunteer.fullName || volunteer.username}"? This cannot be undone.`)) 
-                    onDelete && onDelete(volunteer._id); 
-                }}
+                onClick={() => onDelete && onDelete(volunteer._id, volunteer.fullName || volunteer.username)}
               >
                 Remove
               </button>

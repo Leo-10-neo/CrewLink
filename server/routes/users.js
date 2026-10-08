@@ -525,7 +525,22 @@ router.put('/:id/status', adminAuth, async (req, res) => {
 router.delete('/:id', adminAuth, async (req, res) => {
   try {
     const userId = req.params.id;
-    const user = await User.findByIdAndDelete(userId);
+    let user = await User.findById(userId);
+    let targetUserId = userId;
+
+    if (!user) {
+      // Check if this was passed a VolunteerProfile ID instead of User ID
+      const VolunteerProfile = require('../models/VolunteerProfile');
+      const profile = await VolunteerProfile.findById(userId);
+      if (profile && profile.user) {
+        targetUserId = profile.user.toString();
+        user = await User.findById(targetUserId);
+      }
+    }
+
+    if (user) {
+      await User.findByIdAndDelete(targetUserId);
+    }
 
     // Cascade cleanups
     const VolunteerProfile = require('../models/VolunteerProfile');
@@ -537,13 +552,13 @@ router.delete('/:id', adminAuth, async (req, res) => {
     const Notification = require('../models/Notification');
 
     await Promise.all([
-      VolunteerProfile.deleteMany({ user: userId }),
-      VolunteerTask.deleteMany({ volunteer: userId }),
-      Attendance.deleteMany({ volunteer: userId }),
-      Certificate.deleteMany({ volunteer: userId }),
-      Event.updateMany({ assignedVolunteers: userId }, { $pull: { assignedVolunteers: userId } }),
-      Booking.deleteMany({ user: userId }),
-      Notification.deleteMany({ userId: userId })
+      VolunteerProfile.deleteMany({ $or: [{ user: targetUserId }, { _id: userId }] }),
+      VolunteerTask.deleteMany({ volunteer: targetUserId }),
+      Attendance.deleteMany({ volunteer: targetUserId }),
+      Certificate.deleteMany({ volunteer: targetUserId }),
+      Event.updateMany({ assignedVolunteers: targetUserId }, { $pull: { assignedVolunteers: targetUserId } }),
+      Booking.deleteMany({ user: targetUserId }),
+      Notification.deleteMany({ userId: targetUserId })
     ]);
 
     res.json({ message: 'User deleted successfully' });
