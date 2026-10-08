@@ -15,7 +15,7 @@ const formatUrl = (raw) => {
   return url;
 };
 
-export const PUBLIC_INTERNET_URL = 'https://direct-tue-shipment-portable.trycloudflare.com';
+export const PUBLIC_INTERNET_URL = 'https://rochester-dangerous-metres-finance.trycloudflare.com';
 export const RAW_REGISTRY_URL = 'https://raw.githubusercontent.com/Leo-10-neo/CrewLink/main/current_tunnel_url.txt';
 export const CLOUD_REGISTRY_URL = 'https://api.github.com/repos/Leo-10-neo/CrewLink/contents/current_tunnel_url.txt';
 export const LAN_WIFI_URL = 'http://192.168.0.121:5000';

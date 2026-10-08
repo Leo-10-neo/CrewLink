@@ -3,7 +3,8 @@ import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import QRCode from 'qrcode';
-import { Award, Bell, CalendarDays, Camera, Check, ClipboardCheck, Grid2X2, LogOut, Menu, Plus, Search, Sparkles, Trash2, UsersRound, X, Edit, MessageSquare, Image as ImageIcon, Download, Printer, Mic, Square, Send, ArrowUp, ArrowDown, Smartphone, QrCode, Copy, ExternalLink, CheckCircle2, ShieldCheck, PhoneCall, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Award, Bell, CalendarDays, Camera, Check, ClipboardCheck, Grid2X2, LogOut, Menu, Plus, Search, Sparkles, Trash2, UsersRound, X, Edit, MessageSquare, Image as ImageIcon, Download, Printer, Mic, Square, Send, ArrowUp, ArrowDown, Smartphone, QrCode, Copy, ExternalLink, CheckCircle2, ShieldCheck, PhoneCall, ChevronRight, ChevronDown, ChevronUp, FileSpreadsheet, Upload, AlertCircle, RefreshCw, Loader2, CheckCircle, FileText } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import VoiceNotePlayer from '../components/VoiceNotePlayer';
@@ -72,6 +73,7 @@ export default function AdminDashboard() {
   const [editingEvent, setEditingEvent] = useState(null);
   const [eventForm, setEventForm] = useState(emptyEvent);
   const [showVolunteerModal, setShowVolunteerModal] = useState(false);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [editingVolunteer, setEditingVolunteer] = useState(null);
   const [volunteerForm, setVolunteerForm] = useState(emptyVolunteer);
   const [volunteerSaving, setVolunteerSaving] = useState(false);
@@ -580,7 +582,39 @@ export default function AdminDashboard() {
           </div>
         )}
         <span className="avatar">{user?.username?.[0]?.toUpperCase() || 'D'}</span><span>{user?.username || 'Devika Rao'}</span><button id="topbar-logout" data-testid="topbar-logout" className="logout-icon" onClick={signOut} aria-label="Logout"><LogOut size={21} /></button></div></header>
-      <section className="admin-content"><div className="page-heading"><div><h1>{copy[0]}</h1><p>{copy[1]}</p></div>{(activeView === 'events' || activeView === 'overview') && <button id="btn-create-event" data-testid="btn-create-event" className="primary-action" onClick={() => setShowEventModal(true)}><Plus size={18} /> Create event</button>}{activeView === 'volunteers' && <button id="btn-add-volunteer" data-testid="btn-add-volunteer" className="primary-action" onClick={openAddVolunteer}><Plus size={18} /> Add volunteer</button>}</div>{error && (
+      <section className="admin-content"><div className="page-heading"><div><h1>{copy[0]}</h1><p>{copy[1]}</p></div>{(activeView === 'events' || activeView === 'overview') && <button id="btn-create-event" data-testid="btn-create-event" className="primary-action" onClick={() => setShowEventModal(true)}><Plus size={18} /> Create event</button>}{activeView === 'volunteers' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            id="btn-bulk-import-volunteer"
+            data-testid="btn-bulk-import-volunteer"
+            className="secondary-action"
+            onClick={() => setShowBulkImportModal(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 16px',
+              background: '#f8fafc',
+              border: '1px solid #cbd5e1',
+              borderRadius: '10px',
+              color: '#1e293b',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontSize: '13px',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+          >
+            <FileSpreadsheet size={17} style={{ color: '#16a34a' }} />
+            <span>Upload Excel / CSV</span>
+          </button>
+          <button id="btn-add-volunteer" data-testid="btn-add-volunteer" className="primary-action" onClick={openAddVolunteer}>
+            <Plus size={18} /> Add volunteer
+          </button>
+        </div>
+      )}</div>{error && (
         <div className="admin-alert" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
           <span>{error}</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -610,7 +644,7 @@ export default function AdminDashboard() {
       )}
         {activeView === 'overview' && <Overview events={events} users={users} pending={pending.length} onVolunteersClick={() => setActiveView('volunteers')} />}
         {activeView === 'events' && <EventsView events={visibleEvents} formatDate={formatDate} onEdit={editEvent} onDelete={deleteEvent} onStatus={updateStatus} />}
-        {activeView === 'volunteers' && <VolunteersView volunteers={volunteers} events={events} onAssign={assignVolunteer} onUpdateStatus={updateVolunteerStatus} onViewProfile={setViewingProfile} onDelete={deleteVolunteer} onAddVolunteer={openAddVolunteer} onEditVolunteer={openEditVolunteer} />}
+        {activeView === 'volunteers' && <VolunteersView volunteers={volunteers} events={events} onAssign={assignVolunteer} onUpdateStatus={updateVolunteerStatus} onViewProfile={setViewingProfile} onDelete={deleteVolunteer} onAddVolunteer={openAddVolunteer} onEditVolunteer={openEditVolunteer} onOpenBulkImport={() => setShowBulkImportModal(true)} />}
         {activeView === 'tasks' && <TasksView token={token} volunteers={volunteers} events={events} refreshTrigger={notifications[0]?._id} user={user} initialOpenChatTaskId={openChatTaskId} onChatOpened={() => setOpenChatTaskId(null)} onChatActiveChange={handleChatActiveChange} />}
         {activeView === 'certificates' && <CertificatesView certificates={certificates} pendingVolunteers={pendingVolunteers} onGenerate={fetchData} token={token} />}
       </section>
@@ -632,6 +666,15 @@ export default function AdminDashboard() {
     </nav>
     {showEventModal && <EventModal form={eventForm} setForm={setEventForm} editing={editingEvent} onClose={closeModal} onSubmit={saveEvent} />}
     {showVolunteerModal && <VolunteerModal form={volunteerForm} setForm={setVolunteerForm} editing={editingVolunteer} saving={volunteerSaving} onClose={closeVolunteerModal} onSubmit={saveVolunteer} />}
+    {showBulkImportModal && (
+      <BulkImportModal
+        token={token}
+        onClose={() => setShowBulkImportModal(false)}
+        onSuccess={() => {
+          fetchData(0);
+        }}
+      />
+    )}
     {viewingProfile && (
         <div className="modal-backdrop">
           <div className="event-modal" style={{ maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -754,7 +797,7 @@ const EventsView = ({ events, formatDate, onEdit, onDelete, onStatus }) => (
     )}
   </div>
 );
-const VolunteersView = ({ volunteers, events, onAssign, onUpdateStatus, onViewProfile, onDelete, onAddVolunteer, onEditVolunteer }) => {
+const VolunteersView = ({ volunteers, events, onAssign, onUpdateStatus, onViewProfile, onDelete, onAddVolunteer, onEditVolunteer, onOpenBulkImport }) => {
   return (
     <div className="table-panel">
       <div className="table-head volunteer-table-head" style={{ gridTemplateColumns: '1.4fr 1.1fr 1.4fr .8fr 1.7fr' }}>
@@ -767,16 +810,27 @@ const VolunteersView = ({ volunteers, events, onAssign, onUpdateStatus, onViewPr
       {volunteers.length === 0 ? (
         <div className="empty-table-state" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '36px 16px' }}>
           <span>No volunteer accounts found yet.</span>
-          <button 
-            type="button" 
-            id="btn-add-first-volunteer" 
-            data-testid="btn-add-first-volunteer" 
-            className="primary-action" 
-            onClick={onAddVolunteer}
-            style={{ fontSize: '13px' }}
-          >
-            <Plus size={16} /> Add volunteer
-          </button>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button 
+              type="button" 
+              id="btn-bulk-import-empty"
+              className="secondary-action" 
+              onClick={onOpenBulkImport}
+              style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#1e293b', cursor: 'pointer', fontWeight: '500' }}
+            >
+              <FileSpreadsheet size={16} style={{ color: '#16a34a' }} /> Upload Excel / CSV
+            </button>
+            <button 
+              type="button" 
+              id="btn-add-first-volunteer" 
+              data-testid="btn-add-first-volunteer" 
+              className="primary-action" 
+              onClick={onAddVolunteer}
+              style={{ fontSize: '13px' }}
+            >
+              <Plus size={16} /> Add volunteer
+            </button>
+          </div>
         </div>
       ) : (
         volunteers.map((volunteer) => (
@@ -3436,3 +3490,671 @@ const VolunteerModal = ({ form, setForm, editing, saving, onClose, onSubmit }) =
     </div>
   );
 };
+
+// ──────────────────────────────────────────
+// BULK IMPORT VOLUNTEERS MODAL (EXCEL / CSV)
+// ──────────────────────────────────────────
+const BulkImportModal = ({ token, onClose, onSuccess }) => {
+  const [file, setFile] = useState(null);
+  const [fileName, setFileName] = useState('');
+  const [parsedRows, setParsedRows] = useState([]);
+  const [isParsing, setIsParsing] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [parseError, setParseError] = useState('');
+  const [importResult, setImportResult] = useState(null);
+  const [sendEmails, setSendEmails] = useState(true);
+  const [copiedIdx, setCopiedIdx] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // 1. Download Sample Excel (.xlsx)
+  const downloadSampleExcel = () => {
+    try {
+      const sampleData = [
+        {
+          "Name": "Tony Stark",
+          "Email": "tony.stark@example.com",
+          "Phone No": "9876543210",
+          "Gender": "Male",
+          "Role": "Guest Management"
+        },
+        {
+          "Name": "Pepper Potts",
+          "Email": "pepper.potts@example.com",
+          "Phone No": "9876543211",
+          "Gender": "Female",
+          "Role": "Stage Management"
+        },
+        {
+          "Name": "Peter Parker",
+          "Email": "peter.parker@example.com",
+          "Phone No": "9876543212",
+          "Gender": "Male",
+          "Role": "Decoration Team"
+        },
+        {
+          "Name": "Natasha Romanoff",
+          "Email": "natasha.romanoff@example.com",
+          "Phone No": "9876543213",
+          "Gender": "Female",
+          "Role": "Crowd Management"
+        }
+      ];
+      const ws = XLSX.utils.json_to_sheet(sampleData);
+      ws['!cols'] = [{ wch: 20 }, { wch: 30 }, { wch: 15 }, { wch: 10 }, { wch: 22 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Volunteers");
+      XLSX.writeFile(wb, "CrewLink_Volunteers_Template.xlsx");
+    } catch (err) {
+      console.error('Failed to download Excel template:', err);
+      alert('Unable to generate Excel template: ' + err.message);
+    }
+  };
+
+  // 2. Download Sample CSV (.csv)
+  const downloadSampleCsv = () => {
+    try {
+      const csvContent = "Name,Email,Phone No,Gender,Role\n" +
+        "Tony Stark,tony.stark@example.com,9876543210,Male,Guest Management\n" +
+        "Pepper Potts,pepper.potts@example.com,9876543211,Female,Stage Management\n" +
+        "Peter Parker,peter.parker@example.com,9876543212,Male,Decoration Team\n" +
+        "Natasha Romanoff,natasha.romanoff@example.com,9876543213,Female,Crowd Management\n";
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "CrewLink_Volunteers_Template.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download CSV template:', err);
+    }
+  };
+
+  // 3. Process File Buffer
+  const processFile = (selectedFile) => {
+    if (!selectedFile) return;
+    setParseError('');
+    setImportResult(null);
+    setFile(selectedFile);
+    setFileName(selectedFile.name);
+    setIsParsing(true);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const arrayBuffer = evt.target.result;
+        const wb = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheetName = wb.SheetNames[0];
+        if (!sheetName) {
+          throw new Error('The uploaded spreadsheet contains no sheets.');
+        }
+        const ws = wb.Sheets[sheetName];
+        const rawRows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+        if (rawRows.length === 0) {
+          throw new Error('The spreadsheet is empty. Please add rows to the sheet.');
+        }
+
+        const normalized = rawRows.map((row, idx) => {
+          const nameKey = Object.keys(row).find(k => /^(full\s*name|name|volunteer\s*name)$/i.test(k.trim()));
+          const fullName = (nameKey ? row[nameKey] : (row['Name'] || row['name'] || '')).toString().trim();
+
+          const emailKey = Object.keys(row).find(k => /^(email|mail|email\s*address|e-mail)$/i.test(k.trim()));
+          const email = (emailKey ? row[emailKey] : (row['Email'] || row['email'] || row['Mail'] || row['mail'] || '')).toString().trim();
+
+          const phoneKey = Object.keys(row).find(k => /^(phone|phone\s*no|phone\s*no\.|mobile|phone\s*number|contact)$/i.test(k.trim()));
+          const phone = (phoneKey ? row[phoneKey] : (row['Phone No'] || row['phone no'] || row['Phone'] || row['phone'] || '')).toString().trim();
+
+          const genderKey = Object.keys(row).find(k => /^(gender|sex)$/i.test(k.trim()));
+          let gender = (genderKey ? row[genderKey] : (row['Gender'] || row['gender'] || 'Other')).toString().trim();
+          if (!gender) gender = 'Other';
+
+          const roleKey = Object.keys(row).find(k => /^(role|expert\s*role|position|volunteer\s*role)$/i.test(k.trim()));
+          let role = (roleKey ? row[roleKey] : (row['Role'] || row['role'] || 'Volunteer')).toString().trim();
+          if (!role) role = 'Volunteer';
+
+          const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+          const isValidPhone = phone.length >= 7;
+
+          let errorReason = '';
+          if (!fullName) errorReason = 'Missing Name';
+          else if (!email) errorReason = 'Missing Email';
+          else if (!isValidEmail) errorReason = 'Invalid Email format';
+          else if (!phone) errorReason = 'Missing Phone';
+          else if (!isValidPhone) errorReason = 'Invalid Phone';
+
+          return {
+            id: idx + 1,
+            fullName,
+            email,
+            phone,
+            gender,
+            role,
+            isValid: !errorReason,
+            errorReason
+          };
+        });
+
+        setParsedRows(normalized);
+      } catch (err) {
+        console.error('File parsing error:', err);
+        setParseError(err.message || 'Unable to parse spreadsheet file.');
+        setParsedRows([]);
+      } finally {
+        setIsParsing(false);
+      }
+    };
+
+    reader.onerror = () => {
+      setIsParsing(false);
+      setParseError('Failed to read file from disk.');
+    };
+
+    reader.readAsArrayBuffer(selectedFile);
+  };
+
+  const handleFileChange = (e) => {
+    processFile(e.target.files?.[0]);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  // 4. Submit Bulk Import to Server
+  const handleImport = async () => {
+    const validRows = parsedRows.filter(r => r.isValid);
+    if (validRows.length === 0) {
+      alert('No valid volunteer rows to import. Please check name, email, and phone numbers.');
+      return;
+    }
+
+    setIsImporting(true);
+    setParseError('');
+
+    try {
+      const activeToken = token || localStorage.getItem('token');
+      const authHeader = activeToken ? { Authorization: `Bearer ${activeToken}` } : {};
+
+      const payload = {
+        volunteers: validRows.map(r => ({
+          fullName: r.fullName,
+          email: r.email,
+          phone: r.phone,
+          gender: r.gender,
+          role: r.role
+        })),
+        sendEmails,
+        loginUrl: `${window.location.origin}/login`
+      };
+
+      const res = await axios.post(`${API_URL}/users/volunteers/bulk-import`, payload, {
+        headers: authHeader
+      });
+
+      setImportResult(res.data);
+      if (onSuccess) {
+        onSuccess(res.data);
+      }
+    } catch (err) {
+      console.error('Bulk import error:', err);
+      setParseError(err.response?.data?.message || err.message || 'Server error during import.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  // 5. Download Export of Generated Credentials
+  const downloadCredentialsExport = () => {
+    if (!importResult?.results) return;
+    try {
+      const exportData = importResult.results.map((r, i) => ({
+        "No": i + 1,
+        "Name": r.fullName,
+        "Email": r.email,
+        "Username": r.username || '—',
+        "Auto-Generated Password": r.generatedPassword || '—',
+        "Assigned Role": r.expertRole || 'Volunteer',
+        "Phone": r.phone || '—',
+        "Gender": r.gender || '—',
+        "Import Status": r.status === 'created' ? 'Created Successfully' : 'Skipped / Exists',
+        "Email Status": r.emailSent ? 'Delivered' : (r.emailNote || 'Not Sent')
+      }));
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      ws['!cols'] = [
+        { wch: 6 }, { wch: 20 }, { wch: 28 }, { wch: 18 }, { wch: 24 }, 
+        { wch: 20 }, { wch: 14 }, { wch: 10 }, { wch: 20 }, { wch: 24 }
+      ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Credentials");
+      XLSX.writeFile(wb, "CrewLink_Volunteer_Accounts_Created.xlsx");
+    } catch (err) {
+      console.error('Failed to export credentials:', err);
+    }
+  };
+
+  const copyPassword = (pwd, idx) => {
+    if (!pwd) return;
+    navigator.clipboard.writeText(pwd);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
+  const validCount = parsedRows.filter(r => r.isValid).length;
+  const invalidCount = parsedRows.length - validCount;
+
+  return (
+    <div className="modal-backdrop">
+      <div 
+        className="event-modal" 
+        style={{ 
+          width: 'min(860px, 96%)', 
+          maxHeight: '92vh', 
+          overflowY: 'auto', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          padding: '28px',
+          borderRadius: '20px',
+          background: '#ffffff',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}
+      >
+        {/* Header */}
+        <div className="modal-header" style={{ paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16a34a' }}>
+              <FileSpreadsheet size={24} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
+                Bulk Import Volunteers
+              </h2>
+              <p style={{ margin: '3px 0 0', fontSize: '13px', color: '#64748b' }}>
+                Upload an Excel (.xlsx / .xls) or CSV sheet to auto-create volunteer accounts & send passwords
+              </p>
+            </div>
+          </div>
+          <button 
+            type="button"
+            onClick={onClose} 
+            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '6px', borderRadius: '8px' }}
+            aria-label="Close"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Content Body */}
+        <div style={{ flex: 1, padding: '20px 0', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* STEP A: Results Screen if finished */}
+          {importResult ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '14px', padding: '18px 22px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#10b981', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <CheckCircle2 size={22} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#065f46' }}>
+                    Import Completed Successfully!
+                  </h4>
+                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#047857' }}>
+                    Created <strong>{importResult.createdCount}</strong> volunteer account(s). {importResult.skippedCount > 0 ? `(${importResult.skippedCount} skipped due to existing email or format issues)` : ''}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={downloadCredentialsExport}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    background: '#ffffff',
+                    border: '1px solid #10b981',
+                    borderRadius: '8px',
+                    color: '#065f46',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Download size={14} /> Download Credentials (.xlsx)
+                </button>
+              </div>
+
+              {/* Table of Created Accounts & Auto-Generated Passwords */}
+              <div>
+                <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#334155', marginBottom: '10px' }}>
+                  Generated Volunteer Credentials & Email Status
+                </h4>
+                <div style={{ maxHeight: '320px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', position: 'sticky', top: 0 }}>
+                        <th style={{ padding: '10px 14px' }}>Volunteer</th>
+                        <th style={{ padding: '10px 14px' }}>Username</th>
+                        <th style={{ padding: '10px 14px' }}>Generated Password</th>
+                        <th style={{ padding: '10px 14px' }}>Role</th>
+                        <th style={{ padding: '10px 14px' }}>Email Delivery</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importResult.results.map((res, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #f1f5f9', background: res.status === 'created' ? '#ffffff' : '#fffbeb' }}>
+                          <td style={{ padding: '12px 14px' }}>
+                            <div style={{ fontWeight: '600', color: '#0f172a' }}>{res.fullName}</div>
+                            <div style={{ fontSize: '12px', color: '#64748b' }}>{res.email}</div>
+                          </td>
+                          <td style={{ padding: '12px 14px', fontFamily: 'monospace', color: '#2563eb' }}>
+                            {res.username || '—'}
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            {res.generatedPassword ? (
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px', border: '1px dashed #cbd5e1' }}>
+                                <span style={{ fontFamily: 'monospace', fontWeight: '700', color: '#0f172a' }}>
+                                  {res.generatedPassword}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => copyPassword(res.generatedPassword, i)}
+                                  title="Copy Password"
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: copiedIdx === i ? '#16a34a' : '#64748b', padding: 0 }}
+                                >
+                                  {copiedIdx === i ? <Check size={14} /> : <Copy size={14} />}
+                                </button>
+                              </div>
+                            ) : (
+                              <span style={{ color: '#94a3b8', fontSize: '12px' }}>{res.reason || 'Skipped'}</span>
+                            )}
+                          </td>
+                          <td style={{ padding: '12px 14px', color: '#475569' }}>
+                            <span style={{ background: '#f3e8ff', color: '#7e22ce', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600' }}>
+                              {res.expertRole || 'Volunteer'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            {res.emailSent ? (
+                              <span style={{ color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '600' }}>
+                                <CheckCircle size={14} /> Sent
+                              </span>
+                            ) : (
+                              <span style={{ color: '#d97706', fontSize: '11px' }} title={res.emailNote}>
+                                {res.emailNote || 'Not Sent'}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* STEP 1: Download Templates Banner */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>
+                    Need a template to get started?
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                    Columns required: <strong>Name</strong>, <strong>Email</strong>, <strong>Phone No</strong>, <strong>Gender</strong>, <strong>Role</strong>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={downloadSampleExcel}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      background: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      color: '#16a34a',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Download size={14} /> Template (.xlsx)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={downloadSampleCsv}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      background: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      color: '#3b82f6',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Download size={14} /> Template (.csv)
+                  </button>
+                </div>
+              </div>
+
+              {/* STEP 2: Drag and Drop Upload Area */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: dragOver ? '2px dashed #2563eb' : '2px dashed #cbd5e1',
+                  background: dragOver ? '#eff6ff' : '#f8fafc',
+                  borderRadius: '16px',
+                  padding: '32px 20px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx, .xls, .csv"
+                  onChange={handleFileChange}
+                  style={{ display: 'none' }}
+                />
+                <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#e0e7ff', color: '#4f46e5', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Upload size={24} />
+                </div>
+                <div style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>
+                  {fileName ? fileName : 'Choose Excel / CSV file or drag & drop here'}
+                </div>
+                <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#64748b' }}>
+                  Supports Microsoft Excel (.xlsx, .xls) and Comma-Separated Values (.csv)
+                </p>
+                {isParsing && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px', color: '#4f46e5', fontSize: '13px' }}>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Parsing spreadsheet rows...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Parsing Error Message */}
+              {parseError && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px', color: '#b91c1c', fontSize: '13px' }}>
+                  <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                  <span>{parseError}</span>
+                </div>
+              )}
+
+              {/* STEP 3: Preview Table if rows parsed */}
+              {parsedRows.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>
+                      Preview: {validCount} valid volunteer(s) {invalidCount > 0 ? `(${invalidCount} with issues)` : ''}
+                    </div>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#334155', cursor: 'pointer', fontWeight: '500' }}>
+                      <input
+                        type="checkbox"
+                        checked={sendEmails}
+                        onChange={(e) => setSendEmails(e.target.checked)}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#2563eb' }}
+                      />
+                      <span>Email credentials to volunteers automatically</span>
+                    </label>
+                  </div>
+
+                  <div style={{ maxHeight: '240px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', position: 'sticky', top: 0 }}>
+                          <th style={{ padding: '8px 12px' }}>#</th>
+                          <th style={{ padding: '8px 12px' }}>Name</th>
+                          <th style={{ padding: '8px 12px' }}>Email</th>
+                          <th style={{ padding: '8px 12px' }}>Phone No</th>
+                          <th style={{ padding: '8px 12px' }}>Gender</th>
+                          <th style={{ padding: '8px 12px' }}>Role</th>
+                          <th style={{ padding: '8px 12px' }}>Validation</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parsedRows.map((row) => (
+                          <tr key={row.id} style={{ borderBottom: '1px solid #f1f5f9', background: row.isValid ? '#ffffff' : '#fff1f2' }}>
+                            <td style={{ padding: '8px 12px', color: '#94a3b8' }}>{row.id}</td>
+                            <td style={{ padding: '8px 12px', fontWeight: '600', color: '#0f172a' }}>{row.fullName || '—'}</td>
+                            <td style={{ padding: '8px 12px', color: '#3b82f6' }}>{row.email || '—'}</td>
+                            <td style={{ padding: '8px 12px', color: '#475569' }}>{row.phone || '—'}</td>
+                            <td style={{ padding: '8px 12px', color: '#475569' }}>{row.gender}</td>
+                            <td style={{ padding: '8px 12px' }}>
+                              <span style={{ background: '#f3e8ff', color: '#7e22ce', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>
+                                {row.role}
+                              </span>
+                            </td>
+                            <td style={{ padding: '8px 12px' }}>
+                              {row.isValid ? (
+                                <span style={{ color: '#16a34a', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <Check size={14} /> Ready
+                                </span>
+                              ) : (
+                                <span style={{ color: '#ef4444', fontWeight: '600' }}>
+                                  ⚠️ {row.errorReason}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Modal Actions Footer */}
+        <div style={{ paddingTop: '16px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            {parsedRows.length > 0 && !importResult && (
+              <button
+                type="button"
+                onClick={() => { setFile(null); setFileName(''); setParsedRows([]); setParseError(''); }}
+                style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Clear and choose different file
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {importResult ? (
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  padding: '10px 24px',
+                  background: '#2563eb',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(37,99,235,0.3)'
+                }}
+              >
+                Done & View Volunteers
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#475569',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  id="btn-confirm-bulk-import"
+                  data-testid="btn-confirm-bulk-import"
+                  onClick={handleImport}
+                  disabled={isImporting || validCount === 0}
+                  style={{
+                    padding: '10px 24px',
+                    background: validCount > 0 ? '#16a34a' : '#94a3b8',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontWeight: '600',
+                    fontSize: '14px',
+                    cursor: validCount > 0 && !isImporting ? 'pointer' : 'not-allowed',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: validCount > 0 ? '0 4px 14px rgba(22,163,74,0.35)' : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {isImporting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Creating accounts & sending emails...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileSpreadsheet size={16} />
+                      <span>Import {validCount > 0 ? `${validCount} Volunteers` : 'Volunteers'}</span>
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+

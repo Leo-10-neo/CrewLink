@@ -184,6 +184,166 @@ router.post('/volunteer', adminAuth, async (req, res) => {
   }
 });
 
+// Bulk import volunteers from Excel/CSV (admin only)
+router.post('/volunteers/bulk-import', adminAuth, async (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const VolunteerProfile = require('../models/VolunteerProfile');
+    const { sendVolunteerWelcomeEmail } = require('../services/emailService');
+
+    const { volunteers, sendEmails = true, loginUrl } = req.body;
+
+    if (!Array.isArray(volunteers) || volunteers.length === 0) {
+      return res.status(400).json({ message: 'No volunteer records provided in upload.' });
+    }
+
+    const results = [];
+    let createdCount = 0;
+    let skippedCount = 0;
+
+    for (let index = 0; index < volunteers.length; index++) {
+      const row = volunteers[index];
+      const fullName = (row.fullName || row.name || '').trim();
+      const rawEmail = (row.email || row.mail || '').trim();
+      const rawPhone = (row.phone || row.phoneNo || row.mobile || '').trim();
+      const gender = (row.gender || 'Other').trim();
+      const expertRole = (row.role || row.expertRole || 'Volunteer').trim();
+
+      if (!rawEmail || !rawEmail.includes('@')) {
+        results.push({
+          index: index + 1,
+          fullName: fullName || 'Unknown',
+          email: rawEmail || 'Missing',
+          phone: rawPhone,
+          gender,
+          expertRole,
+          status: 'skipped',
+          reason: 'Missing or invalid email address'
+        });
+        skippedCount++;
+        continue;
+      }
+
+      if (!rawPhone) {
+        results.push({
+          index: index + 1,
+          fullName: fullName || 'Unknown',
+          email: rawEmail,
+          phone: 'Missing',
+          gender,
+          expertRole,
+          status: 'skipped',
+          reason: 'Missing phone number'
+        });
+        skippedCount++;
+        continue;
+      }
+
+      const cleanEmail = rawEmail.toLowerCase();
+
+      // Check if user already exists
+      const existingUser = await User.findOne({ email: cleanEmail });
+      if (existingUser) {
+        results.push({
+          index: index + 1,
+          fullName: existingUser.fullName || fullName,
+          email: cleanEmail,
+          phone: rawPhone,
+          gender,
+          expertRole,
+          status: 'skipped',
+          reason: 'Email is already registered'
+        });
+        skippedCount++;
+        continue;
+      }
+
+      // Generate clean unique username
+      const baseName = fullName 
+        ? fullName.toLowerCase().replace(/[^a-z0-9]/g, '') 
+        : cleanEmail.split('@')[0].replace(/[^a-z0-9]/g, '');
+      let username = (baseName || 'volunteer') + Math.floor(1000 + Math.random() * 9000);
+      let attempts = 0;
+      while (await User.findOne({ username }) && attempts < 5) {
+        username = (baseName || 'volunteer') + Math.floor(1000 + Math.random() * 9000);
+        attempts++;
+      }
+
+      // Generate auto-generated password: e.g. Crew@4819
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const plainPassword = `Crew@${randomSuffix}`;
+
+      // Hash password
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(plainPassword, salt);
+
+      // Create User
+      const newUser = new User({
+        username,
+        email: cleanEmail,
+        password: hashedPassword,
+        role: 'volunteer',
+        fullName: fullName || username,
+        phone: rawPhone,
+        gender: gender || 'Other',
+        expertRole: expertRole || 'Volunteer',
+        profileStatus: 'Verified'
+      });
+      await newUser.save();
+
+      // Create VolunteerProfile
+      await VolunteerProfile.create({
+        user: newUser._id,
+        fullName: newUser.fullName,
+        phone: newUser.phone,
+        gender: newUser.gender,
+        expertRole: newUser.expertRole,
+        applicationStatus: 'approved'
+      });
+
+      // Send email if enabled
+      let emailStatus = { success: false, skipped: true };
+      if (sendEmails !== false) {
+        emailStatus = await sendVolunteerWelcomeEmail({
+          email: cleanEmail,
+          fullName: newUser.fullName,
+          username,
+          password: plainPassword,
+          expertRole: newUser.expertRole,
+          loginUrl
+        });
+      }
+
+      results.push({
+        index: index + 1,
+        id: newUser._id,
+        fullName: newUser.fullName,
+        email: cleanEmail,
+        username,
+        generatedPassword: plainPassword,
+        phone: rawPhone,
+        gender,
+        expertRole,
+        emailSent: emailStatus.success,
+        emailNote: emailStatus.isMock ? 'Credentials saved (SMTP mock)' : (emailStatus.error ? `Email error: ${emailStatus.error}` : 'Email sent successfully'),
+        status: 'created'
+      });
+      createdCount++;
+    }
+
+    res.json({
+      success: true,
+      message: `Bulk import completed: ${createdCount} volunteer(s) created, ${skippedCount} skipped.`,
+      createdCount,
+      skippedCount,
+      results
+    });
+  } catch (error) {
+    console.error('Bulk import error:', error);
+    res.status(500).json({ message: error.message || 'Server error during bulk volunteer import' });
+  }
+});
+
 // Update volunteer details (admin only)
 router.put('/:id/volunteer', adminAuth, async (req, res) => {
   try {
