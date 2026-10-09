@@ -31,7 +31,6 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_BASE
-        fromService:
-          type: web
-          name: crewlink-api
-          property: host
+        value: https://crewlink-egf6.onrender.com
+      - key: VITE_API_URL
+        value: https://crewlink-egf6.onrender.com/api
