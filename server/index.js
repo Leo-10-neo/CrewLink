@@ -20,7 +20,8 @@ const { seedAdmin } = require('./seed');
 
 mongoose.connect(MONGODB_URI)
   .then(async () => {
-    console.log(`MongoDB connected successfully to ${MONGODB_URI}`);
+    const sanitizedUri = MONGODB_URI.replace(/:([^:@]+)@/, ':****@');
+    console.log(`MongoDB connected successfully to ${sanitizedUri}`);
     // Auto-create admin account if it doesn't exist (needed for fresh cloud DB)
     await seedAdmin();
   })

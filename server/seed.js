@@ -1,4 +1,4 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 /**
@@ -15,7 +15,7 @@ const seedAdmin = async () => {
 
     const existing = await User.findOne({ email: adminEmail });
     if (existing) {
-      console.log([Seed] Admin account already exists: );
+      console.log(`[Seed] Admin account already exists: ${adminEmail}`);
       return;
     }
 
@@ -31,7 +31,7 @@ const seedAdmin = async () => {
       profileStatus: 'Verified'
     });
 
-    console.log([Seed] ✅ Admin account created:  / );
+    console.log(`[Seed] ✅ Admin account created: ${adminEmail} / ${adminPassword}`);
   } catch (err) {
     console.error('[Seed] Failed to seed admin:', err.message);
   }
