@@ -16,8 +16,14 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/event-management';
+const { seedAdmin } = require('./seed');
+
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log(`MongoDB connected successfully to ${MONGODB_URI}`))
+  .then(async () => {
+    console.log(`MongoDB connected successfully to ${MONGODB_URI}`);
+    // Auto-create admin account if it doesn't exist (needed for fresh cloud DB)
+    await seedAdmin();
+  })
   .catch((err) => console.error('MongoDB connection error:', err));
 
 // Routes
