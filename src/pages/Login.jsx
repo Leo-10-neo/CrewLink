@@ -20,6 +20,7 @@ import {
   resetApiBase, 
   testServerConnection, 
   autoDiscoverTunnelUrl, 
+  wakeUpServer,
   PUBLIC_INTERNET_URL 
 } from '../services/api';
 
@@ -41,6 +42,7 @@ const Login = () => {
   const [isTestingServer, setIsTestingServer] = useState(false);
   const [serverTestStatus, setServerTestStatus] = useState(null); // { success: boolean, message: string }
   const [isAutoReconnecting, setIsAutoReconnecting] = useState(false);
+  const [isWakingUp, setIsWakingUp] = useState(false); // Render cold-start wake-up state
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -103,6 +105,16 @@ const Login = () => {
     setIsNetworkErr(false);
   };
 
+  const navigateByRole = (userData) => {
+    if (userData.role === 'admin') {
+      navigate('/admin/dashboard');
+    } else if (userData.role === 'volunteer') {
+      navigate('/volunteer/dashboard');
+    } else {
+      setApiError('Access denied. Unrecognized user role.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -113,59 +125,76 @@ const Login = () => {
     setIsLoading(true);
     setApiError('');
     setIsNetworkErr(false);
+    setIsWakingUp(false);
+
+    const attemptLogin = async () => {
+      const result = await login(formData.email.trim(), formData.password);
+      if (result.success) {
+        navigateByRole(result.user);
+        return true;
+      }
+      return result;
+    };
 
     try {
-      const result = await login(formData.email.trim(), formData.password);
-      
-      if (result.success) {
-        if (result.user.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else if (result.user.role === 'volunteer') {
-          navigate('/volunteer/dashboard');
+      const result = await attemptLogin();
+      if (result === true) return;
+
+      // Check if this is a server error (500) = Render cold start
+      const isServerError = result.message?.toLowerCase().includes('server error') ||
+        result.message?.toLowerCase().includes('500') ||
+        result.message?.toLowerCase().includes('internal');
+      const isNetworkErr = result.isNetworkError;
+
+      if (isServerError || isNetworkErr) {
+        // Server may be waking up from sleep — show friendly message and retry
+        setIsWakingUp(true);
+        setApiError('');
+        setIsNetworkErr(false);
+
+        // Wake up server and wait for it to be ready (up to 60s)
+        await wakeUpServer();
+
+        // Retry login after wake-up
+        setIsWakingUp(false);
+        setIsLoading(true);
+        const retryResult = await attemptLogin();
+        if (retryResult === true) return;
+
+        // If still failing after retry, do one final auto-discover + retry
+        const disc = await autoDiscoverTunnelUrl(true);
+        if (disc.success) {
+          const finalResult = await attemptLogin();
+          if (finalResult === true) return;
+          setApiError(finalResult.message || 'Login failed. Please try again.');
         } else {
-          setApiError('Access denied. Unrecognized user role.');
+          setIsNetworkErr(true);
+          setApiError('Cannot connect to server. Please check your internet connection.');
         }
       } else {
-        if (result.isNetworkError || (result.message && result.message.toLowerCase().includes('connect'))) {
-          // Attempt auto-recovery from cloud registry
-          const disc = await autoDiscoverTunnelUrl();
-          if (disc.success) {
-            const retryRes = await login(formData.email.trim(), formData.password);
-            if (retryRes.success) {
-              if (retryRes.user.role === 'admin') {
-                navigate('/admin/dashboard');
-              } else if (retryRes.user.role === 'volunteer') {
-                navigate('/volunteer/dashboard');
-              } else {
-                setApiError('Access denied. Unrecognized user role.');
-              }
-              return;
-            }
-          }
-          setIsNetworkErr(true);
-        }
-        setApiError(result.message);
+        // Auth error (wrong password etc)
+        setApiError(result.message || 'Invalid email or password.');
       }
     } catch (error) {
-      // Auto-recovery attempt on unexpected network exception
+      // Unexpected error — try wake-up and retry
+      setIsWakingUp(true);
+      setApiError('');
       try {
-        const disc = await autoDiscoverTunnelUrl();
-        if (disc.success) {
-          const retryRes = await login(formData.email.trim(), formData.password);
-          if (retryRes.success) {
-            if (retryRes.user.role === 'admin') {
-              navigate('/admin/dashboard');
-            } else if (retryRes.user.role === 'volunteer') {
-              navigate('/volunteer/dashboard');
-            }
-            return;
-          }
-        }
-      } catch (_) {}
-      setApiError('Cannot connect to backend server. Re-check internet or tunnel status.');
-      setIsNetworkErr(true);
+        await wakeUpServer();
+        setIsWakingUp(false);
+        setIsLoading(true);
+        const retryResult = await attemptLogin();
+        if (retryResult === true) return;
+        setApiError('Login failed after retry. Please try again in a moment.');
+      } catch (_) {
+        setApiError('Cannot connect to backend server.');
+        setIsNetworkErr(true);
+      } finally {
+        setIsWakingUp(false);
+      }
     } finally {
       setIsLoading(false);
+      setIsWakingUp(false);
     }
   };
 
@@ -407,10 +436,15 @@ const Login = () => {
               type="submit"
               id="login-submit"
               data-testid="login-submit"
-              disabled={isLoading}
+              disabled={isLoading || isWakingUp}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-blue-600/30"
             >
-              {isLoading ? (
+              {isWakingUp ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  <span>Waking up server...</span>
+                </>
+              ) : isLoading ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
                   <span>Authenticating...</span>

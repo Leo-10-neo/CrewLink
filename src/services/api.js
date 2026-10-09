@@ -2,8 +2,8 @@ import axios from 'axios';
 import { Capacitor } from '@capacitor/core';
 import CrewLinkSync from '../plugins/CrewLinkSync';
 
-// Set global axios timeout to prevent network requests hanging indefinitely on mobile
-axios.defaults.timeout = 10000;
+// Set global axios timeout — 60s to handle Render cold starts (free tier takes ~30-60s to wake)
+axios.defaults.timeout = 60000;
 
 // Helper to format URL
 const formatUrl = (raw) => {
@@ -257,7 +257,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000,
+  timeout: 60000, // 60s for Render cold starts
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -375,20 +375,47 @@ api.interceptors.response.use((res) => res, createResponseErrorInterceptor(api))
 // APP LIFECYCLE & RESUME LISTENERS:
 // Ensures that when the user wakes the app after 2 hours, connection is refreshed!
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// KEEP-ALIVE SERVICE:
+// Pings Render backend every 10 minutes to prevent free-tier spin-down.
+// Only active when deployed to a public domain (not localhost).
+// ─────────────────────────────────────────────────────────────────────────────
+export const wakeUpServer = async () => {
+  try {
+    const base = getApiBase();
+    await axios.get(`${base}/api/test`, { timeout: 60000, _skipIntercept: true });
+    console.log('✅ CrewLink keep-alive ping successful');
+    return true;
+  } catch (_) {
+    console.warn('⚠️ Keep-alive ping failed — server may be starting up');
+    return false;
+  }
+};
+
 if (typeof window !== 'undefined') {
   // 1. Initial proactive discovery (immediate, zero delay)
   autoDiscoverTunnelUrl(false).catch(() => {});
 
-  // 2. On network reconnected (Wi-Fi or mobile data restored)
+  // 2. Keep-alive ping every 10 minutes — only on deployed site (not localhost)
+  const isDeployed = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+  if (isDeployed) {
+    // First ping after 5s to warm up on page load
+    setTimeout(() => wakeUpServer(), 5000);
+    // Then every 10 minutes
+    setInterval(() => wakeUpServer(), 10 * 60 * 1000);
+    console.log('🔄 CrewLink keep-alive service started (every 10 min)');
+  }
+
+  // 3. On network reconnected (Wi-Fi or mobile data restored)
   window.addEventListener('online', () => {
     console.log('📶 Device back online! Running CrewLink auto-discovery...');
     autoDiscoverTunnelUrl(true).catch(() => {});
   });
 
-  // 3. On app resume / phone unlock / tab focus
+  // 4. On app resume / phone unlock / tab focus
   const handleResume = () => {
     if (!document.hidden) {
-      testServerConnection(getApiBase(), 2000).then((res) => {
+      testServerConnection(getApiBase(), 5000).then((res) => {
         if (!res.success) {
           autoDiscoverTunnelUrl(true).catch(() => {});
         }
@@ -399,10 +426,10 @@ if (typeof window !== 'undefined') {
   document.addEventListener('visibilitychange', handleResume);
   window.addEventListener('focus', handleResume);
 
-  // 4. Periodic background check every 15 seconds
+  // 5. Periodic background check every 15 seconds
   setInterval(() => {
     if (!document.hidden) {
-      testServerConnection(getApiBase(), 2500).then((res) => {
+      testServerConnection(getApiBase(), 5000).then((res) => {
         if (!res.success) {
           autoDiscoverTunnelUrl(true).catch(() => {});
         }
