@@ -44,7 +44,7 @@ function createTransporter() {
  * Sends welcome email with auto-generated credentials to newly registered volunteer
  */
 async function sendVolunteerWelcomeEmail({ email, fullName, username, password, expertRole, loginUrl }) {
-  const portalUrl = loginUrl || process.env.FRONTEND_URL || 'http://localhost:5000/login';
+  const portalUrl = loginUrl || process.env.FRONTEND_URL || 'https://crew-link-phi.vercel.app/login';
   const roleName = expertRole || 'Volunteer';
   const name = fullName || username || 'Volunteer';
 
