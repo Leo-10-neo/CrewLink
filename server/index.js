@@ -97,9 +97,15 @@ app.get('/test-report', (req, res) => {
   res.status(404).send('HTML Report not found.');
 });
 
-// Test route
+// Test route with DB health check
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'API is working' });
+  const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+  const dbState = states[mongoose.connection.readyState] || 'unknown';
+  res.json({
+    message: 'API is working',
+    database: dbState,
+    dbReady: mongoose.connection.readyState === 1
+  });
 });
 
 // ── TEST CLEANUP ENDPOINT ────────────────────────────────────────────────────
