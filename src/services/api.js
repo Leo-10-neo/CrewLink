@@ -15,8 +15,8 @@ const formatUrl = (raw) => {
   return url;
 };
 
-export const PUBLIC_INTERNET_URL = 'https://crewlink-z098.onrender.com';
-export const RENDER_BACKEND_URL = 'https://crewlink-z098.onrender.com';
+export const PUBLIC_INTERNET_URL = 'https://pointer-configurations-nonprofit-mega.trycloudflare.com';
+export const RENDER_BACKEND_URL = 'https://crewlink-j86n.onrender.com';
 export const RAW_REGISTRY_URL = 'https://raw.githubusercontent.com/Leo-10-neo/CrewLink/main/current_tunnel_url.txt';
 export const CLOUD_REGISTRY_URL = 'https://api.github.com/repos/Leo-10-neo/CrewLink/contents/current_tunnel_url.txt';
 export const LAN_WIFI_URL = 'http://192.168.0.121:5000';
@@ -37,18 +37,23 @@ export const getApiBase = () => {
     }
   }
 
-  // 2. Build-time environment variable
+  // 2. If running directly in a web browser on Render (Render web service serves frontend & API together)
+  if (typeof window !== 'undefined' && window.location.hostname && window.location.hostname.endsWith('onrender.com')) {
+    return window.location.origin;
+  }
+
+  // 3. Build-time environment variable
   let base = import.meta.env.VITE_API_BASE;
   if (base) {
     return formatUrl(base);
   }
   
-  // 3. Native mobile (Capacitor / Android WebView): use Render backend directly
+  // 4. Native mobile (Capacitor / Android WebView): use Render backend directly
   if (typeof Capacitor !== 'undefined' && Capacitor.getPlatform() !== 'web') {
     return RENDER_BACKEND_URL;
   }
 
-  // 4. Protocol / WebView checks
+  // 5. Protocol / WebView checks
   if (typeof window !== 'undefined') {
     if (
       window.location.protocol === 'capacitor:' || 
@@ -58,23 +63,23 @@ export const getApiBase = () => {
       return RENDER_BACKEND_URL;
     }
 
-    // 5. User-agent check for Android WebView
+    // 6. User-agent check for Android WebView
     const ua = navigator.userAgent || '';
     if ((ua.includes('wv') || ua.includes('Android')) && (window.location.hostname === 'localhost' || !window.location.port)) {
       return RENDER_BACKEND_URL;
     }
 
-    // 6. Localhost PC web development → use local server
+    // 7. Localhost PC web development → use local server
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:5000';
     }
 
-    // 7. LAN IP when browsing on phone browser (e.g. 192.168.x.x)
+    // 8. LAN IP when browsing on phone browser (e.g. 192.168.x.x)
     if (window.location.hostname && /^(\d{1,3}\.){3}\d{1,3}$/.test(window.location.hostname) && window.location.hostname !== '127.0.0.1') {
       return `http://${window.location.hostname}:5000`;
     }
 
-    // 8. Any public domain (Vercel, Netlify, etc.) → always use Render backend
+    // 9. Any other public domain (Vercel, Netlify, etc.) → always use Render backend
     if (window.location.hostname && window.location.hostname !== 'localhost') {
       return RENDER_BACKEND_URL;
     }
@@ -153,6 +158,11 @@ export const autoDiscoverTunnelUrl = async (force = false) => {
 
     // Always include Render backend as the primary production candidate
     candidates.push(RENDER_BACKEND_URL);
+
+    // Current web origin candidate (if running directly in browser on Render or custom domain)
+    if (typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http')) {
+      candidates.push(window.location.origin);
+    }
 
     // Local Wi-Fi candidate (instant if phone is on home Wi-Fi)
     if (LAN_WIFI_URL) candidates.push(LAN_WIFI_URL);
