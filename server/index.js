@@ -18,14 +18,51 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/event-management';
 const { seedAdmin } = require('./seed');
 
-mongoose.connect(MONGODB_URI)
-  .then(async () => {
-    const sanitizedUri = MONGODB_URI.replace(/:([^:@]+)@/, ':****@');
-    console.log(`MongoDB connected successfully to ${sanitizedUri}`);
+let lastMongoError = null;
+let isConnecting = false;
+
+const connectDB = async () => {
+  if (isConnecting || mongoose.connection.readyState === 1) return;
+  isConnecting = true;
+  const isCloud = MONGODB_URI.includes('mongodb.net') || MONGODB_URI.startsWith('mongodb+srv');
+  const sanitizedUri = MONGODB_URI.replace(/:([^:@]+)@/, ':****@');
+  console.log(`[MongoDB] Connecting to ${isCloud ? 'Cloud (MongoDB Atlas)' : 'Local MongoDB'}: ${sanitizedUri}`);
+
+  try {
+    await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
+    lastMongoError = null;
+    console.log(`[MongoDB] Connected successfully to ${sanitizedUri}`);
     // Auto-create admin account if it doesn't exist (needed for fresh cloud DB)
     await seedAdmin();
-  })
-  .catch((err) => console.error('MongoDB connection error:', err));
+  } catch (err) {
+    lastMongoError = err.message;
+    console.error('[MongoDB] Connection error:', err.message);
+    if (!process.env.MONGODB_URI || MONGODB_URI.includes('127.0.0.1') || MONGODB_URI.includes('localhost')) {
+      console.warn('⚠️ [MongoDB] Server is attempting to connect to localhost. In Render cloud deployment, MONGODB_URI environment variable MUST be set with a cloud MongoDB Atlas connection string!');
+    }
+  } finally {
+    isConnecting = false;
+  }
+};
+
+connectDB();
+
+// Periodic retry if disconnected
+setInterval(() => {
+  if (mongoose.connection.readyState === 0) {
+    connectDB().catch(() => {});
+  }
+}, 30000);
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️ [MongoDB] Disconnected.');
+});
+mongoose.connection.on('error', (err) => {
+  lastMongoError = err.message;
+  console.error('[MongoDB] Runtime error:', err.message);
+});
 
 // Routes
 console.log('Setting up routes...');
@@ -101,10 +138,19 @@ app.get('/test-report', (req, res) => {
 app.get('/api/test', (req, res) => {
   const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
   const dbState = states[mongoose.connection.readyState] || 'unknown';
+  const isEnvConfigured = Boolean(process.env.MONGODB_URI);
+  const isAtlas = Boolean(process.env.MONGODB_URI && (process.env.MONGODB_URI.includes('mongodb.net') || process.env.MONGODB_URI.startsWith('mongodb+srv')));
+
   res.json({
     message: 'API is working',
     database: dbState,
-    dbReady: mongoose.connection.readyState === 1
+    dbReady: mongoose.connection.readyState === 1,
+    details: {
+      isEnvConfigured,
+      isAtlasCluster: isAtlas,
+      defaultingToLocalhost: !isEnvConfigured,
+      lastError: lastMongoError
+    }
   });
 });
 

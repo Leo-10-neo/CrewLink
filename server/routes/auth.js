@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
@@ -13,6 +14,12 @@ console.log('Auth routes loaded');
 // Register
 router.post('/register', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Database is disconnected on cloud server. Please ensure MONGODB_URI is configured in Render Environment settings and MongoDB Atlas allows 0.0.0.0/0.'
+      });
+    }
+
     const { 
       username, email, password, role, 
       photo, aadharNo, panCardNo, address, age,
@@ -129,6 +136,12 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Database is disconnected on cloud server. Please ensure MONGODB_URI is configured in Render Environment settings and MongoDB Atlas allows 0.0.0.0/0.'
+      });
+    }
+
     const rawInput = (req.body.email || req.body.username || '').trim();
     const password = (req.body.password || '').trim();
 
@@ -174,7 +187,12 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error during login' });
+    if (error.name === 'MongooseError' && error.message.includes('buffering timed out')) {
+      return res.status(503).json({
+        message: 'Database connection timed out. MongoDB is unreachable. Please check Render MONGODB_URI and MongoDB Atlas Network Access.'
+      });
+    }
+    res.status(500).json({ message: error.message || 'Server error during login' });
   }
 });
 

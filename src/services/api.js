@@ -15,7 +15,7 @@ const formatUrl = (raw) => {
   return url;
 };
 
-export const PUBLIC_INTERNET_URL = 'https://pointer-configurations-nonprofit-mega.trycloudflare.com';
+export const PUBLIC_INTERNET_URL = 'https://healing-mostly-brokers-certain.trycloudflare.com';
 export const RENDER_BACKEND_URL = 'https://crewlink-j86n.onrender.com';
 export const RAW_REGISTRY_URL = 'https://raw.githubusercontent.com/Leo-10-neo/CrewLink/main/current_tunnel_url.txt';
 export const CLOUD_REGISTRY_URL = 'https://api.github.com/repos/Leo-10-neo/CrewLink/contents/current_tunnel_url.txt';

@@ -204,10 +204,17 @@ const Login = () => {
     try {
       const res = await testServerConnection(serverUrlInput);
       if (res.success) {
-        setServerTestStatus({
-          success: true,
-          message: 'Connected successfully! CrewLink API is live.',
-        });
+        if (res.data?.dbReady === false) {
+          setServerTestStatus({
+            success: false,
+            message: 'Server reached, but Database is disconnected! Set MONGODB_URI in Render Environment.',
+          });
+        } else {
+          setServerTestStatus({
+            success: true,
+            message: 'Connected successfully! CrewLink API & Database are live.',
+          });
+        }
       } else {
         setServerTestStatus({
           success: false,
