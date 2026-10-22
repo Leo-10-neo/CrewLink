@@ -60,3 +60,4 @@ yarn-error.log*
 # Local database and binaries
 cloudflared.exe
 mongodb_data/
+*.zip
