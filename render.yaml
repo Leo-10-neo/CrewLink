@@ -31,6 +31,6 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_BASE
-        value: https://crewlink-j86n.onrender.com
+        value: https://crewlink-azv4.onrender.com
       - key: VITE_API_URL
-        value: https://crewlink-j86n.onrender.com/api
+        value: https://crewlink-azv4.onrender.com/api

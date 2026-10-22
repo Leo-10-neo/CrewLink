@@ -1,7 +1,7 @@
 # CrewLink - Event Management System
 
 🌐 **Live Web Application:** [https://crew-link-phi.vercel.app/](https://crew-link-phi.vercel.app/)  
-🔗 **Live Backend API:** [https://crewlink-j86n.onrender.com](https://crewlink-j86n.onrender.com)
+🔗 **Live Backend API:** [https://crewlink-azv4.onrender.com](https://crewlink-azv4.onrender.com)
 
 A full-stack event and crew management application built with MongoDB, Express, React, and Node.js featuring volunteer coordination, task management, QR scanning, attendance, certificate generation, and an Android mobile app.
 
@@ -124,7 +124,7 @@ npm install
 npm run dev
 ```
 
-The application will be available at [https://crew-link-phi.vercel.app/](https://crewlink-j86n.onrender.com) (or locally at `http://localhost:5000/`).
+The application will be available at [https://crew-link-phi.vercel.app/](https://crewlink-azv4.onrender.com) (or locally at `http://localhost:5000/`).
 
 ## API Endpoints
 
