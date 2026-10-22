@@ -124,7 +124,7 @@ npm install
 npm run dev
 ```
 
-The application will be available at [https://crew-link-phi.vercel.app/](https://crewlink-azv4.onrender.com) (or locally at `http://localhost:5000/`).
+The application will be available at [https://crew-link-ten.vercel.app/](https://crew-link-ten.vercel.app/) (or locally at `http://localhost:5000/`).
 
 ## API Endpoints
 
