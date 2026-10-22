@@ -31,18 +31,28 @@ export const getApiBase = () => {
 
   // 1. User-configured server URL (persisted on the device in localStorage)
   if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
     const custom = localStorage.getItem('crewlink_api_base');
     if (custom && custom.trim()) {
-      return formatUrl(custom);
+      // If we are developing on localhost, only use custom URL if it's explicitly set to a local target
+      if (!isLocalhost || custom.includes('localhost') || custom.includes('127.0.0.1')) {
+        return formatUrl(custom);
+      }
+    }
+
+    // 2. Localhost PC web development → always use local backend port 5000
+    if (isLocalhost) {
+      return 'http://localhost:5000';
+    }
+
+    // 3. If running directly in a web browser on Render (Render web service serves frontend & API together)
+    if (window.location.hostname && window.location.hostname.endsWith('onrender.com')) {
+      return window.location.origin;
     }
   }
 
-  // 2. If running directly in a web browser on Render (Render web service serves frontend & API together)
-  if (typeof window !== 'undefined' && window.location.hostname && window.location.hostname.endsWith('onrender.com')) {
-    return window.location.origin;
-  }
-
-  // 3. Build-time environment variable
+  // 4. Build-time environment variable
   let base = import.meta.env.VITE_API_BASE;
   if (base) {
     return formatUrl(base);

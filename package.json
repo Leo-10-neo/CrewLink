@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "vite",
+    "server": "node server/index.js",
+    "server:watch": "node --watch server/index.js",
+    "dev:local": "start \"CrewLink Backend\" cmd /k \"node --watch server/index.js\" && vite --open",
     "build": "vite build",
     "postinstall": "npm --prefix server install",
     "lint": "eslint .",
