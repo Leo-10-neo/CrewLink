@@ -47,24 +47,24 @@ const Navbar = () => {
   }, [location.pathname, isAuthenticated, currentLinks.length]);
 
   return (
-    <nav className="glass-panel sticky top-0 z-50 border-b border-gray-200/50" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+    <nav className="glass-panel sticky top-0 z-50 border-b border-slate-200/60" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 group">
+          <Link to="/" className="flex items-center space-x-2.5 group">
             <img
               src="/crewlink_logo_transparent.png"
               alt="CrewLink Logo"
-              className="h-10 w-auto transform group-hover:scale-105 transition-all duration-300 drop-shadow-md"
+              className="h-8 w-auto transform group-hover:scale-105 transition-all duration-300 drop-shadow-sm"
             />
-            <span className="text-2xl font-bold text-accent tracking-tight">
+            <span className="text-xl font-black text-slate-900 tracking-tight">
               CrewLink
             </span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center">
-            <div className="relative flex items-center space-x-2 mr-6">
+            <div className="relative flex items-center space-x-1 mr-6">
               {/* Sliding Water Droplet Indicator */}
               <div 
                 className="droplet-bg"
@@ -82,11 +82,11 @@ const Navbar = () => {
                     key={link.path}
                     to={link.path}
                     ref={el => navRefs.current[index] = el}
-                    className={`nav-link ${isActive(link.path) ? 'nav-link-active' : ''}`}
+                    className={`nav-link text-sm ${isActive(link.path) ? 'nav-link-active text-slate-900 font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
                   >
                     {Icon ? (
                       <div className="flex items-center space-x-2">
-                        <Icon size={18} />
+                        <Icon size={16} />
                         <span>{link.name}</span>
                       </div>
                     ) : (
@@ -99,21 +99,27 @@ const Navbar = () => {
             
             {/* Auth Buttons */}
             {!isAuthenticated ? (
-              <div className="flex items-center space-x-3 border-l border-gray-200/50 pl-6">
-                <Link to="/login" id="nav-login-link" data-testid="nav-login-link" className="text-gray-600 hover:text-gray-900 font-medium text-sm">
+              <div className="flex items-center space-x-3 border-l border-slate-200/80 pl-6">
+                <Link to="/login" id="nav-login-link" data-testid="nav-login-link" className="text-slate-600 hover:text-slate-900 font-medium text-sm px-2">
                   Login
                 </Link>
-                <Link to="/volunteer-register" id="nav-volunteer-link" data-testid="nav-volunteer-link" className="btn-primary text-sm py-2 px-4">
-                  Volunteer Sign Up
+                <Link 
+                  to="/volunteer-register" 
+                  id="nav-volunteer-link" 
+                  data-testid="nav-volunteer-link" 
+                  className="bg-[#0f172a] hover:bg-slate-800 text-white font-medium text-sm py-2 px-5 rounded-full flex items-center space-x-1.5 transition-all shadow-sm hover:shadow"
+                >
+                  <span>Open Crew</span>
+                  <span className="text-base leading-none">&rarr;</span>
                 </Link>
               </div>
             ) : (
-              <div className="flex items-center space-x-3 border-l border-gray-200/50 pl-6">
+              <div className="flex items-center space-x-3 border-l border-slate-200/80 pl-6">
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 font-medium transition-colors duration-200"
+                  className="flex items-center space-x-2 text-slate-600 hover:text-slate-900 font-medium transition-colors duration-200"
                 >
-                  <LogOut size={18} />
+                  <LogOut size={16} />
                   <span>Logout</span>
                 </button>
               </div>

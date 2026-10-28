@@ -1,8 +1,21 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { Calendar, Users, Award, Star, ArrowRight, CheckCircle, TrendingUp, Shield, Heart } from 'lucide-react';
 
 const Home = () => {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0, isHovered: false });
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    setMousePos({ x, y, isHovered: true });
+  };
+
+  const handleMouseLeave = () => {
+    setMousePos({ x: 0, y: 0, isHovered: false });
+  };
   const features = [
     {
       icon: Calendar,
@@ -73,64 +86,64 @@ const Home = () => {
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-transparent">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-24 lg:py-32">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-16 pb-20 lg:pt-24 lg:pb-28">
+          <div className="grid lg:grid-cols-12 gap-12 lg:gap-14 items-center">
 
-            {/* Left Column - Text */}
-            <div className="max-w-xl animate-slide-up relative z-10">
-              <div className="flex items-center space-x-4 mb-8 animate-fade-in">
-                {/* Custom 3D Code-based Logo */}
-                                                    <svg 
-              viewBox="0 0 100 60" 
-              className="w-16 h-10 transform group-hover:scale-105 transition-all duration-300 drop-shadow-xl"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <linearGradient id="silverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#ffffff" />
-                  <stop offset="50%" stopColor="#f8fafc" />
-                  <stop offset="100%" stopColor="#cbd5e1" />
-                </linearGradient>
-                <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#d946ef" />
-                  <stop offset="100%" stopColor="#4c1d95" />
-                </linearGradient>
-                <clipPath id="clipTopLeft">
-                  <rect x="0" y="0" width="60" height="30" />
-                </clipPath>
-                <filter id="bevel3D" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="2" dy="4" stdDeviation="3" floodOpacity="0.2" result="dropShadow" />
-                  <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur" />
-                  <feOffset dx="-1.5" dy="-1.5" result="offsetBlur" />
-                  <feComposite in="SourceGraphic" in2="offsetBlur" operator="arithmetic" k2="1" k3="-1" result="highlightMask" />
-                  <feFlood floodColor="white" floodOpacity="0.9" />
-                  <feComposite in2="highlightMask" operator="in" result="highlight" />
-                  <feOffset in="SourceAlpha" dx="2" dy="2" result="offsetBlur2" />
-                  <feComposite in="SourceGraphic" in2="offsetBlur2" operator="arithmetic" k2="1" k3="-1" result="shadowMask" />
-                  <feFlood floodColor="#000000" floodOpacity="0.5" />
-                  <feComposite in2="shadowMask" operator="in" result="shadow" />
-                  <feMerge>
-                    <feMergeNode in="dropShadow" />
-                    <feMergeNode in="SourceGraphic" />
-                    <feMergeNode in="shadow" />
-                    <feMergeNode in="highlight" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <rect x="12" y="10" width="46" height="40" rx="20" fill="none" stroke="url(#silverGrad)" strokeWidth="12" filter="url(#bevel3D)" />
-              <rect x="42" y="10" width="46" height="40" rx="20" fill="none" stroke="url(#purpleGrad)" strokeWidth="12" filter="url(#bevel3D)" />
-              <rect x="12" y="10" width="46" height="40" rx="20" fill="none" stroke="url(#silverGrad)" strokeWidth="12" clipPath="url(#clipTopLeft)" filter="url(#bevel3D)" />
-            </svg>
+            {/* Left Column - Hero Content */}
+            <div className="lg:col-span-6 animate-slide-up relative z-10">
+              <div className="flex items-center space-x-3.5 mb-7 animate-fade-in group cursor-pointer">
+                {/* Custom 3D Logo */}
+                <svg 
+                  viewBox="0 0 100 60" 
+                  className="w-14 h-9 transform group-hover:scale-105 transition-all duration-300 drop-shadow-md"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <defs>
+                    <linearGradient id="silverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ffffff" />
+                      <stop offset="50%" stopColor="#f8fafc" />
+                      <stop offset="100%" stopColor="#cbd5e1" />
+                    </linearGradient>
+                    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#c084fc" />
+                      <stop offset="100%" stopColor="#7e22ce" />
+                    </linearGradient>
+                    <clipPath id="clipTopLeft">
+                      <rect x="0" y="0" width="60" height="30" />
+                    </clipPath>
+                    <filter id="bevel3D" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="2" dy="4" stdDeviation="3" floodOpacity="0.2" result="dropShadow" />
+                      <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur" />
+                      <feOffset dx="-1.5" dy="-1.5" result="offsetBlur" />
+                      <feComposite in="SourceGraphic" in2="offsetBlur" operator="arithmetic" k2="1" k3="-1" result="highlightMask" />
+                      <feFlood floodColor="white" floodOpacity="0.9" />
+                      <feComposite in2="highlightMask" operator="in" result="highlight" />
+                      <feOffset in="SourceAlpha" dx="2" dy="2" result="offsetBlur2" />
+                      <feComposite in="SourceGraphic" in2="offsetBlur2" operator="arithmetic" k2="1" k3="-1" result="shadowMask" />
+                      <feFlood floodColor="#000000" floodOpacity="0.5" />
+                      <feComposite in2="shadowMask" operator="in" result="shadow" />
+                      <feMerge>
+                        <feMergeNode in="dropShadow" />
+                        <feMergeNode in="SourceGraphic" />
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="highlight" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <rect x="12" y="10" width="46" height="40" rx="20" fill="none" stroke="url(#silverGrad)" strokeWidth="12" filter="url(#bevel3D)" />
+                  <rect x="42" y="10" width="46" height="40" rx="20" fill="none" stroke="url(#purpleGrad)" strokeWidth="12" filter="url(#bevel3D)" />
+                  <rect x="12" y="10" width="46" height="40" rx="20" fill="none" stroke="url(#silverGrad)" strokeWidth="12" clipPath="url(#clipTopLeft)" filter="url(#bevel3D)" />
+                </svg>
 
-                <span className="text-4xl font-black text-accent tracking-tight drop-shadow-sm">
+                <span className="text-3xl sm:text-4xl font-black text-[#2563eb] tracking-tight drop-shadow-sm">
                   CrewLink
                 </span>
               </div>
 
-              <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-[1.1] tracking-tight font-serif">
-                Great events start with the <span className="italic font-medium text-accent">right crew</span>.
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-[1.1] tracking-tight font-serif">
+                Great events start with the <span className="italic font-medium text-[#2563eb]">right crew.</span>
               </h1>
-              <p className="text-xl text-gray-700 mb-10 leading-relaxed font-medium">
+              <p className="text-lg lg:text-xl text-slate-600 mb-9 leading-relaxed font-normal max-w-xl">
                 Connect. Collaborate. Create unforgettable events with the perfect team by your side.
               </p>
 
@@ -139,123 +152,130 @@ const Home = () => {
                   to="/volunteer-register"
                   id="home-btn-volunteer"
                   data-testid="home-btn-volunteer"
-                  className="w-full sm:w-auto btn-primary text-lg px-8 py-4 flex items-center justify-center space-x-2"
+                  className="w-full sm:w-auto btn-primary text-base px-8 py-3.5 flex items-center justify-center space-x-2"
                 >
                   <span>Become a Volunteer</span>
-                  <ArrowRight size={20} />
+                  <span className="text-lg leading-none">&rarr;</span>
                 </Link>
                 <Link
                   to="/login"
                   id="home-btn-login"
                   data-testid="home-btn-login"
-                  className="w-full sm:w-auto btn-secondary text-lg px-8 py-4"
+                  className="w-full sm:w-auto btn-secondary text-base px-8 py-3.5 flex items-center justify-center space-x-2"
                 >
-                  Login
+                  <span>Login</span>
                 </Link>
               </div>
 
-              <div className="mt-12 flex flex-wrap items-center gap-6 text-sm text-gray-700 font-medium">
+              <div className="mt-10 flex flex-wrap items-center gap-6 text-sm text-slate-700 font-medium">
                 <div className="flex items-center space-x-2">
-                  <CheckCircle className="text-accent" size={18} />
+                  <CheckCircle className="text-slate-600" size={18} />
                   <span>No credit card required</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <CheckCircle className="text-accent" size={18} />
+                  <CheckCircle className="text-slate-600" size={18} />
                   <span>Free to join</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <CheckCircle className="text-accent" size={18} />
+                  <CheckCircle className="text-slate-600" size={18} />
                   <span>Instant access</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Attractive Event Image */}
-            <div className="hidden lg:block relative h-[650px] w-full animate-fade-in perspective-[1000px]">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative w-full max-w-lg transform rotate-y-[-5deg] rotate-x-[2deg] hover:rotate-y-[0deg] hover:rotate-x-[0deg] transition-transform duration-700 ease-out">
+            {/* Right Column - Attractive 3D Event Multi-Photo Stack */}
+            <div className="lg:col-span-6 relative pt-4 pb-12 animate-fade-in perspective-[1000px]">
+              <div
+                className="relative max-w-lg mx-auto transition-transform duration-500 ease-out"
+                style={{
+                  transform: mousePos.isHovered
+                    ? `perspective(1000px) rotateY(${mousePos.x * 16}deg) rotateX(${-mousePos.y * 16}deg)`
+                    : 'perspective(1000px) rotateY(-5deg) rotateX(2deg)',
+                  transformStyle: 'preserve-3d'
+                }}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+              >
+                {/* Glow effect behind */}
+                <div className="absolute top-[15%] left-[10%] w-[80%] h-[70%] bg-blue-400/20 rounded-full blur-[100px] pointer-events-none" />
 
-                  {/* Glow effect behind */}
-                  <div className="absolute top-[20%] left-[10%] w-[80%] h-[60%] bg-fuchsia-400 rounded-full blur-[120px] opacity-30 mix-blend-multiply"></div>
+                {/* Main Attractive Image Stack with interactive fan-out on hover */}
+                <div className="relative z-10 w-full h-[380px] sm:h-[420px] group cursor-pointer animate-float" style={{ animationDelay: '0s' }}>
 
-                  {/* Main Attractive Image Stack */}
-                  <div className="relative z-10 w-full h-[400px] group cursor-pointer animate-float" style={{ animationDelay: '0s' }}>
-
-                    {/* Card 3 (Bottom) - Social/Party Event */}
-                    <div className="absolute inset-0 glass-panel rounded-3xl p-3 shadow-premium transition-all duration-500 ease-out origin-bottom-right group-hover:rotate-[8deg] group-hover:translate-x-12 group-hover:-translate-y-6 opacity-70 group-hover:opacity-100 z-0">
-                      <div
-                        className="w-full h-full rounded-2xl bg-cover bg-center shadow-inner relative overflow-hidden"
-                        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80')" }}
-                      >
-                        <div className="absolute inset-0 bg-black/40 rounded-2xl group-hover:bg-black/20 transition-colors"></div>
-                        <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md text-white border border-white/30">
-                          Social Events
-                        </div>
+                  {/* Card 3 (Bottom) - Social/Party Event */}
+                  <div className="absolute inset-0 glass-panel rounded-3xl p-2.5 sm:p-3 shadow-premium transition-all duration-500 ease-out origin-bottom-right group-hover:rotate-[8deg] group-hover:translate-x-10 sm:group-hover:translate-x-14 group-hover:-translate-y-6 opacity-70 group-hover:opacity-100 z-0">
+                    <div
+                      className="w-full h-full rounded-2xl bg-cover bg-center shadow-inner relative overflow-hidden"
+                      style={{ backgroundImage: "url('https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80')" }}
+                    >
+                      <div className="absolute inset-0 bg-black/40 rounded-2xl group-hover:bg-black/20 transition-colors" />
+                      <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md text-white border border-white/30">
+                        Social Events
                       </div>
-                    </div>
-
-                    {/* Card 2 (Middle) - Corporate Event */}
-                    <div className="absolute inset-0 glass-panel rounded-3xl p-3 shadow-premium transition-all duration-500 ease-out origin-bottom-right group-hover:rotate-[4deg] group-hover:translate-x-6 group-hover:-translate-y-3 opacity-85 group-hover:opacity-100 z-10">
-                      <div
-                        className="w-full h-full rounded-2xl bg-cover bg-center shadow-inner relative overflow-hidden"
-                        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1540317580384-e5d43616b9aa?w=800&q=80')" }}
-                      >
-                        <div className="absolute inset-0 bg-black/30 rounded-2xl group-hover:bg-black/10 transition-colors"></div>
-                        <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md text-white border border-white/30">
-                          Corporate Events
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card 1 (Top/Main) - Live Experience */}
-                    <div className="absolute inset-0 glass-panel rounded-3xl p-3 shadow-premium transition-all duration-500 ease-out z-20 group-hover:-translate-x-4 group-hover:-rotate-2">
-                      <div
-                        className="w-full h-full rounded-2xl bg-cover bg-center shadow-inner relative overflow-hidden"
-                        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80')" }}
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
-                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-violet-500 text-white backdrop-blur-md mb-2 w-max shadow-lg">
-                            Live Experience
-                          </span>
-                          <h3 className="text-3xl font-bold text-white tracking-tight drop-shadow-md">Unforgettable Events</h3>
-                          <p className="text-white/80 font-medium">Powered by the perfect crew</p>
-                        </div>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {/* Second Overlapping Photo */}
-                  <div className="absolute -bottom-10 -right-6 z-30 animate-float" style={{ animationDelay: '1s' }}>
-                    <div className="glass-panel p-2 rounded-2xl shadow-2xl -rotate-3 hover:rotate-0 transition-transform duration-500">
-                      <img
-                        src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=400&q=80"
-                        alt="Event Planning"
-                        className="w-48 h-48 rounded-xl object-cover border-2 border-white/20"
-                      />
                     </div>
                   </div>
 
-                  {/* Secondary Floating Badge 1 - Satisfaction */}
-                  <div className="absolute -bottom-6 -left-10 z-40 glass-panel rounded-2xl p-4 shadow-premium animate-float flex items-center space-x-4 border border-white/40" style={{ animationDelay: '1.5s' }}>
-                    <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center shadow-inner">
-                      <TrendingUp className="text-green-600" size={24} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Satisfaction</p>
-                      <p className="text-xl font-black text-gray-900">High</p>
+                  {/* Card 2 (Middle) - Corporate Event */}
+                  <div className="absolute inset-0 glass-panel rounded-3xl p-2.5 sm:p-3 shadow-premium transition-all duration-500 ease-out origin-bottom-right group-hover:rotate-[4deg] group-hover:translate-x-5 sm:group-hover:translate-x-7 group-hover:-translate-y-3 opacity-85 group-hover:opacity-100 z-10">
+                    <div
+                      className="w-full h-full rounded-2xl bg-cover bg-center shadow-inner relative overflow-hidden"
+                      style={{ backgroundImage: "url('https://images.unsplash.com/photo-1540317580384-e5d43616b9aa?w=800&q=80')" }}
+                    >
+                      <div className="absolute inset-0 bg-black/30 rounded-2xl group-hover:bg-black/10 transition-colors" />
+                      <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md text-white border border-white/30">
+                        Corporate Events
+                      </div>
                     </div>
                   </div>
 
-                  {/* Secondary Floating Badge 2 - Pros */}
-                  <div className="absolute -top-6 -right-10 z-40 glass-panel rounded-2xl p-4 shadow-premium animate-float flex items-center space-x-3 border border-white/40" style={{ animationDelay: '3s' }}>
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shadow-inner">
-                      <Shield className="text-blue-600" size={20} />
+                  {/* Card 1 (Top/Main) - Live Experience */}
+                  <div className="absolute inset-0 glass-panel rounded-3xl p-2.5 sm:p-3 shadow-premium transition-all duration-500 ease-out z-20 group-hover:-translate-x-3 sm:group-hover:-translate-x-4 group-hover:-rotate-2">
+                    <div
+                      className="w-full h-full rounded-2xl bg-cover bg-center shadow-inner relative overflow-hidden"
+                      style={{ backgroundImage: "url('https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80')" }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent flex flex-col justify-end p-5 sm:p-6">
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-violet-600 text-white backdrop-blur-md mb-2 w-max shadow-md">
+                          Live Experience
+                        </span>
+                        <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-md">Unforgettable Events</h3>
+                        <p className="text-white/80 text-xs sm:text-sm font-medium">Powered by the perfect crew</p>
+                      </div>
                     </div>
-                    <p className="text-lg font-bold text-gray-900">Verified Pros</p>
                   </div>
 
                 </div>
+
+                {/* Second Overlapping Photo - Venue/Conference Hall */}
+                <div className="absolute -bottom-8 -right-3 sm:-bottom-10 sm:-right-6 z-30 animate-float" style={{ animationDelay: '1s' }}>
+                  <div className="glass-panel p-2 rounded-2xl shadow-2xl -rotate-3 hover:rotate-0 transition-transform duration-500 border border-slate-200/80">
+                    <img
+                      src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=400&q=80"
+                      alt="Event Planning & Venue"
+                      className="w-36 h-36 sm:w-44 sm:h-44 rounded-xl object-cover"
+                    />
+                  </div>
+                </div>
+
+                {/* Secondary Floating Badge 1 - Satisfaction */}
+                <div className="absolute -bottom-5 -left-4 sm:-bottom-6 sm:-left-8 z-40 glass-panel rounded-2xl p-3 sm:p-4 shadow-premium animate-float flex items-center space-x-3 sm:space-x-4 border border-slate-200/90" style={{ animationDelay: '1.5s' }}>
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 flex-shrink-0">
+                    <TrendingUp size={22} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Satisfaction</p>
+                    <p className="text-lg sm:text-xl font-black text-slate-900 leading-tight">High</p>
+                  </div>
+                </div>
+
+                {/* Secondary Floating Badge 2 - Pros */}
+                <div className="absolute -top-4 -right-2 sm:-top-6 sm:-right-8 z-40 glass-panel rounded-2xl px-4 py-2.5 sm:py-3 shadow-premium animate-float flex items-center space-x-3 border border-slate-200/90" style={{ animationDelay: '3s' }}>
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 flex-shrink-0">
+                    <Shield size={18} />
+                  </div>
+                  <p className="text-sm sm:text-base font-bold text-slate-900">Verified Pros</p>
+                </div>
+
               </div>
             </div>
 
@@ -279,10 +299,8 @@ const Home = () => {
         </div>
       </section>
 
-
-
       {/* Features Section */}
-      <section className="py-20 bg-transparent">
+      <section id="how-it-works" className="py-20 bg-transparent">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="max-w-2xl mb-16 animate-slide-up">
             <h2 className="text-3xl lg:text-4xl font-semibold text-gray-900 mb-4">
